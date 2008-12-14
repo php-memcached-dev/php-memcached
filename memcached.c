@@ -14,9 +14,23 @@
 
 /* $ Id: $ */ 
 
-#include "php_memcached.h"
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
-#if HAVE_MEMCACHED
+#include <php.h>
+
+#ifdef ZTS
+#include "TSRM.h"
+#endif
+
+#include <php_ini.h>
+#include <SAPI.h>
+#include <ext/standard/info.h>
+#include <Zend/zend_extensions.h>
+#include <libmemcached/memcached.h>
+
+#include "php_memcached.h"
 
 /* {{{ memcached_functions[] */
 function_entry memcached_functions[] = {
@@ -36,7 +50,7 @@ zend_module_entry memcached_module_entry = {
 	PHP_RINIT(memcached),     /* Replace with NULL if there is nothing to do at request start */
 	PHP_RSHUTDOWN(memcached), /* Replace with NULL if there is nothing to do at request end   */
 	PHP_MINFO(memcached),
-	"0.1.0", 
+	PHP_MEMCACHED_VERSION,
 	STANDARD_MODULE_PROPERTIES
 };
 /* }}} */
@@ -91,17 +105,13 @@ PHP_RSHUTDOWN_FUNCTION(memcached)
 /* {{{ PHP_MINFO_FUNCTION */
 PHP_MINFO_FUNCTION(memcached)
 {
-	php_info_print_box_start(0);
-	php_printf("<p>libmemcached extension</p>\n");
-	php_printf("<p>Version 0.1.0</p>\n");
-	php_printf("<p><b>Authors:</b></p>\n");
-	php_printf("<p>Andrei Zmievski &lt;andrei@php.net&gt; (lead)</p>\n");
-	php_info_print_box_end();
-
+	php_info_print_table_start();
+	php_info_print_table_header(2, "memcached support", "enabled");
+	php_info_print_table_row(2, "Version", PHP_MEMCACHED_VERSION);
+	php_info_print_table_row(2, "Revision", "$Revision: 1.107 $");
+	php_info_print_table_end();
 }
 /* }}} */
-
-#endif /* HAVE_MEMCACHED */
 
 
 /*
