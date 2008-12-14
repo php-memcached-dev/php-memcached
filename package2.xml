@@ -1,0 +1,71 @@
+<?xml version="1.0"?>
+<package version="2.0" xmlns="http://pear.php.net/dtd/package-2.0"
+    xmlns:tasks="http://pear.php.net/dtd/tasks-1.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://pear.php.net/dtd/tasks-1.0
+http://pear.php.net/dtd/tasks-1.0.xsd
+http://pear.php.net/dtd/package-2.0
+http://pear.php.net/dtd/package-2.0.xsd">
+
+  <name>memcached</name>
+  <channel>pecl.php.net</channel>
+
+  <summary>libmemcached extension</summary>
+
+  <description>
+  Extension for interfacing with memcache servers via libmemcached library.
+  </description>
+
+  <lead>
+    <name>Andrei Zmievski</name>
+    <user>andrei</user>
+    <email>andrei@php.net</email>
+    <active>yes</active>
+  </lead>
+
+  <date>2008-12-14</date>
+  <version>
+    <release>0.0.1</release>
+    <api>0.0.1</api>
+  </version>
+  <stability>
+    <release>devel</release>
+    <api>devel</api>
+  </stability>
+
+  <license uri="http://php.net/license" filesource="LICENSE">PHP</license>
+
+  <notes>
+none
+  </notes>
+
+  <contents>
+    <dir name="/">
+      <file role='doc' name='EXPERIMENTAL'/>
+      <file role='doc' name='CREDITS'/>
+      <file role='src' name='config.m4'/>
+      <file role='src' name='memcached.dsp'/>
+      <file role='src' name='config.w32'/>
+      <file role='src' name='memcached.c'/>
+      <file role='src' name='php_memcached.h'/>
+    </dir>
+  </contents>
+
+  <dependencies>
+    <required>
+      <php>
+        <min>4.0.0</min>
+      </php>
+      <pearinstaller>
+        <min>1.4.0a1</min>
+      </pearinstaller>
+    </required>
+  </dependencies>
+
+  <providesextension>memcached</providesextension>
+
+  <extsrcrelease>
+   <configureoption name="with-memcached" default="autodetect" prompt="memcached installation directory?" />
+  </extsrcrelease>
+
+</package>

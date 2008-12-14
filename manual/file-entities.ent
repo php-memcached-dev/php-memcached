@@ -1,0 +1,3 @@
+<!ENTITY reference.memcached.reference SYSTEM './memcached/reference.xml'>
+<!ENTITY reference.memcached.configure SYSTEM './memcached/configure.xml'>
+<!ENTITY reference.memcached.functions SYSTEM './functions.xml'>
