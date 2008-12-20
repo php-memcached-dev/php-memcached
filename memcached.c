@@ -12,7 +12,13 @@
    +----------------------------------------------------------------------+
 */
 
-/* $ Id: $ */ 
+/* $ Id: $ */
+
+/* TODO
+ * - refcount on php_memc_t
+ * - persistent_id in php_memc_t
+ * - persistent switch-over in constructor
+ */
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -32,12 +38,29 @@
 
 #include "php_memcached.h"
 
+static zend_class_entry *memcached_ce = NULL;
+static int le_memc;
+
+typedef struct {
+	zend_class_entry *ce;
+	HashTable *properties;
+	unsigned int in_get:1;
+	unsigned int in_set:1;
+
+	memcached_st *conn;
+	unsigned is_persistent:1;
+} php_memc_t;
+
 /* {{{ memcached_functions[] */
-function_entry memcached_functions[] = {
+static zend_function_entry memcached_functions[] = {
 	{ NULL, NULL, NULL }
 };
 /* }}} */
 
+static zend_function_entry memcached_class_functions[] = {
+	{ NULL, NULL, NULL }
+};
+/* }}} */
 
 /* {{{ memcached_module_entry
  */
@@ -45,10 +68,10 @@ zend_module_entry memcached_module_entry = {
 	STANDARD_MODULE_HEADER,
 	"memcached",
 	memcached_functions,
-	PHP_MINIT(memcached),     /* Replace with NULL if there is nothing to do at php startup   */ 
-	PHP_MSHUTDOWN(memcached), /* Replace with NULL if there is nothing to do at php shutdown  */
-	PHP_RINIT(memcached),     /* Replace with NULL if there is nothing to do at request start */
-	PHP_RSHUTDOWN(memcached), /* Replace with NULL if there is nothing to do at request end   */
+	PHP_MINIT(memcached),
+	PHP_MSHUTDOWN(memcached),
+	NULL,
+	NULL,
 	PHP_MINFO(memcached),
 	PHP_MEMCACHED_VERSION,
 	STANDARD_MODULE_PROPERTIES
@@ -59,48 +82,73 @@ zend_module_entry memcached_module_entry = {
 ZEND_GET_MODULE(memcached)
 #endif
 
+ZEND_RSRC_DTOR_FUNC(php_memc_dtor)
+{
+    if (rsrc->ptr) {
+        php_memc_t *obj = (php_memc_t *)rsrc->ptr;
+		/* TODO dtor code */
+        rsrc->ptr = NULL;
+    }
+}
+
+static void php_memc_free(php_memc_t *obj TSRMLS_DC)
+{
+	pefree(obj, obj->is_persistent);
+}
+
+static void php_memc_free_storage(php_memc_t *obj TSRMLS_DC)
+{
+    if (obj->properties) {
+        zend_hash_destroy(obj->properties);
+        efree(obj->properties);
+        obj->properties = NULL;
+    }
+
+	php_memc_free(obj TSRMLS_CC);
+}
+
+zend_object_value php_memc_new(zend_class_entry *ce TSRMLS_DC)
+{
+    zend_object_value retval;
+    php_memc_t *obj;
+    zval *tmp;
+
+    obj = emalloc(sizeof(*obj));
+    memset(obj, 0, sizeof(*obj));
+    obj->ce = ce;
+    ALLOC_HASHTABLE(obj->properties);
+    zend_hash_init(obj->properties, 0, NULL, ZVAL_PTR_DTOR, 0);
+    zend_hash_copy(obj->properties, &ce->default_properties, (copy_ctor_func_t) zval_add_ref, (void *) &tmp, sizeof(zval *));
+
+    retval.handle = zend_objects_store_put(obj, (zend_objects_store_dtor_t)zend_objects_destroy_object, (zend_objects_free_object_storage_t)php_memc_free_storage, NULL TSRMLS_CC);
+    retval.handlers = &std_object_handlers;
+
+    return retval;
+}
+
 
 /* {{{ PHP_MINIT_FUNCTION */
 PHP_MINIT_FUNCTION(memcached)
 {
+	zend_class_entry ce;
 
-	/* add your stuff here */
+    le_memc = zend_register_list_destructors_ex(NULL, php_memc_dtor, "Memcached persistent connection", module_number);
+
+	INIT_CLASS_ENTRY(ce, "Memcached", memcached_class_functions);
+	memcached_ce = zend_register_internal_class(&ce TSRMLS_CC);
+	memcached_ce->create_object = php_memc_new;
 
 	return SUCCESS;
 }
 /* }}} */
-
 
 /* {{{ PHP_MSHUTDOWN_FUNCTION */
 PHP_MSHUTDOWN_FUNCTION(memcached)
 {
 
-	/* add your stuff here */
-
 	return SUCCESS;
 }
 /* }}} */
-
-
-/* {{{ PHP_RINIT_FUNCTION */
-PHP_RINIT_FUNCTION(memcached)
-{
-	/* add your stuff here */
-
-	return SUCCESS;
-}
-/* }}} */
-
-
-/* {{{ PHP_RSHUTDOWN_FUNCTION */
-PHP_RSHUTDOWN_FUNCTION(memcached)
-{
-	/* add your stuff here */
-
-	return SUCCESS;
-}
-/* }}} */
-
 
 /* {{{ PHP_MINFO_FUNCTION */
 PHP_MINFO_FUNCTION(memcached)
