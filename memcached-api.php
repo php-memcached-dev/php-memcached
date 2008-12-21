@@ -69,7 +69,7 @@ class Memcached {
 	const OPT_PREFIX_KEY;
 
 
-	public function __construct( $locale ) {}
+	public function __construct( $persistent_id = '' ) {}
 	
 	public function get( $key, $cache_cb = null ) {}
 
