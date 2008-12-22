@@ -46,7 +46,7 @@ none
       <file role='src' name='config.m4'/>
       <file role='src' name='memcached.dsp'/>
       <file role='src' name='config.w32'/>
-      <file role='src' name='memcached.c'/>
+      <file role='src' name='php_memcached.c'/>
       <file role='src' name='php_memcached.h'/>
     </dir>
   </contents>

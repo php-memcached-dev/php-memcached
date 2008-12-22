@@ -26,6 +26,10 @@ extern zend_module_entry memcached_module_entry;
 #define PHP_MEMCACHED_API
 #endif
 
+PHP_MEMCACHED_API zend_class_entry *php_memc_get_ce(void);
+PHP_MEMCACHED_API zend_class_entry *php_memc_get_exception(void);
+PHP_MEMCACHED_API zend_class_entry *php_memc_get_exception_base(int root TSRMLS_DC);
+
 PHP_MINIT_FUNCTION(memcached);
 PHP_MSHUTDOWN_FUNCTION(memcached);
 PHP_RINIT_FUNCTION(memcached);

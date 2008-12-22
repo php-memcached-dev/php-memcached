@@ -80,7 +80,13 @@ if test "$PHP_MEMCACHED" != "no"; then
     PHP_ADD_LIBRARY_WITH_PATH(memcached, $PHP_LIBMEMCACHED_DIR/lib, MEMCACHED_SHARED_LIBADD)
 
     PHP_SUBST(MEMCACHED_SHARED_LIBADD)
-    PHP_NEW_EXTENSION(memcached, memcached.c , $ext_shared)
+    PHP_NEW_EXTENSION(memcached, php_memcached.c , $ext_shared)
+
+    ifdef([PHP_ADD_EXTENSION_DEP],
+    [
+      PHP_ADD_EXTENSION_DEP(pdo, spl, true)
+    ])
+
   fi
 
 fi

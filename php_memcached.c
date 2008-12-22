@@ -1,15 +1,17 @@
 /*
-   +----------------------------------------------------------------------+
-   | This source file is subject to version 3.0 of the PHP license,       |
-   | that is bundled with this package in the file LICENSE, and is        |
-   | available through the world-wide-web at the following url:           |
-   | http://www.php.net/license/3_0.txt.                                  |
-   | If you did not receive a copy of the PHP license and are unable to   |
-   | obtain it through the world-wide-web, please send a note to          |
-   | license@php.net so we can mail you a copy immediately.               |
-   +----------------------------------------------------------------------+
-   | Authors: Andrei Zmievski <andrei@php.net>                            |
-   +----------------------------------------------------------------------+
+  +----------------------------------------------------------------------+
+  | Copyright (c) 2008 The PHP Group                                     |
+  +----------------------------------------------------------------------+
+  | This source file is subject to version 3.0 of the PHP license,       |
+  | that is bundled with this package in the file LICENSE, and is        |
+  | available through the world-wide-web at the following url:           |
+  | http://www.php.net/license/3_0.txt.                                  |
+  | If you did not receive a copy of the PHP license and are unable to   |
+  | obtain it through the world-wide-web, please send a note to          |
+  | license@php.net so we can mail you a copy immediately.               |
+  +----------------------------------------------------------------------+
+  | Authors: Andrei Zmievski <andrei@php.net>                            |
+  +----------------------------------------------------------------------+
 */
 
 /* $ Id: $ */
@@ -30,13 +32,17 @@
 #include <php_ini.h>
 #include <SAPI.h>
 #include <ext/standard/info.h>
-#include <Zend/zend_extensions.h>
+#include <zend_extensions.h>
+#include <zend_exceptions.h>
 #include <libmemcached/memcached.h>
 
 #include "php_memcached.h"
 
-static zend_class_entry *memcached_ce = NULL;
 static int le_memc;
+
+static zend_class_entry *memcached_ce = NULL;
+static zend_class_entry *memcached_exception_ce = NULL;
+static zend_class_entry *spl_ce_RuntimeException = NULL;
 
 typedef struct {
 	zend_class_entry *ce;
@@ -44,7 +50,7 @@ typedef struct {
 	unsigned int in_get:1;
 	unsigned int in_set:1;
 
-	memcached_st *conn;
+	memcached_st *memc;
 
 	unsigned is_persistent:1;
 	const char *plist_key;
@@ -68,7 +74,7 @@ static PHP_METHOD(Memcached, __construct)
 {
 	zval *object = getThis();
 	php_memc_t *i_obj;
-	memcached_st *conn = NULL;
+	memcached_st *memc = NULL;
 	char *persistent_id = NULL;
 	int persistent_id_len;
 	zend_bool skip_ctor = 0;
@@ -128,11 +134,12 @@ static PHP_METHOD(Memcached, __construct)
 		return;
 	}
 
-	conn = memcached_create(NULL);
-	if (conn == NULL) {
+	memc = memcached_create(NULL);
+	if (memc == NULL) {
 		php_error_docref(NULL TSRMLS_CC, E_ERROR, "could not allocate libmemcached structure");
 		/* not reached */
 	}
+	i_obj->memc = memc;
 
 	if (persistent_id) {
 		zend_rsrc_list_entry le;
@@ -153,6 +160,8 @@ static PHP_METHOD(Memcached, __construct)
 ****************************************/
 static void php_memc_free(php_memc_t *i_obj TSRMLS_DC)
 {
+	memcached_free(i_obj->memc);
+
 	pefree(i_obj, i_obj->is_persistent);
 }
 
@@ -194,7 +203,6 @@ ZEND_RSRC_DTOR_FUNC(php_memc_dtor)
 	fp = fopen("/tmp/a.log", "a");
     if (rsrc->ptr) {
         php_memc_t *i_obj = (php_memc_t *)rsrc->ptr;
-		fprintf(fp, "destroying list entry for '%s'\n", i_obj->plist_key);
 		php_memc_free(i_obj TSRMLS_CC);
         rsrc->ptr = NULL;
     }
@@ -204,6 +212,43 @@ ZEND_RSRC_DTOR_FUNC(php_memc_dtor)
 int php_memc_list_entry(void)
 {
 	return le_memc;
+}
+
+PHP_MEMCACHED_API
+zend_class_entry *php_memc_get_ce(void)
+{
+	return memcached_ce;
+}
+
+PHP_MEMCACHED_API
+zend_class_entry *php_memc_get_exception(void)
+{
+	return memcached_exception_ce;
+}
+
+PHP_MEMCACHED_API
+zend_class_entry *php_memc_get_exception_base(int root TSRMLS_DC)
+{
+#if HAVE_SPL
+	if (!root) {
+		if (!spl_ce_RuntimeException) {
+			zend_class_entry **pce;
+
+			if (zend_hash_find(CG(class_table), "runtimeexception", sizeof("RuntimeException"), (void **) &pce) 
+				== SUCCESS) {
+				spl_ce_RuntimeException = *pce;
+				return *pce;
+			}
+		} else {
+			return spl_ce_RuntimeException;
+		}
+	}
+#endif
+#if (PHP_MAJOR_VERSION == 5) && (PHP_MINOR_VERSION < 2)
+	return zend_exception_get_default();
+#else
+	return zend_exception_get_default(TSRMLS_C);
+#endif
 }
 
 /* {{{ memcached_functions[] */
@@ -221,8 +266,23 @@ static zend_function_entry memcached_class_methods[] = {
 
 /* {{{ memcached_module_entry
  */
+
+#if ZEND_MODULE_API_NO >= 20050922
+static const zend_module_dep memcached_deps[] = {
+#ifdef HAVE_SPL
+    ZEND_MOD_REQUIRED("spl")
+#endif
+    {NULL, NULL, NULL}
+};
+#endif
+
 zend_module_entry memcached_module_entry = {
-	STANDARD_MODULE_HEADER,
+#if ZEND_MODULE_API_NO >= 20050922
+    STANDARD_MODULE_HEADER_EX, NULL,
+    (zend_module_dep*)memcached_deps,
+#else
+    STANDARD_MODULE_HEADER,
+#endif
 	"memcached",
 	memcached_functions,
 	PHP_MINIT(memcached),
@@ -235,7 +295,6 @@ zend_module_entry memcached_module_entry = {
 };
 /* }}} */
 
-
 /* {{{ PHP_MINIT_FUNCTION */
 PHP_MINIT_FUNCTION(memcached)
 {
@@ -246,6 +305,12 @@ PHP_MINIT_FUNCTION(memcached)
 	INIT_CLASS_ENTRY(ce, "Memcached", memcached_class_methods);
 	memcached_ce = zend_register_internal_class(&ce TSRMLS_CC);
 	memcached_ce->create_object = php_memc_new;
+
+    INIT_CLASS_ENTRY(ce, "MemcachedException", NULL);
+	memcached_exception_ce = zend_register_internal_class_ex(&ce, php_memc_get_exception_base(0 TSRMLS_CC), NULL TSRMLS_CC);
+	/* TODO
+	 * possibly declare custom exception property here
+	 */
 
 	return SUCCESS;
 }
