@@ -68,6 +68,7 @@ static PHP_METHOD(Memcached, __construct)
 {
 	zval *object = getThis();
 	php_memc_t *i_obj;
+	memcached_st *conn = NULL;
 	char *persistent_id = NULL;
 	int persistent_id_len;
 	zend_bool skip_ctor = 0;
@@ -125,6 +126,12 @@ static PHP_METHOD(Memcached, __construct)
 
 	if (skip_ctor) {
 		return;
+	}
+
+	conn = memcached_create(NULL);
+	if (conn == NULL) {
+		php_error_docref(NULL TSRMLS_CC, E_ERROR, "could not allocate libmemcached structure");
+		/* not reached */
 	}
 
 	if (persistent_id) {
