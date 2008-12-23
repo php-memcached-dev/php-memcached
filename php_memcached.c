@@ -17,6 +17,7 @@
 /* $ Id: $ */
 
 /* TODO
+ * - compression and prefix key should be per class, not persistent
  */
 
 #ifdef HAVE_CONFIG_H
@@ -41,6 +42,13 @@
 #define MEMC_OPT_COMPRESSION   -1001
 #define MEMC_OPT_PREFIX_KEY    -1002
 
+#define MEMC_METHOD_INIT_VARS              \
+    zval*             object  = getThis(); \
+    php_memc_t*       i_obj   = NULL;      \
+
+#define MEMC_METHOD_FETCH_OBJECT                                               \
+    i_obj = (php_memc_t *) zend_object_store_get_object( object TSRMLS_CC );   \
+
 static int le_memc;
 
 static zend_class_entry *memcached_ce = NULL;
@@ -55,6 +63,8 @@ typedef struct {
 	unsigned is_persistent:1;
 	const char *plist_key;
 	int plist_key_len;
+
+	unsigned compression:1;
 } php_memc_t;
 
 #ifdef COMPILE_DL_MEMCACHED
@@ -70,6 +80,8 @@ int php_memc_list_entry(void);
 /****************************************
   Function implementations
 ****************************************/
+
+/* {{{ Memcached::__construct() */
 static PHP_METHOD(Memcached, __construct)
 {
 	zval *object = getThis();
@@ -119,7 +131,15 @@ static PHP_METHOD(Memcached, __construct)
 			pi_obj->plist_key_len = plist_key_len + 1;
 		}
 
+		/*
+		 * Copy emalloc'ed bits and internal options.
+		 */
 		pi_obj->zo = i_obj->zo;
+		pi_obj->compression = i_obj->compression;
+
+		/*
+		 * Replace non-persistent object with persistent one.
+		 */
 		efree(i_obj);
 		i_obj = pi_obj;
 		zend_object_store_set_object(object, i_obj TSRMLS_CC);
@@ -152,6 +172,93 @@ static PHP_METHOD(Memcached, __construct)
 		}
 	}
 }
+/* }}} */
+
+/* {{{ Memcached::getOption */
+static PHP_METHOD(Memcached, getOption)
+{
+	long option;
+	uint64_t result;
+	memcached_behavior flag;
+	MEMC_METHOD_INIT_VARS;
+
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "l", &option) == FAILURE) {
+		return;
+	}
+
+	MEMC_METHOD_FETCH_OBJECT;
+
+	switch (option) {
+		case MEMC_OPT_COMPRESSION:
+			RETURN_BOOL(i_obj->compression);
+
+		case MEMC_OPT_PREFIX_KEY:
+		{
+			memcached_return retval;
+			char *result;
+
+			result = memcached_callback_get(i_obj->memc, MEMCACHED_CALLBACK_PREFIX_KEY, &retval);
+			if (retval == MEMCACHED_SUCCESS) {
+				RETURN_STRING(result, 1);
+			} else {
+				RETURN_EMPTY_STRING();
+			}
+		}
+
+		case MEMCACHED_BEHAVIOR_SOCKET_SEND_SIZE:
+		case MEMCACHED_BEHAVIOR_SOCKET_RECV_SIZE:
+			if (memcached_server_count(i_obj->memc) == 0) {
+				php_error_docref(NULL TSRMLS_CC, E_WARNING, "no servers defined");
+				return;
+			}
+
+		default:
+			/*
+			 * Assume that it's a libmemcached behavior option.
+			 */
+			flag = (memcached_behavior) option;
+			result = memcached_behavior_get(i_obj->memc, flag);
+			RETURN_LONG((long)result);
+	}
+}
+/* }}} */
+
+/* {{{ Memcached::setOption */
+static PHP_METHOD(Memcached, setOption)
+{
+	long option;
+	memcached_behavior flag;
+	zval *value;
+	MEMC_METHOD_INIT_VARS;
+
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "lz/", &option, &value) == FAILURE) {
+		return;
+	}
+
+	MEMC_METHOD_FETCH_OBJECT;
+
+	switch (option) {
+		case MEMC_OPT_COMPRESSION:
+			convert_to_boolean(value);
+			i_obj->compression = Z_BVAL_P(value);
+			break;
+
+		case MEMC_OPT_PREFIX_KEY:
+			convert_to_string(value);
+			if (memcached_callback_set(i_obj->memc, MEMCACHED_CALLBACK_PREFIX_KEY,
+									   Z_STRVAL_P(value)) == MEMCACHED_BAD_KEY_PROVIDED) {
+				php_error_docref(NULL TSRMLS_CC, E_WARNING, "bad key provided");
+				RETURN_FALSE;
+			}
+			break;
+
+		default:
+			break;
+	}
+
+	RETURN_TRUE;
+}
+/* }}} */
 
 
 /****************************************
@@ -183,6 +290,8 @@ zend_object_value php_memc_new(zend_class_entry *ce TSRMLS_DC)
 	zend_object_std_init( &i_obj->zo, ce TSRMLS_CC );
     zend_hash_copy(i_obj->zo.properties, &ce->default_properties, (copy_ctor_func_t) zval_add_ref, (void *) &tmp, sizeof(zval *));
 
+	i_obj->compression = 1;
+
     retval.handle = zend_objects_store_put(i_obj, (zend_objects_store_dtor_t)zend_objects_destroy_object, (zend_objects_free_object_storage_t)php_memc_free_storage, NULL TSRMLS_CC);
     retval.handlers = zend_get_std_object_handlers();
 
@@ -191,14 +300,11 @@ zend_object_value php_memc_new(zend_class_entry *ce TSRMLS_DC)
 
 ZEND_RSRC_DTOR_FUNC(php_memc_dtor)
 {
-	FILE *fp;
-	fp = fopen("/tmp/a.log", "a");
     if (rsrc->ptr) {
         php_memc_t *i_obj = (php_memc_t *)rsrc->ptr;
 		php_memc_destroy(i_obj TSRMLS_CC);
         rsrc->ptr = NULL;
     }
-	fclose(fp);
 }
 
 int php_memc_list_entry(void)
@@ -226,8 +332,8 @@ zend_class_entry *php_memc_get_exception_base(int root TSRMLS_DC)
 		if (!spl_ce_RuntimeException) {
 			zend_class_entry **pce;
 
-			if (zend_hash_find(CG(class_table), "runtimeexception", sizeof("RuntimeException"), (void **) &pce) 
-				== SUCCESS) {
+			if (zend_hash_find(CG(class_table), "runtimeexception",
+							   sizeof("RuntimeException"), (void **) &pce) == SUCCESS) {
 				spl_ce_RuntimeException = *pce;
 				return *pce;
 			}
@@ -252,6 +358,8 @@ static zend_function_entry memcached_functions[] = {
 /* {{{ memcached_class_methods */
 static zend_function_entry memcached_class_methods[] = {
     PHP_ME(Memcached, __construct, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(Memcached, getOption,   NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(Memcached, setOption,   NULL, ZEND_ACC_PUBLIC)
 	{ NULL, NULL, NULL }
 };
 /* }}} */
@@ -304,18 +412,18 @@ static void php_memc_register_constants(INIT_FUNC_ARGS)
 	 */
 
 	REGISTER_MEMC_CLASS_CONST_LONG(OPT_HASH, MEMCACHED_BEHAVIOR_HASH);
-	REGISTER_MEMC_CLASS_CONST_LONG(OPT_HASH_DEFAULT, MEMCACHED_HASH_DEFAULT);
-	REGISTER_MEMC_CLASS_CONST_LONG(OPT_HASH_MD5, MEMCACHED_HASH_MD5);
-	REGISTER_MEMC_CLASS_CONST_LONG(OPT_HASH_CRC, MEMCACHED_HASH_CRC);
-	REGISTER_MEMC_CLASS_CONST_LONG(OPT_HASH_FNV1_64, MEMCACHED_HASH_FNV1_64);
-	REGISTER_MEMC_CLASS_CONST_LONG(OPT_HASH_FNV1A_64, MEMCACHED_HASH_FNV1A_64);
-	REGISTER_MEMC_CLASS_CONST_LONG(OPT_HASH_FNV1_32, MEMCACHED_HASH_FNV1_32);
-	REGISTER_MEMC_CLASS_CONST_LONG(OPT_HASH_FNV1A_32, MEMCACHED_HASH_FNV1A_32);
-	REGISTER_MEMC_CLASS_CONST_LONG(OPT_HASH_HSIEH, MEMCACHED_HASH_HSIEH);
-	REGISTER_MEMC_CLASS_CONST_LONG(OPT_HASH_MURMUR, MEMCACHED_HASH_MURMUR);
+	REGISTER_MEMC_CLASS_CONST_LONG(HASH_DEFAULT, MEMCACHED_HASH_DEFAULT);
+	REGISTER_MEMC_CLASS_CONST_LONG(HASH_MD5, MEMCACHED_HASH_MD5);
+	REGISTER_MEMC_CLASS_CONST_LONG(HASH_CRC, MEMCACHED_HASH_CRC);
+	REGISTER_MEMC_CLASS_CONST_LONG(HASH_FNV1_64, MEMCACHED_HASH_FNV1_64);
+	REGISTER_MEMC_CLASS_CONST_LONG(HASH_FNV1A_64, MEMCACHED_HASH_FNV1A_64);
+	REGISTER_MEMC_CLASS_CONST_LONG(HASH_FNV1_32, MEMCACHED_HASH_FNV1_32);
+	REGISTER_MEMC_CLASS_CONST_LONG(HASH_FNV1A_32, MEMCACHED_HASH_FNV1A_32);
+	REGISTER_MEMC_CLASS_CONST_LONG(HASH_HSIEH, MEMCACHED_HASH_HSIEH);
+	REGISTER_MEMC_CLASS_CONST_LONG(HASH_MURMUR, MEMCACHED_HASH_MURMUR);
 	REGISTER_MEMC_CLASS_CONST_LONG(OPT_DISTRIBUTION, MEMCACHED_BEHAVIOR_DISTRIBUTION);
-	REGISTER_MEMC_CLASS_CONST_LONG(OPT_DISTRIBUTION_MODULA, MEMCACHED_DISTRIBUTION_MODULA);
-	REGISTER_MEMC_CLASS_CONST_LONG(OPT_DISTRIBUTION_CONSISTENT, MEMCACHED_DISTRIBUTION_CONSISTENT);
+	REGISTER_MEMC_CLASS_CONST_LONG(DISTRIBUTION_MODULA, MEMCACHED_DISTRIBUTION_MODULA);
+	REGISTER_MEMC_CLASS_CONST_LONG(DISTRIBUTION_CONSISTENT, MEMCACHED_DISTRIBUTION_CONSISTENT);
 	REGISTER_MEMC_CLASS_CONST_LONG(OPT_BUFFER_WRITES, MEMCACHED_BEHAVIOR_BUFFER_REQUESTS);
 	REGISTER_MEMC_CLASS_CONST_LONG(OPT_BINARY_PROTOCOL, MEMCACHED_BEHAVIOR_BINARY_PROTOCOL);
 	REGISTER_MEMC_CLASS_CONST_LONG(OPT_NO_BLOCK, MEMCACHED_BEHAVIOR_NO_BLOCK);
