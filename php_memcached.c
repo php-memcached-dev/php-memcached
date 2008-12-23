@@ -257,6 +257,15 @@ static PHP_METHOD(Memcached, setOption)
 			break;
 
 		default:
+			/*
+			 * Assume that it's a libmemcached behavior option.
+			 */
+			flag = (memcached_behavior) option;
+			convert_to_long(value);
+			if (memcached_behavior_set(i_obj->memc, flag, (uint64_t)Z_LVAL_P(value)) == MEMCACHED_FAILURE) {
+				php_error_docref(NULL TSRMLS_CC, E_WARNING, "error setting memcached option");
+				RETURN_FALSE;
+			}
 			break;
 	}
 
