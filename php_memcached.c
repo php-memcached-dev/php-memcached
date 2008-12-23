@@ -78,7 +78,7 @@ int php_memc_list_entry(void);
 
 
 /****************************************
-  Function implementations
+  Method implementations
 ****************************************/
 
 /* {{{ Memcached::__construct() */
@@ -129,16 +129,20 @@ static PHP_METHOD(Memcached, __construct)
 			}
 			memcpy((char *)pi_obj->plist_key, plist_key, plist_key_len + 1);
 			pi_obj->plist_key_len = plist_key_len + 1;
+
+			/*
+			 * Copy state bits because we've just constructed a new persistent object.
+			 */
+			pi_obj->compression = i_obj->compression;
 		}
 
 		/*
-		 * Copy emalloc'ed bits and internal options.
+		 * Copy emalloc'ed bits.
 		 */
 		pi_obj->zo = i_obj->zo;
-		pi_obj->compression = i_obj->compression;
 
 		/*
-		 * Replace non-persistent object with persistent one.
+		 * Replace non-persistent object with the persistent one.
 		 */
 		efree(i_obj);
 		i_obj = pi_obj;
