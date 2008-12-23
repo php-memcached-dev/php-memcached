@@ -50,8 +50,6 @@ class Memcached {
 
 	const OPT_CONNECT_TIMEOUT;
 
-	const OPT_CONNECT_TIMEOUT;
-
 	const OPT_RETRY_TIMEOUT;
 
 	const OPT_SND_TIMEOUT;
@@ -59,6 +57,10 @@ class Memcached {
 	const OPT_RCV_TIMEOUT;
 
 	const OPT_POLL_TIMEOUT;
+
+	const OPT_SERVER_FAILURE_LIMIT;
+
+	const OPT_CACHE_LOOKUPS;
 
 
 	/**

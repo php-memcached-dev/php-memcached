@@ -38,6 +38,9 @@
 
 #include "php_memcached.h"
 
+#define MEMC_OPT_COMPRESSION   -1001
+#define MEMC_OPT_PREFIX_KEY    -1002
+
 static int le_memc;
 
 static zend_class_entry *memcached_ce = NULL;
@@ -45,10 +48,7 @@ static zend_class_entry *memcached_exception_ce = NULL;
 static zend_class_entry *spl_ce_RuntimeException = NULL;
 
 typedef struct {
-	zend_class_entry *ce;
-	HashTable *properties;
-	unsigned int in_get:1;
-	unsigned int in_set:1;
+	zend_object zo;
 
 	memcached_st *memc;
 
@@ -119,8 +119,7 @@ static PHP_METHOD(Memcached, __construct)
 			pi_obj->plist_key_len = plist_key_len + 1;
 		}
 
-		pi_obj->ce = i_obj->ce;
-		pi_obj->properties = i_obj->properties;
+		pi_obj->zo = i_obj->zo;
 		efree(i_obj);
 		i_obj = pi_obj;
 		zend_object_store_set_object(object, i_obj TSRMLS_CC);
@@ -158,7 +157,7 @@ static PHP_METHOD(Memcached, __construct)
 /****************************************
   Internal support code
 ****************************************/
-static void php_memc_free(php_memc_t *i_obj TSRMLS_DC)
+static void php_memc_destroy(php_memc_t *i_obj TSRMLS_DC)
 {
 	memcached_free(i_obj->memc);
 
@@ -167,14 +166,10 @@ static void php_memc_free(php_memc_t *i_obj TSRMLS_DC)
 
 static void php_memc_free_storage(php_memc_t *i_obj TSRMLS_DC)
 {
-    if (i_obj->properties) {
-        zend_hash_destroy(i_obj->properties);
-        efree(i_obj->properties);
-        i_obj->properties = NULL;
-    }
+	zend_object_std_dtor(&i_obj->zo TSRMLS_CC);
 
 	if (!i_obj->is_persistent) {
-		php_memc_free(i_obj TSRMLS_CC);
+		php_memc_destroy(i_obj TSRMLS_CC);
 	}
 }
 
@@ -184,15 +179,12 @@ zend_object_value php_memc_new(zend_class_entry *ce TSRMLS_DC)
     php_memc_t *i_obj;
     zval *tmp;
 
-    i_obj = emalloc(sizeof(*i_obj));
-    memset(i_obj, 0, sizeof(*i_obj));
-    i_obj->ce = ce;
-    ALLOC_HASHTABLE(i_obj->properties);
-    zend_hash_init(i_obj->properties, 0, NULL, ZVAL_PTR_DTOR, 0);
-    zend_hash_copy(i_obj->properties, &ce->default_properties, (copy_ctor_func_t) zval_add_ref, (void *) &tmp, sizeof(zval *));
+    i_obj = ecalloc(1, sizeof(*i_obj));
+	zend_object_std_init( &i_obj->zo, ce TSRMLS_CC );
+    zend_hash_copy(i_obj->zo.properties, &ce->default_properties, (copy_ctor_func_t) zval_add_ref, (void *) &tmp, sizeof(zval *));
 
     retval.handle = zend_objects_store_put(i_obj, (zend_objects_store_dtor_t)zend_objects_destroy_object, (zend_objects_free_object_storage_t)php_memc_free_storage, NULL TSRMLS_CC);
-    retval.handlers = &std_object_handlers;
+    retval.handlers = zend_get_std_object_handlers();
 
     return retval;
 }
@@ -203,7 +195,7 @@ ZEND_RSRC_DTOR_FUNC(php_memc_dtor)
 	fp = fopen("/tmp/a.log", "a");
     if (rsrc->ptr) {
         php_memc_t *i_obj = (php_memc_t *)rsrc->ptr;
-		php_memc_free(i_obj TSRMLS_CC);
+		php_memc_destroy(i_obj TSRMLS_CC);
         rsrc->ptr = NULL;
     }
 	fclose(fp);
@@ -295,6 +287,53 @@ zend_module_entry memcached_module_entry = {
 };
 /* }}} */
 
+/* {{{ php_memc_register_constants */
+static void php_memc_register_constants(INIT_FUNC_ARGS)
+{
+	#define REGISTER_MEMC_CLASS_CONST_LONG(name, value) zend_declare_class_constant_long(php_memc_get_ce() , ZEND_STRS( #name ) - 1, value TSRMLS_CC)
+
+	/*
+	 * Class options
+	 */
+
+	REGISTER_MEMC_CLASS_CONST_LONG(OPT_COMPRESSION, MEMC_OPT_COMPRESSION);
+	REGISTER_MEMC_CLASS_CONST_LONG(OPT_PREFIX_KEY,  MEMC_OPT_PREFIX_KEY);
+
+	/*
+	 * libmemcached behavior options
+	 */
+
+	REGISTER_MEMC_CLASS_CONST_LONG(OPT_HASH, MEMCACHED_BEHAVIOR_HASH);
+	REGISTER_MEMC_CLASS_CONST_LONG(OPT_HASH_DEFAULT, MEMCACHED_HASH_DEFAULT);
+	REGISTER_MEMC_CLASS_CONST_LONG(OPT_HASH_MD5, MEMCACHED_HASH_MD5);
+	REGISTER_MEMC_CLASS_CONST_LONG(OPT_HASH_CRC, MEMCACHED_HASH_CRC);
+	REGISTER_MEMC_CLASS_CONST_LONG(OPT_HASH_FNV1_64, MEMCACHED_HASH_FNV1_64);
+	REGISTER_MEMC_CLASS_CONST_LONG(OPT_HASH_FNV1A_64, MEMCACHED_HASH_FNV1A_64);
+	REGISTER_MEMC_CLASS_CONST_LONG(OPT_HASH_FNV1_32, MEMCACHED_HASH_FNV1_32);
+	REGISTER_MEMC_CLASS_CONST_LONG(OPT_HASH_FNV1A_32, MEMCACHED_HASH_FNV1A_32);
+	REGISTER_MEMC_CLASS_CONST_LONG(OPT_HASH_HSIEH, MEMCACHED_HASH_HSIEH);
+	REGISTER_MEMC_CLASS_CONST_LONG(OPT_HASH_MURMUR, MEMCACHED_HASH_MURMUR);
+	REGISTER_MEMC_CLASS_CONST_LONG(OPT_DISTRIBUTION, MEMCACHED_BEHAVIOR_DISTRIBUTION);
+	REGISTER_MEMC_CLASS_CONST_LONG(OPT_DISTRIBUTION_MODULA, MEMCACHED_DISTRIBUTION_MODULA);
+	REGISTER_MEMC_CLASS_CONST_LONG(OPT_DISTRIBUTION_CONSISTENT, MEMCACHED_DISTRIBUTION_CONSISTENT);
+	REGISTER_MEMC_CLASS_CONST_LONG(OPT_BUFFER_WRITES, MEMCACHED_BEHAVIOR_BUFFER_REQUESTS);
+	REGISTER_MEMC_CLASS_CONST_LONG(OPT_BINARY_PROTOCOL, MEMCACHED_BEHAVIOR_BINARY_PROTOCOL);
+	REGISTER_MEMC_CLASS_CONST_LONG(OPT_NO_BLOCK, MEMCACHED_BEHAVIOR_NO_BLOCK);
+	REGISTER_MEMC_CLASS_CONST_LONG(OPT_TCP_NODELAY, MEMCACHED_BEHAVIOR_TCP_NODELAY);
+	REGISTER_MEMC_CLASS_CONST_LONG(OPT_SOCKET_SEND_SIZE, MEMCACHED_BEHAVIOR_SOCKET_SEND_SIZE);
+	REGISTER_MEMC_CLASS_CONST_LONG(OPT_SOCKET_RECV_SIZE, MEMCACHED_BEHAVIOR_SOCKET_RECV_SIZE);
+	REGISTER_MEMC_CLASS_CONST_LONG(OPT_CONNECT_TIMEOUT, MEMCACHED_BEHAVIOR_CONNECT_TIMEOUT);
+	REGISTER_MEMC_CLASS_CONST_LONG(OPT_RETRY_TIMEOUT, MEMCACHED_BEHAVIOR_RETRY_TIMEOUT);
+	REGISTER_MEMC_CLASS_CONST_LONG(OPT_SEND_TIMEOUT, MEMCACHED_BEHAVIOR_SND_TIMEOUT);
+	REGISTER_MEMC_CLASS_CONST_LONG(OPT_RECV_TIMEOUT, MEMCACHED_BEHAVIOR_RETRY_TIMEOUT);
+	REGISTER_MEMC_CLASS_CONST_LONG(OPT_POLL_TIMEOUT, MEMCACHED_BEHAVIOR_POLL_TIMEOUT);
+	REGISTER_MEMC_CLASS_CONST_LONG(OPT_CACHE_LOOKUPS, MEMCACHED_BEHAVIOR_CACHE_LOOKUPS);
+	REGISTER_MEMC_CLASS_CONST_LONG(OPT_SERVER_FAILURE_LIMIT, MEMCACHED_BEHAVIOR_SERVER_FAILURE_LIMIT);
+
+	#undef REGISTER_MEMC_CLASS_CONST_LONG
+}
+/* }}} */
+
 /* {{{ PHP_MINIT_FUNCTION */
 PHP_MINIT_FUNCTION(memcached)
 {
@@ -311,6 +350,8 @@ PHP_MINIT_FUNCTION(memcached)
 	/* TODO
 	 * possibly declare custom exception property here
 	 */
+
+	php_memc_register_constants(INIT_FUNC_ARGS_PASSTHRU);
 
 	return SUCCESS;
 }
