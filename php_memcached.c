@@ -325,12 +325,55 @@ PHP_METHOD(Memcached, decrement)
 /* {{{ Memcached::addServer() */
 PHP_METHOD(Memcached, addServer)
 {
+	char *host;
+	int   host_len;
+	long  port, weight = 0;
+	MEMC_METHOD_INIT_VARS;
+
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sl|l", &host, &host_len,
+							  &port, &weight) == FAILURE) {
+		return;
+	}
+
+	MEMC_METHOD_FETCH_OBJECT;
+
+	if (memcached_server_add_with_weight(i_obj->memc, host, port, weight) != MEMCACHED_SUCCESS) {
+		RETURN_FALSE;
+	}
+
+	RETURN_TRUE;
 }
 /* }}} */
 
 /* {{{ Memcached::getServerList() */
 PHP_METHOD(Memcached, getServerList)
 {
+	memcached_server_st *servers;
+	unsigned int i, servers_count;
+	zval *array;
+	MEMC_METHOD_INIT_VARS;
+
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "") == FAILURE) {
+		return;
+	}
+
+	MEMC_METHOD_FETCH_OBJECT;
+
+	array_init(return_value);
+	servers = memcached_server_list(i_obj->memc);
+	servers_count = memcached_server_count(i_obj->memc);
+	if (servers == NULL) {
+		return;
+	}
+
+	for (i = 0; i < servers_count; i++) {
+		MAKE_STD_ZVAL(array);
+		array_init(array);
+		add_assoc_string(array, "host", servers[i].hostname, 1);
+		add_assoc_long(array, "port", servers[i].port);
+		add_assoc_long(array, "weight", servers[i].weight);
+		add_next_index_zval(return_value, array);
+	}
 }
 /* }}} */
 
@@ -539,7 +582,7 @@ zend_class_entry *php_memc_get_exception_base(int root TSRMLS_DC)
 #define MEMC_ME(name, args) PHP_ME(Memcached, name, args, ZEND_ACC_PUBLIC)
 static zend_function_entry memcached_class_methods[] = {
     MEMC_ME(__construct, NULL)
-	
+
 	MEMC_ME(get,                NULL)
 	MEMC_ME(getByKey,           NULL)
 	MEMC_ME(getDelayed,         NULL)
