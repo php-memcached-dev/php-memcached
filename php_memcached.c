@@ -74,7 +74,8 @@ ZEND_GET_MODULE(memcached)
 /****************************************
   Forward declarations
 ****************************************/
-int php_memc_list_entry(void);
+static int php_memc_list_entry(void);
+static int php_memc_handle_error(memcached_return status TSRMLS_DC);
 
 
 /****************************************
@@ -380,6 +381,29 @@ PHP_METHOD(Memcached, getServerList)
 /* {{{ Memcached::getServerByKey() */
 PHP_METHOD(Memcached, getServerByKey)
 {
+	char *server_key;
+	int   server_key_len;
+	memcached_server_st *server;
+	memcached_return error;
+	MEMC_METHOD_INIT_VARS;
+
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &server_key, &server_key_len) == FAILURE) {
+		return;
+	}
+
+	MEMC_METHOD_FETCH_OBJECT;
+
+	server = memcached_server_by_key(i_obj->memc, server_key, server_key_len, &error);
+	if (server == NULL) {
+		php_memc_handle_error(error TSRMLS_CC);
+		RETURN_FALSE;
+	}
+
+	array_init(return_value);
+	add_assoc_string(return_value, "host", server->hostname, 1);
+	add_assoc_long(return_value, "port", server->port);
+	add_assoc_long(return_value, "weight", server->weight);
+	memcached_server_free(server);
 }
 /* }}} */
 
@@ -535,7 +559,58 @@ ZEND_RSRC_DTOR_FUNC(php_memc_dtor)
 /* }}} */
 
 /* {{{ internal API functions */
-int php_memc_list_entry(void)
+static int php_memc_handle_error(memcached_return status TSRMLS_DC)
+{
+	int result = 0;
+
+	switch (status) {
+		case MEMCACHED_SUCCESS:
+		case MEMCACHED_DATA_EXISTS:
+		case MEMCACHED_STORED:
+		case MEMCACHED_NOTFOUND:
+		case MEMCACHED_BUFFERED:
+			result = 0;
+			break;
+
+		case MEMCACHED_FAILURE:
+		case MEMCACHED_HOST_LOOKUP_FAILURE:
+		case MEMCACHED_CONNECTION_FAILURE:
+		case MEMCACHED_CONNECTION_BIND_FAILURE:
+		case MEMCACHED_READ_FAILURE:
+		case MEMCACHED_UNKNOWN_READ_FAILURE:
+		case MEMCACHED_PROTOCOL_ERROR:
+		case MEMCACHED_CLIENT_ERROR:
+		case MEMCACHED_SERVER_ERROR:
+		case MEMCACHED_WRITE_FAILURE:
+		case MEMCACHED_CONNECTION_SOCKET_CREATE_FAILURE:
+		{
+			char *message;
+			int   message_len;
+			zval *ex;
+			zend_class_entry *def_ex  = php_memc_get_exception_base(1 TSRMLS_CC),
+							 *memc_ex = php_memc_get_exception();
+
+			MAKE_STD_ZVAL(ex);
+			object_init_ex(ex, memc_ex);
+
+			message_len = spprintf(&message, 0, "%s", memcached_strerror(NULL, status));
+			zend_update_property_string(def_ex, ex, "message", sizeof("message")-1, message TSRMLS_CC);
+			zend_throw_exception_object(ex TSRMLS_CC);
+			efree(message);
+			result = -1;
+			break;
+		}
+
+		default:
+			php_error_docref(NULL TSRMLS_CC, E_WARNING, "%s", memcached_strerror(NULL, status));
+			result = -1;
+			break;
+	}
+
+	return result;
+}
+
+static int php_memc_list_entry(void)
 {
 	return le_memc;
 }
