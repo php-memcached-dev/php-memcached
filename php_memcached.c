@@ -178,7 +178,175 @@ static PHP_METHOD(Memcached, __construct)
 }
 /* }}} */
 
-/* {{{ Memcached::getOption */
+/* {{{ Memcached::get() */
+PHP_METHOD(Memcached, get)
+{
+}
+/* }}} */
+
+/* {{{ Memcached::getByKey() */
+PHP_METHOD(Memcached, getByKey)
+{
+}
+/* }}} */
+
+/* {{{ Memcached::getDelayed() */
+PHP_METHOD(Memcached, getDelayed)
+{
+}
+/* }}} */
+
+/* {{{ Memcached::getDelayedByKey() */
+PHP_METHOD(Memcached, getDelayedByKey)
+{
+}
+/* }}} */
+
+/* {{{ Memcached::fetch() */
+PHP_METHOD(Memcached, fetch)
+{
+}
+/* }}} */
+
+/* {{{ Memcached::fetchAll() */
+PHP_METHOD(Memcached, fetchAll)
+{
+}
+/* }}} */
+
+/* {{{ Memcached::set() */
+PHP_METHOD(Memcached, set)
+{
+}
+/* }}} */
+
+/* {{{ Memcached::setByKey() */
+PHP_METHOD(Memcached, setByKey)
+{
+}
+/* }}} */
+
+/* {{{ Memcached::setMulti() */
+PHP_METHOD(Memcached, setMulti)
+{
+}
+/* }}} */
+
+/* {{{ Memcached::getLastTokens() */
+PHP_METHOD(Memcached, getLastTokens)
+{
+}
+/* }}} */
+
+/* {{{ Memcached::cas() */
+PHP_METHOD(Memcached, cas)
+{
+}
+/* }}} */
+
+/* {{{ Memcached::casByKey() */
+PHP_METHOD(Memcached, casByKey)
+{
+}
+/* }}} */
+
+/* {{{ Memcached::add() */
+PHP_METHOD(Memcached, add)
+{
+}
+/* }}} */
+
+/* {{{ Memcached::addByKey() */
+PHP_METHOD(Memcached, addByKey)
+{
+}
+/* }}} */
+
+/* {{{ Memcached::append() */
+PHP_METHOD(Memcached, append)
+{
+}
+/* }}} */
+
+/* {{{ Memcached::appendByKey() */
+PHP_METHOD(Memcached, appendByKey)
+{
+}
+/* }}} */
+
+/* {{{ Memcached::prepend() */
+PHP_METHOD(Memcached, prepend)
+{
+}
+/* }}} */
+
+/* {{{ Memcached::prependByKey() */
+PHP_METHOD(Memcached, prependByKey)
+{
+}
+/* }}} */
+
+/* {{{ Memcached::replace() */
+PHP_METHOD(Memcached, replace)
+{
+}
+/* }}} */
+
+/* {{{ Memcached::replaceByKey() */
+PHP_METHOD(Memcached, replaceByKey)
+{
+}
+/* }}} */
+
+/* {{{ Memcached::delete() */
+PHP_METHOD(Memcached, delete)
+{
+}
+/* }}} */
+
+/* {{{ Memcached::deleteByKey() */
+PHP_METHOD(Memcached, deleteByKey)
+{
+}
+/* }}} */
+
+/* {{{ Memcached::increment() */
+PHP_METHOD(Memcached, increment)
+{
+}
+/* }}} */
+
+/* {{{ Memcached::decrement() */
+PHP_METHOD(Memcached, decrement)
+{
+}
+/* }}} */
+
+/* {{{ Memcached::addServer() */
+PHP_METHOD(Memcached, addServer)
+{
+}
+/* }}} */
+
+/* {{{ Memcached::getServerList() */
+PHP_METHOD(Memcached, getServerList)
+{
+}
+/* }}} */
+
+/* {{{ Memcached::getServerByKey() */
+PHP_METHOD(Memcached, getServerByKey)
+{
+}
+/* }}} */
+
+/* {{{ Memcached::setMultiByKey() */
+PHP_METHOD(Memcached, setMultiByKey)
+{
+}
+/* }}} */
+
+/* {{{ Memcached::getOption() */
 static PHP_METHOD(Memcached, getOption)
 {
 	long option;
@@ -227,7 +395,7 @@ static PHP_METHOD(Memcached, getOption)
 }
 /* }}} */
 
-/* {{{ Memcached::setOption */
+/* {{{ Memcached::setOption() */
 static PHP_METHOD(Memcached, setOption)
 {
 	long option;
@@ -277,6 +445,8 @@ static PHP_METHOD(Memcached, setOption)
 /****************************************
   Internal support code
 ****************************************/
+
+/* {{{ constructor/destructor */
 static void php_memc_destroy(php_memc_t *i_obj TSRMLS_DC)
 {
 	memcached_free(i_obj->memc);
@@ -319,7 +489,9 @@ ZEND_RSRC_DTOR_FUNC(php_memc_dtor)
         rsrc->ptr = NULL;
     }
 }
+/* }}} */
 
+/* {{{ internal API functions */
 int php_memc_list_entry(void)
 {
 	return le_memc;
@@ -361,20 +533,52 @@ zend_class_entry *php_memc_get_exception_base(int root TSRMLS_DC)
 	return zend_exception_get_default(TSRMLS_C);
 #endif
 }
-
-/* {{{ memcached_functions[] */
-static zend_function_entry memcached_functions[] = {
-	{ NULL, NULL, NULL }
-};
 /* }}} */
 
 /* {{{ memcached_class_methods */
+#define MEMC_ME(name, args) PHP_ME(Memcached, name, args, ZEND_ACC_PUBLIC)
 static zend_function_entry memcached_class_methods[] = {
-    PHP_ME(Memcached, __construct, NULL, ZEND_ACC_PUBLIC)
-    PHP_ME(Memcached, getOption,   NULL, ZEND_ACC_PUBLIC)
-    PHP_ME(Memcached, setOption,   NULL, ZEND_ACC_PUBLIC)
+    MEMC_ME(__construct, NULL)
+	
+	MEMC_ME(get,                NULL)
+	MEMC_ME(getByKey,           NULL)
+	MEMC_ME(getDelayed,         NULL)
+	MEMC_ME(getDelayedByKey,    NULL)
+	MEMC_ME(fetch,              NULL)
+	MEMC_ME(fetchAll,           NULL)
+
+	MEMC_ME(set,                NULL)
+	MEMC_ME(setByKey,           NULL)
+	MEMC_ME(setMulti,           NULL)
+	MEMC_ME(setMultiByKey,      NULL)
+
+	MEMC_ME(getLastTokens,      NULL)
+
+	MEMC_ME(cas,                NULL)
+	MEMC_ME(casByKey,           NULL)
+	MEMC_ME(add,                NULL)
+	MEMC_ME(addByKey,           NULL)
+	MEMC_ME(append,             NULL)
+	MEMC_ME(appendByKey,        NULL)
+	MEMC_ME(prepend,            NULL)
+	MEMC_ME(prependByKey,       NULL)
+	MEMC_ME(replace,            NULL)
+	MEMC_ME(replaceByKey,       NULL)
+	MEMC_ME(delete,             NULL)
+	MEMC_ME(deleteByKey,        NULL)
+
+	MEMC_ME(increment,          NULL)
+	MEMC_ME(decrement,          NULL)
+
+	MEMC_ME(addServer,          NULL)
+	MEMC_ME(getServerList,      NULL)
+	MEMC_ME(getServerByKey,     NULL)
+
+    MEMC_ME(getOption,   NULL)
+    MEMC_ME(setOption,   NULL)
 	{ NULL, NULL, NULL }
 };
+#undef MEMC_ME
 /* }}} */
 
 /* {{{ memcached_module_entry
@@ -397,7 +601,7 @@ zend_module_entry memcached_module_entry = {
     STANDARD_MODULE_HEADER,
 #endif
 	"memcached",
-	memcached_functions,
+	NULL,
 	PHP_MINIT(memcached),
 	PHP_MSHUTDOWN(memcached),
 	NULL,

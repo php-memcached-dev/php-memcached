@@ -101,7 +101,7 @@ class Memcached {
 
 	public function add( $key, $value, $expiration ) {}
 
-	public function addByKey( $server_ke, $key, $value, $expiration ) {}
+	public function addByKey( $server_key, $key, $value, $expiration ) {}
 
 	public function append( $key, $value, $expiration ) {}
 
