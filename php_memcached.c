@@ -83,7 +83,8 @@ ZEND_GET_MODULE(memcached)
 ****************************************/
 static int php_memc_list_entry(void);
 static int php_memc_handle_error(memcached_return status TSRMLS_DC);
-static char *php_memc_zval_to_payload(zval *value, size_t *payload_len, uint32_t *flags);
+static char *php_memc_zval_to_payload(zval *value, size_t *payload_len, uint32_t *flags TSRMLS_DC);
+static int php_memc_zval_from_payload(zval *value, char *payload, size_t payload_len, uint32_t flags TSRMLS_DC);
 
 
 /****************************************
@@ -190,6 +191,38 @@ static PHP_METHOD(Memcached, __construct)
 /* {{{ Memcached::get() */
 PHP_METHOD(Memcached, get)
 {
+	zval *keys = NULL;
+	char *key = NULL;
+	int   key_len = 0;
+	char  *payload = NULL;
+	size_t payload_len = 0;
+	uint32_t flags = 0;
+	memcached_return status;
+	MEMC_METHOD_INIT_VARS;
+
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z", &keys) == FAILURE) {
+		return;
+	}
+
+	MEMC_METHOD_FETCH_OBJECT;
+
+	if (Z_TYPE_P(keys) != IS_ARRAY && Z_TYPE_P(keys) != IS_STRING) {
+		php_error_docref(NULL TSRMLS_CC, E_WARNING, "expects parameter 1 to be string or array, %s given",
+						 zend_zval_type_name(keys));
+		return;
+	}
+
+	if (Z_TYPE_P(keys) == IS_STRING) {
+		payload = memcached_get(i_obj->memc, key, key_len, &payload_len, &flags, &status);
+		if (php_memc_handle_error(status TSRMLS_CC) < 0) {
+			RETURN_NULL();
+		}
+		if (php_memc_zval_from_payload(return_value, payload, payload_len, flags TSRMLS_CC) < 0) {
+			RETURN_NULL();
+		}
+	}
+
+	/* TODO implement array case */
 }
 /* }}} */
 
@@ -246,9 +279,12 @@ PHP_METHOD(Memcached, set)
 		flags |= MEMC_VAL_COMPRESSED;
 	}
 
-	payload = php_memc_zval_to_payload(value, &payload_len, &flags);
+	payload = php_memc_zval_to_payload(value, &payload_len, &flags TSRMLS_CC);
+	if (payload == NULL) {
+		RETURN_FALSE;
+	}
 	status = memcached_set(i_obj->memc, key, key_len, payload, payload_len, expiration, flags);
-	if (php_memc_handle_error(status) < 0) {
+	if (php_memc_handle_error(status TSRMLS_CC) < 0) {
 		RETURN_FALSE;
 	}
 
@@ -647,7 +683,7 @@ static int php_memc_handle_error(memcached_return status TSRMLS_DC)
 	return result;
 }
 
-static char *php_memc_zval_to_payload(zval *value, size_t *payload_len, uint32_t *flags)
+static char *php_memc_zval_to_payload(zval *value, size_t *payload_len, uint32_t *flags TSRMLS_DC)
 {
 	char *payload;
 	smart_str buf = {0};
@@ -696,6 +732,7 @@ static char *php_memc_zval_to_payload(zval *value, size_t *payload_len, uint32_t
 		char *payload_comp = emalloc(payload_comp_len);
 
 		if (compress(payload_comp, &payload_comp_len, buf.c, buf.len) != Z_OK) {
+			php_error_docref(NULL TSRMLS_CC, E_WARNING, "could not compress value");
 			free(payload_comp);
 			smart_str_free(&buf);
 			return NULL;
@@ -711,6 +748,68 @@ static char *php_memc_zval_to_payload(zval *value, size_t *payload_len, uint32_t
 	}
 
 	return payload;
+}
+
+static int php_memc_zval_from_payload(zval *value, char *payload, size_t payload_len, uint32_t flags TSRMLS_DC)
+{
+	if (payload == NULL) {
+		return -1;
+	}
+
+	if (flags & MEMC_VAL_COMPRESSED) {
+		/*
+		   From gzuncompress().
+
+		   zlib::uncompress() wants to know the output data length
+		   if none was given as a parameter
+		   we try from input length * 2 up to input length * 2^15
+		   doubling it whenever it wasn't big enough
+		   that should be eneugh for all real life cases
+		 */
+		unsigned int factor = 1, maxfactor = 16;
+		unsigned long length;
+		int status;
+		char *buf = NULL;
+		do {
+			length = (unsigned long)payload_len * (1 << factor++);
+			buf = erealloc(buf, length + 1);
+			memset(buf, 0, length + 1);
+			status = uncompress(buf, &length, payload, payload_len);
+		} while ((status==Z_BUF_ERROR) && (factor < maxfactor));
+
+        payload = emalloc(length + 1);
+        memcpy(payload, buf, length);
+        payload_len = length;
+		payload[payload_len] = 0;
+        efree(buf);
+        if (status != Z_OK) {
+			php_error_docref(NULL TSRMLS_CC, E_WARNING, "could not uncompress value");
+            efree(payload);
+            return -1;
+        }
+	}
+
+	if (flags & MEMC_VAL_SERIALIZED) {
+		const char *payload_tmp = payload;
+		php_unserialize_data_t var_hash;
+
+		PHP_VAR_UNSERIALIZE_INIT(var_hash);
+		if (!php_var_unserialize(&value, (const unsigned char **)&payload_tmp, payload_tmp + payload_len, &var_hash TSRMLS_CC)) {
+			ZVAL_FALSE(value);
+			PHP_VAR_UNSERIALIZE_DESTROY(var_hash);
+			if (flags & MEMC_VAL_COMPRESSED) {
+				efree(payload);
+			}
+			php_error_docref(NULL TSRMLS_CC, E_WARNING, "could not unserialize value");
+			return -1;
+		}
+		PHP_VAR_UNSERIALIZE_DESTROY(var_hash);
+	} else {
+		payload[payload_len] = 0;
+		ZVAL_STRINGL(value, payload, payload_len, 1);
+	}
+
+	return 0;
 }
 
 static int php_memc_list_entry(void)
