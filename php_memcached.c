@@ -35,12 +35,19 @@
 #include <ext/standard/info.h>
 #include <zend_extensions.h>
 #include <zend_exceptions.h>
+#include <ext/standard/php_smart_str.h>
+#include <ext/standard/php_var.h>
 #include <libmemcached/memcached.h>
+
+#include <zlib.h>
 
 #include "php_memcached.h"
 
 #define MEMC_OPT_COMPRESSION   -1001
 #define MEMC_OPT_PREFIX_KEY    -1002
+
+#define MEMC_VAL_COMPRESSED    (1<<0)
+#define MEMC_VAL_SERIALIZED    (1<<1)
 
 #define MEMC_METHOD_INIT_VARS              \
     zval*             object  = getThis(); \
@@ -76,6 +83,7 @@ ZEND_GET_MODULE(memcached)
 ****************************************/
 static int php_memc_list_entry(void);
 static int php_memc_handle_error(memcached_return status TSRMLS_DC);
+static char *php_memc_zval_to_payload(zval *value, size_t *payload_len, uint32_t *flags);
 
 
 /****************************************
@@ -218,6 +226,34 @@ PHP_METHOD(Memcached, fetchAll)
 /* {{{ Memcached::set() */
 PHP_METHOD(Memcached, set)
 {
+	char *key = NULL;
+	int   key_len = 0;
+	zval *value;
+	time_t expiration = 0;
+	char  *payload;
+	size_t payload_len;
+	uint32_t flags = 0;
+	memcached_return status;
+	MEMC_METHOD_INIT_VARS;
+
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sz|l", &key, &key_len, &value) == FAILURE) {
+		return;
+	}
+
+	MEMC_METHOD_FETCH_OBJECT;
+
+	if (i_obj->compression) {
+		flags |= MEMC_VAL_COMPRESSED;
+	}
+
+	payload = php_memc_zval_to_payload(value, &payload_len, &flags);
+	status = memcached_set(i_obj->memc, key, key_len, payload, payload_len, expiration, flags);
+	if (php_memc_handle_error(status) < 0) {
+		RETURN_FALSE;
+	}
+
+	efree(payload);
+	RETURN_TRUE;
 }
 /* }}} */
 
@@ -583,6 +619,7 @@ static int php_memc_handle_error(memcached_return status TSRMLS_DC)
 		case MEMCACHED_SERVER_ERROR:
 		case MEMCACHED_WRITE_FAILURE:
 		case MEMCACHED_CONNECTION_SOCKET_CREATE_FAILURE:
+		case MEMCACHED_NO_SERVERS:
 		{
 			char *message;
 			int   message_len;
@@ -608,6 +645,72 @@ static int php_memc_handle_error(memcached_return status TSRMLS_DC)
 	}
 
 	return result;
+}
+
+static char *php_memc_zval_to_payload(zval *value, size_t *payload_len, uint32_t *flags)
+{
+	char *payload;
+	smart_str buf = {0};
+
+	switch (Z_TYPE_P(value)) {
+
+		case IS_STRING:
+			smart_str_appendl(&buf, Z_STRVAL_P(value), Z_STRLEN_P(value));
+			break;
+
+		case IS_LONG:
+		case IS_DOUBLE:
+		case IS_BOOL:
+		{
+			zval value_copy;
+
+			value_copy = *value;
+			zval_copy_ctor(&value_copy);
+			convert_to_string(&value_copy);
+			smart_str_appendl(&buf, Z_STRVAL(value_copy), Z_STRLEN(value_copy));
+			zval_dtor(&value_copy);
+			break;
+		}
+
+		default:
+		{
+			php_serialize_data_t var_hash;
+
+			PHP_VAR_SERIALIZE_INIT(var_hash);
+			php_var_serialize(&buf, &value, &var_hash TSRMLS_CC);
+			PHP_VAR_SERIALIZE_DESTROY(var_hash);
+
+			if (!buf.c) {
+				php_error_docref(NULL TSRMLS_CC, E_WARNING, "could not serialize value");
+				smart_str_free(&buf);
+				return NULL;
+			}
+
+			*flags |= MEMC_VAL_SERIALIZED;
+			break;
+		}
+	}
+
+	if (*flags & MEMC_VAL_COMPRESSED) {
+		unsigned long payload_comp_len = buf.len + (buf.len / 500) + 25 + 1;
+		char *payload_comp = emalloc(payload_comp_len);
+
+		if (compress(payload_comp, &payload_comp_len, buf.c, buf.len) != Z_OK) {
+			free(payload_comp);
+			smart_str_free(&buf);
+			return NULL;
+		}
+		payload      = payload_comp;
+		*payload_len = payload_comp_len;
+		payload[*payload_len] = 0;
+	} else {
+		payload      = emalloc(buf.len + 1);
+		*payload_len = buf.len;
+		memcpy(payload, buf.c, buf.len);
+		payload[buf.len] = 0;
+	}
+
+	return payload;
 }
 
 static int php_memc_list_entry(void)
