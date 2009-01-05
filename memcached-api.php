@@ -133,6 +133,8 @@ class Memcached {
 
 	public function getServerByKey ( $server_key ) {}
 
+	public function flush ( ) {}
+
 }
 
 class MemcachedException extends Exception {
