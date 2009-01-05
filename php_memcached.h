@@ -26,6 +26,10 @@ extern zend_module_entry memcached_module_entry;
 #define PHP_MEMCACHED_API
 #endif
 
+ZEND_BEGIN_MODULE_GLOBALS(php_memcached)
+	HashTable tokens;
+ZEND_END_MODULE_GLOBALS(php_memcached)
+
 PHP_MEMCACHED_API zend_class_entry *php_memc_get_ce(void);
 PHP_MEMCACHED_API zend_class_entry *php_memc_get_exception(void);
 PHP_MEMCACHED_API zend_class_entry *php_memc_get_exception_base(int root TSRMLS_DC);
@@ -37,6 +41,12 @@ PHP_RSHUTDOWN_FUNCTION(memcached);
 PHP_MINFO_FUNCTION(memcached);
 
 #define PHP_MEMCACHED_VERSION "0.1.0"
+
+#ifdef ZTS
+#define MEMC_G(v) TSRMG(php_memcached_globals_id, zend_memcache_globals *, v)
+#else
+#define MEMC_G(v) (php_memcached_globals.v)
+#endif
 
 #endif /* PHP_MEMCACHED_H */
 

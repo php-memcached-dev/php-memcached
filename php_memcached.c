@@ -56,12 +56,6 @@
 #define MEMC_METHOD_FETCH_OBJECT                                               \
     i_obj = (php_memc_t *) zend_object_store_get_object( object TSRMLS_CC );   \
 
-static int le_memc;
-
-static zend_class_entry *memcached_ce = NULL;
-static zend_class_entry *memcached_exception_ce = NULL;
-static zend_class_entry *spl_ce_RuntimeException = NULL;
-
 typedef struct {
 	zend_object zo;
 
@@ -73,6 +67,14 @@ typedef struct {
 
 	unsigned compression:1;
 } php_memc_t;
+
+static int le_memc;
+
+static zend_class_entry *memcached_ce = NULL;
+static zend_class_entry *memcached_exception_ce = NULL;
+static zend_class_entry *spl_ce_RuntimeException = NULL;
+
+ZEND_DECLARE_MODULE_GLOBALS(php_memcached)
 
 #ifdef COMPILE_DL_MEMCACHED
 ZEND_GET_MODULE(memcached)
@@ -919,6 +921,16 @@ static int php_memc_list_entry(void)
 	return le_memc;
 }
 
+static void php_memc_init_globals(zend_php_memcached_globals *php_memcached_globals_p TSRMLS_DC)
+{
+	zend_hash_init(&MEMC_G(tokens), 1, NULL, ZVAL_PTR_DTOR, 1);
+}
+
+static void php_memc_destroy_globals(zend_php_memcached_globals *php_memcached_globals_p TSRMLS_DC)
+{
+	zend_hash_destroy(&MEMC_G(tokens));
+}
+
 PHP_MEMCACHED_API
 zend_class_entry *php_memc_get_ce(void)
 {
@@ -1100,6 +1112,13 @@ PHP_MINIT_FUNCTION(memcached)
 
 	php_memc_register_constants(INIT_FUNC_ARGS_PASSTHRU);
 
+#ifdef ZTS
+	ts_allocate_id(&php_memcached_globals_id, sizeof(zend_php_memcached_globals),
+				   (ts_allocate_ctor) php_mem_init_globals, (ts_allocate_dtor) php_memc_destroy_globals);
+#else
+	php_memc_init_globals(&php_memcached_globals TSRMLS_CC);
+#endif
+
 	return SUCCESS;
 }
 /* }}} */
@@ -1107,6 +1126,11 @@ PHP_MINIT_FUNCTION(memcached)
 /* {{{ PHP_MSHUTDOWN_FUNCTION */
 PHP_MSHUTDOWN_FUNCTION(memcached)
 {
+#ifdef ZTS
+    ts_free_id(php_memcached_globals_id);
+#else
+    php_memc_destroy_globals(&php_memcached_globals TSRMLS_CC);
+#endif
 
 	return SUCCESS;
 }
