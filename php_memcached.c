@@ -17,7 +17,7 @@
 /* $ Id: $ */
 
 /* TODO
- * - compression and prefix key should be per class, not persistent
+ * - check for key length in setters (maybe)
  */
 
 #ifdef HAVE_CONFIG_H
@@ -242,6 +242,8 @@ static void php_memc_get_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 		return;
 	}
 
+	zend_hash_clean(&MEMC_G(tokens));
+
 	if (with_cas && Z_TYPE_P(keys) == IS_STRING) {
 		memcached_behavior_set(i_obj->memc, MEMCACHED_BEHAVIOR_SUPPORT_CAS, 1);
 		zend_hash_clean(&MEMC_G(tokens));
@@ -275,7 +277,9 @@ static void php_memc_get_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 		zend_hash_add(&MEMC_G(tokens), memcached_result_key_value(&result),
 					  memcached_result_key_length(&result)+1, (void*)&cas, sizeof(uint64_t), NULL);
 
+		memcached_result_free(&result);
 		memcached_behavior_set(i_obj->memc, MEMCACHED_BEHAVIOR_SUPPORT_CAS, 0);
+		return;
 	}
 
 	if (Z_TYPE_P(keys) == IS_STRING) {
@@ -321,7 +325,6 @@ static void php_memc_get_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 
 		if (with_cas) {
 			memcached_behavior_set(i_obj->memc, MEMCACHED_BEHAVIOR_SUPPORT_CAS, 0);
-			zend_hash_clean(&MEMC_G(tokens));
 		}
 
 		efree(mkeys);
@@ -469,15 +472,82 @@ PHP_METHOD(Memcached, setByKey)
 }
 /* }}} */
 
+/* {{{ -- php_memc_setMulti_impl */
+static void php_memc_setMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
+{
+	zval *entries;
+	char *server_key = NULL;
+	int   server_key_len = 0;
+	time_t expiration = 0;
+	zval *value, **entry;
+	char *str_key;
+	uint  str_key_len;
+	ulong num_key;
+	char  *payload;
+	size_t payload_len;
+	uint32_t flags = 0;
+	memcached_return status;
+	MEMC_METHOD_INIT_VARS;
+
+	if (by_key) {
+		if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sa|l", &server_key,
+								  &server_key_len, &entries, &expiration) == FAILURE) {
+			return;
+		}
+	} else {
+		if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "a|l", &entries, &expiration) == FAILURE) {
+			return;
+		}
+	}
+
+	MEMC_METHOD_FETCH_OBJECT;
+
+	for (zend_hash_internal_pointer_reset(Z_ARRVAL_P(entries));
+		 zend_hash_get_current_data(Z_ARRVAL_P(entries), (void**)&entry) == SUCCESS;
+		 zend_hash_move_forward(Z_ARRVAL_P(entries))) {
+
+		if (zend_hash_get_current_key_ex(Z_ARRVAL_P(entries), &str_key, &str_key_len, &num_key, 0, NULL) != HASH_KEY_IS_STRING) {
+			continue;
+		}
+
+		flags = 0;
+		if (i_obj->compression) {
+			flags |= MEMC_VAL_COMPRESSED;
+		}
+
+		payload = php_memc_zval_to_payload(*entry, &payload_len, &flags TSRMLS_CC);
+		if (payload == NULL) {
+			RETURN_FALSE;
+		}
+
+		if (!by_key) {
+			server_key     = str_key;
+			server_key_len = str_key_len;
+		}
+		status = memcached_set_by_key(i_obj->memc, server_key, server_key_len, str_key,
+									  str_key_len, payload, payload_len, expiration, flags);
+		efree(payload);
+
+		if (php_memc_handle_error(status TSRMLS_CC) < 0) {
+			RETURN_FALSE;
+		}
+	}
+
+	RETURN_TRUE;
+}
+/* }}} */
+
 /* {{{ Memcached::setMulti() */
 PHP_METHOD(Memcached, setMulti)
 {
+	php_memc_setMulti_impl(INTERNAL_FUNCTION_PARAM_PASSTHRU, 0);
 }
 /* }}} */
 
 /* {{{ Memcached::setMultiByKey() */
 PHP_METHOD(Memcached, setMultiByKey)
 {
+	php_memc_setMulti_impl(INTERNAL_FUNCTION_PARAM_PASSTHRU, 1);
 }
 /* }}} */
 
@@ -941,6 +1011,7 @@ static char *php_memc_zval_to_payload(zval *value, size_t *payload_len, uint32_t
 		payload[buf.len] = 0;
 	}
 
+	smart_str_free(&buf);
 	return payload;
 }
 
@@ -1002,6 +1073,10 @@ static int php_memc_zval_from_payload(zval *value, char *payload, size_t payload
 		payload[payload_len] = 0;
 		ZVAL_STRINGL(value, payload, payload_len, 1);
 	}
+
+    if (flags & MEMC_VAL_COMPRESSED) {
+        efree(payload);
+    }
 
 	return 0;
 }
