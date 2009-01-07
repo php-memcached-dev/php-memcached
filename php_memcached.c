@@ -575,15 +575,71 @@ PHP_METHOD(Memcached, getLastTokens)
 }
 /* }}} */
 
+/* {{{ -- php_memc_cas_impl */
+static void php_memc_cas_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
+{
+	double cas_d;
+	uint64_t cas;
+	char *key = NULL;
+	int   key_len = 0;
+	char *server_key = NULL;
+	int   server_key_len = 0;
+	zval *value;
+	time_t expiration = 0;
+	char  *payload;
+	size_t payload_len;
+	uint32_t flags = 0;
+	memcached_return status;
+	MEMC_METHOD_INIT_VARS;
+
+	if (by_key) {
+		if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "dssz|l", &cas_d, &server_key,
+								  &server_key_len, &key, &key_len, &value, &expiration) == FAILURE) {
+			return;
+		}
+	} else {
+		if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "dsz|l", &cas_d, &key, &key_len,
+								  &value, &expiration) == FAILURE) {
+			return;
+		}
+		server_key     = key;
+		server_key_len = key_len;
+	}
+
+	MEMC_METHOD_FETCH_OBJECT;
+
+	DVAL_TO_LVAL(cas_d, cas);
+
+	if (i_obj->compression) {
+		flags |= MEMC_VAL_COMPRESSED;
+	}
+
+	payload = php_memc_zval_to_payload(value, &payload_len, &flags TSRMLS_CC);
+	if (payload == NULL) {
+		RETURN_FALSE;
+	}
+	status = memcached_cas_by_key(i_obj->memc, server_key, server_key_len, key, key_len,
+								  payload, payload_len, expiration, flags, cas);
+	if (php_memc_handle_error(status TSRMLS_CC) < 0) {
+		RETURN_FALSE;
+	}
+
+	efree(payload);
+	RETURN_TRUE;
+}
+/* }}} */
+
 /* {{{ Memcached::cas() */
 PHP_METHOD(Memcached, cas)
 {
+	php_memc_cas_impl(INTERNAL_FUNCTION_PARAM_PASSTHRU, 0);
 }
 /* }}} */
 
 /* {{{ Memcached::casByKey() */
 PHP_METHOD(Memcached, casByKey)
 {
+	php_memc_cas_impl(INTERNAL_FUNCTION_PARAM_PASSTHRU, 1);
 }
 /* }}} */
 
