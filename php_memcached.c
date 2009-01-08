@@ -18,6 +18,8 @@
 
 /* TODO
  * - check for key length in setters (maybe)
+ * - throw an exception if cas fails due to token mismatch
+ * - return tokens as by-ref parameter
  */
 
 #ifdef HAVE_CONFIG_H
@@ -45,6 +47,8 @@
 
 #define MEMC_OPT_COMPRESSION   -1001
 #define MEMC_OPT_PREFIX_KEY    -1002
+
+#define MEMC_RES_PAYLOAD_FAILURE -1001
 
 #define MEMC_VAL_COMPRESSED    (1<<0)
 #define MEMC_VAL_SERIALIZED    (1<<1)
@@ -105,6 +109,11 @@ static int php_memc_list_entry(void);
 static int php_memc_handle_error(memcached_return status TSRMLS_DC);
 static char *php_memc_zval_to_payload(zval *value, size_t *payload_len, uint32_t *flags TSRMLS_DC);
 static int php_memc_zval_from_payload(zval *value, char *payload, size_t payload_len, uint32_t flags TSRMLS_DC);
+static void php_memc_get_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key);
+static void php_memc_getMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key);
+static void php_memc_set_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key);
+static void php_memc_setMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key);
+static void php_memc_cas_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key);
 
 
 /****************************************
@@ -208,10 +217,25 @@ static PHP_METHOD(Memcached, __construct)
 }
 /* }}} */
 
+/* {{{ Memcached::get() */
+PHP_METHOD(Memcached, get)
+{
+	php_memc_get_impl(INTERNAL_FUNCTION_PARAM_PASSTHRU, 0);
+}
+/* }}} */
+
+/* {{{ Memcached::getByKey() */
+PHP_METHOD(Memcached, getByKey)
+{
+	php_memc_get_impl(INTERNAL_FUNCTION_PARAM_PASSTHRU, 1);
+}
+/* }}} */
+
 /* {{{ -- php_memc_get_impl */
 static void php_memc_get_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 {
-	zval *keys = NULL;
+	char *key = NULL;
+	int   key_len = 0;
 	char *server_key = NULL;
 	int   server_key_len = 0;
 	char  *payload = NULL;
@@ -219,6 +243,118 @@ static void php_memc_get_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 	uint32_t flags = 0;
 	uint64_t cas = 0;
 	zend_bool with_cas = 0;
+	memcached_result_st result;
+	memcached_return status = MEMCACHED_SUCCESS;
+	MEMC_METHOD_INIT_VARS;
+
+	if (by_key) {
+		if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ss|b", &server_key,
+								  &server_key_len, &key, &key_len, &with_cas) == FAILURE) {
+			return;
+		}
+	} else {
+		if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|b", &key, &key_len,
+								  &with_cas) == FAILURE) {
+			return;
+		}
+	}
+
+	MEMC_METHOD_FETCH_OBJECT;
+	MEMC_G(rescode) = MEMCACHED_SUCCESS;
+	zend_hash_clean(&MEMC_G(tokens));
+
+	if (with_cas) {
+
+		uint64_t orig_cas_flag;
+
+		orig_cas_flag = memcached_behavior_get(i_obj->memc, MEMCACHED_BEHAVIOR_SUPPORT_CAS);
+		memcached_behavior_set(i_obj->memc, MEMCACHED_BEHAVIOR_SUPPORT_CAS, 1);
+		zend_hash_clean(&MEMC_G(tokens));
+
+		status = memcached_mget_by_key(i_obj->memc, server_key, server_key_len, &key, &key_len, 1);
+
+		if (php_memc_handle_error(status) < 0) {
+			RETURN_FALSE;
+		}
+
+		status = MEMCACHED_SUCCESS;
+		memcached_result_create(i_obj->memc, &result);
+
+		if (memcached_fetch_result(i_obj->memc, &result, &status) == NULL
+			&& php_memc_handle_error(status) < 0) {
+
+			memcached_result_free(&result);
+			RETURN_FALSE;
+		}
+
+		payload     = memcached_result_value(&result);
+		payload_len = memcached_result_length(&result);
+		flags       = memcached_result_flags(&result);
+		cas         = memcached_result_cas(&result);
+
+		if (php_memc_zval_from_payload(return_value, payload, payload_len, flags TSRMLS_CC) < 0) {
+			memcached_result_free(&result);
+			MEMC_G(rescode) = MEMC_RES_PAYLOAD_FAILURE;
+			RETURN_FALSE;
+		}
+
+		zend_hash_add(&MEMC_G(tokens), memcached_result_key_value(&result),
+					  memcached_result_key_length(&result)+1, (void*)&cas, sizeof(uint64_t), NULL);
+
+		memcached_result_free(&result);
+		memcached_behavior_set(i_obj->memc, MEMCACHED_BEHAVIOR_SUPPORT_CAS, orig_cas_flag);
+		return;
+
+	} else {
+
+		payload = memcached_get_by_key(i_obj->memc, server_key, server_key_len, key,
+									   key_len, &payload_len, &flags, &status);
+		if (php_memc_handle_error(status TSRMLS_CC) < 0) {
+			RETURN_FALSE;
+		}
+		if (php_memc_zval_from_payload(return_value, payload, payload_len, flags TSRMLS_CC) < 0) {
+			MEMC_G(rescode) = MEMC_RES_PAYLOAD_FAILURE;
+			RETURN_FALSE;
+		}
+
+	}
+}
+/* }}} */
+
+/* {{{ Memcached::getMulti() */
+PHP_METHOD(Memcached, getMulti)
+{
+	php_memc_getMulti_impl(INTERNAL_FUNCTION_PARAM_PASSTHRU, 0);
+}
+/* }}} */
+
+/* {{{ Memcached::getMultiByKey() */
+PHP_METHOD(Memcached, getMultiByKey)
+{
+	php_memc_getMulti_impl(INTERNAL_FUNCTION_PARAM_PASSTHRU, 1);
+}
+/* }}} */
+
+/* {{{ -- php_memc_getMulti_impl */
+static void php_memc_getMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
+{
+	zval *keys = NULL;
+	char *server_key = NULL;
+	int   server_key_len = 0;
+	zend_bool with_cas = 0;
+	size_t num_keys = 0;
+	zval **entry = NULL;
+	char  *payload = NULL;
+	size_t payload_len = 0;
+	char **mkeys = NULL;
+	size_t *mkeys_len = NULL;
+	char *res_key = NULL;
+	size_t res_key_len = 0;
+	uint32_t flags;
+	uint64_t cas = 0;
+	uint64_t orig_cas_flag;
+	zval *value;
+	int i = 0;
 	memcached_result_st result;
 	memcached_return status = MEMCACHED_SUCCESS;
 	MEMC_METHOD_INIT_VARS;
@@ -235,152 +371,75 @@ static void php_memc_get_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 	}
 
 	MEMC_METHOD_FETCH_OBJECT;
-
-	if (Z_TYPE_P(keys) != IS_ARRAY && Z_TYPE_P(keys) != IS_STRING) {
-		php_error_docref(NULL TSRMLS_CC, E_WARNING, "expects parameter 1 to be string or array, %s given",
-						 zend_zval_type_name(keys));
-		return;
-	}
-
+	MEMC_G(rescode) = MEMCACHED_SUCCESS;
 	zend_hash_clean(&MEMC_G(tokens));
 
-	if (with_cas && Z_TYPE_P(keys) == IS_STRING) {
+	num_keys  = zend_hash_num_elements(Z_ARRVAL_P(keys));
+	mkeys     = safe_emalloc(num_keys, sizeof(char *), 0);
+	mkeys_len = safe_emalloc(num_keys, sizeof(size_t), 0);
+
+	for (zend_hash_internal_pointer_reset(Z_ARRVAL_P(keys));
+		 zend_hash_get_current_data(Z_ARRVAL_P(keys), (void**)&entry) == SUCCESS;
+		 zend_hash_move_forward(Z_ARRVAL_P(keys))) {
+
+		if (Z_TYPE_PP(entry) == IS_STRING) {
+			mkeys[i]     = Z_STRVAL_PP(entry);
+			mkeys_len[i] = Z_STRLEN_PP(entry);
+			i++;
+		}
+	}
+
+	if (with_cas) {
+		orig_cas_flag = memcached_behavior_get(i_obj->memc, MEMCACHED_BEHAVIOR_SUPPORT_CAS);
 		memcached_behavior_set(i_obj->memc, MEMCACHED_BEHAVIOR_SUPPORT_CAS, 1);
-		zend_hash_clean(&MEMC_G(tokens));
+	}
 
-		status = memcached_mget(i_obj->memc, &Z_STRVAL_P(keys), &Z_STRLEN_P(keys), 1);
+	status = memcached_mget_by_key(i_obj->memc, server_key, server_key_len, mkeys, mkeys_len, i);
 
-		if (php_memc_handle_error(status) < 0) {
-			RETURN_FALSE;
-		}
+	if (with_cas) {
+		memcached_behavior_set(i_obj->memc, MEMCACHED_BEHAVIOR_SUPPORT_CAS, orig_cas_flag);
+	}
 
-		status = MEMCACHED_SUCCESS;
-		memcached_result_create(i_obj->memc, &result);
-		;
-		if (memcached_fetch_result(i_obj->memc, &result, &status) == NULL
-			&& php_memc_handle_error(status) < 0) {
+	efree(mkeys);
+	efree(mkeys_len);
+	if (php_memc_handle_error(status) < 0) {
+		RETURN_FALSE;
+	}
 
-			memcached_result_free(&result);
-			RETURN_FALSE;
-		}
+	array_init(return_value);
+	status = MEMCACHED_SUCCESS;
+	memcached_result_create(i_obj->memc, &result);
+	while ((memcached_fetch_result(i_obj->memc, &result, &status)) != NULL) {
 
 		payload     = memcached_result_value(&result);
 		payload_len = memcached_result_length(&result);
 		flags       = memcached_result_flags(&result);
-		cas         = memcached_result_cas(&result);
+		res_key     = memcached_result_key_value(&result);
+		res_key_len = memcached_result_key_length(&result);
 
-		if (php_memc_zval_from_payload(return_value, payload, payload_len, flags TSRMLS_CC) < 0) {
-			memcached_result_free(&result);
-			RETURN_FALSE;
-		}
+		MAKE_STD_ZVAL(value);
 
-		zend_hash_add(&MEMC_G(tokens), memcached_result_key_value(&result),
-					  memcached_result_key_length(&result)+1, (void*)&cas, sizeof(uint64_t), NULL);
-
-		memcached_result_free(&result);
-		memcached_behavior_set(i_obj->memc, MEMCACHED_BEHAVIOR_SUPPORT_CAS, 0);
-		return;
-	}
-
-	if (Z_TYPE_P(keys) == IS_STRING) {
-		payload = memcached_get_by_key(i_obj->memc, server_key, server_key_len,
-									   Z_STRVAL_P(keys), Z_STRLEN_P(keys), &payload_len, &flags, &status);
-		if (php_memc_handle_error(status TSRMLS_CC) < 0) {
-			RETURN_FALSE;
-		}
-		if (php_memc_zval_from_payload(return_value, payload, payload_len, flags TSRMLS_CC) < 0) {
-			RETURN_FALSE;
-		}
-	} else {
-		size_t num_keys = 0;
-		zval **entry = NULL;
-		char **mkeys = NULL;
-		size_t *mkeys_len = NULL;
-		char *res_key = NULL;
-		size_t res_key_len = 0;
-		uint32_t flags;
-		zval *value;
-		int i = 0;
-
-		num_keys  = zend_hash_num_elements(Z_ARRVAL_P(keys));
-		mkeys     = safe_emalloc(num_keys, sizeof(char *), 0);
-		mkeys_len = safe_emalloc(num_keys, sizeof(size_t), 0);
-
-		for (zend_hash_internal_pointer_reset(Z_ARRVAL_P(keys));
-			 zend_hash_get_current_data(Z_ARRVAL_P(keys), (void**)&entry) == SUCCESS;
-			 zend_hash_move_forward(Z_ARRVAL_P(keys))) {
-
-			if (Z_TYPE_PP(entry) == IS_STRING) {
-				mkeys[i]     = Z_STRVAL_PP(entry);
-				mkeys_len[i] = Z_STRLEN_PP(entry);
-				i++;
-			}
-		}
-
-		if (with_cas) {
-			memcached_behavior_set(i_obj->memc, MEMCACHED_BEHAVIOR_SUPPORT_CAS, 1);
-		}
-
-		status = memcached_mget_by_key(i_obj->memc, server_key, server_key_len, mkeys, mkeys_len, i);
-
-		if (with_cas) {
-			memcached_behavior_set(i_obj->memc, MEMCACHED_BEHAVIOR_SUPPORT_CAS, 0);
-		}
-
-		efree(mkeys);
-		efree(mkeys_len);
-		if (php_memc_handle_error(status) < 0) {
-			RETURN_FALSE;
-		}
-
-		array_init(return_value);
-		status = MEMCACHED_SUCCESS;
-		memcached_result_create(i_obj->memc, &result);
-		while ((memcached_fetch_result(i_obj->memc, &result, &status)) != NULL) {
-
-			payload     = memcached_result_value(&result);
-			payload_len = memcached_result_length(&result);
-			flags       = memcached_result_flags(&result);
-			res_key     = memcached_result_key_value(&result);
-			res_key_len = memcached_result_key_length(&result);
-
-			MAKE_STD_ZVAL(value);
-
-			if (php_memc_zval_from_payload(value, payload, payload_len, flags TSRMLS_CC) < 0) {
-				zval_ptr_dtor(&value);
-				zval_dtor(return_value);
-				RETURN_FALSE;
-			}
-
-			add_assoc_zval_ex(return_value, res_key, res_key_len+1, value);
-			if (with_cas) {
-				cas = memcached_result_cas(&result);
-				zend_hash_add(&MEMC_G(tokens), res_key, res_key_len+1, (void*)&cas,
-							  sizeof(uint64_t), NULL);
-			}
-		}
-
-		memcached_result_free(&result);
-
-		if (status != MEMCACHED_END && php_memc_handle_error(status) < 0) {
+		if (php_memc_zval_from_payload(value, payload, payload_len, flags TSRMLS_CC) < 0) {
+			zval_ptr_dtor(&value);
 			zval_dtor(return_value);
+			MEMC_G(rescode) = MEMC_RES_PAYLOAD_FAILURE;
 			RETURN_FALSE;
 		}
+
+		add_assoc_zval_ex(return_value, res_key, res_key_len+1, value);
+		if (with_cas) {
+			cas = memcached_result_cas(&result);
+			zend_hash_add(&MEMC_G(tokens), res_key, res_key_len+1, (void*)&cas,
+						  sizeof(uint64_t), NULL);
+		}
 	}
-}
-/* }}} */
 
-/* {{{ Memcached::get() */
-PHP_METHOD(Memcached, get)
-{
-	php_memc_get_impl(INTERNAL_FUNCTION_PARAM_PASSTHRU, 0);
-}
-/* }}} */
+	memcached_result_free(&result);
 
-/* {{{ Memcached::getByKey() */
-PHP_METHOD(Memcached, getByKey)
-{
-	php_memc_get_impl(INTERNAL_FUNCTION_PARAM_PASSTHRU, 1);
+	if (status != MEMCACHED_END && php_memc_handle_error(status) < 0) {
+		zval_dtor(return_value);
+		RETURN_FALSE;
+	}
 }
 /* }}} */
 
@@ -405,6 +464,20 @@ PHP_METHOD(Memcached, fetch)
 /* {{{ Memcached::fetchAll() */
 PHP_METHOD(Memcached, fetchAll)
 {
+}
+/* }}} */
+
+/* {{{ Memcached::set() */
+PHP_METHOD(Memcached, set)
+{
+	php_memc_set_impl(INTERNAL_FUNCTION_PARAM_PASSTHRU, 0);
+}
+/* }}} */
+
+/* {{{ Memcached::setByKey() */
+PHP_METHOD(Memcached, setByKey)
+{
+	php_memc_set_impl(INTERNAL_FUNCTION_PARAM_PASSTHRU, 1);
 }
 /* }}} */
 
@@ -445,30 +518,31 @@ static void php_memc_set_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 
 	payload = php_memc_zval_to_payload(value, &payload_len, &flags TSRMLS_CC);
 	if (payload == NULL) {
+		MEMC_G(rescode) = MEMC_RES_PAYLOAD_FAILURE;
 		RETURN_FALSE;
 	}
 	status = memcached_set_by_key(i_obj->memc, server_key, server_key_len, key, key_len,
 								  payload, payload_len, expiration, flags);
+	efree(payload);
 	if (php_memc_handle_error(status TSRMLS_CC) < 0) {
 		RETURN_FALSE;
 	}
 
-	efree(payload);
 	RETURN_TRUE;
 }
 /* }}} */
 
-/* {{{ Memcached::set() */
-PHP_METHOD(Memcached, set)
+/* {{{ Memcached::setMulti() */
+PHP_METHOD(Memcached, setMulti)
 {
-	php_memc_set_impl(INTERNAL_FUNCTION_PARAM_PASSTHRU, 0);
+	php_memc_setMulti_impl(INTERNAL_FUNCTION_PARAM_PASSTHRU, 0);
 }
 /* }}} */
 
-/* {{{ Memcached::setByKey() */
-PHP_METHOD(Memcached, setByKey)
+/* {{{ Memcached::setMultiByKey() */
+PHP_METHOD(Memcached, setMultiByKey)
 {
-	php_memc_set_impl(INTERNAL_FUNCTION_PARAM_PASSTHRU, 1);
+	php_memc_setMulti_impl(INTERNAL_FUNCTION_PARAM_PASSTHRU, 1);
 }
 /* }}} */
 
@@ -517,6 +591,7 @@ static void php_memc_setMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 
 		payload = php_memc_zval_to_payload(*entry, &payload_len, &flags TSRMLS_CC);
 		if (payload == NULL) {
+			MEMC_G(rescode) = MEMC_RES_PAYLOAD_FAILURE;
 			RETURN_FALSE;
 		}
 
@@ -534,20 +609,6 @@ static void php_memc_setMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 	}
 
 	RETURN_TRUE;
-}
-/* }}} */
-
-/* {{{ Memcached::setMulti() */
-PHP_METHOD(Memcached, setMulti)
-{
-	php_memc_setMulti_impl(INTERNAL_FUNCTION_PARAM_PASSTHRU, 0);
-}
-/* }}} */
-
-/* {{{ Memcached::setMultiByKey() */
-PHP_METHOD(Memcached, setMultiByKey)
-{
-	php_memc_setMulti_impl(INTERNAL_FUNCTION_PARAM_PASSTHRU, 1);
 }
 /* }}} */
 
@@ -572,6 +633,20 @@ PHP_METHOD(Memcached, getLastTokens)
 
 		add_assoc_double_ex(return_value, str_key, str_key_len, (double)(*cas_p));
 	}
+}
+/* }}} */
+
+/* {{{ Memcached::cas() */
+PHP_METHOD(Memcached, cas)
+{
+	php_memc_cas_impl(INTERNAL_FUNCTION_PARAM_PASSTHRU, 0);
+}
+/* }}} */
+
+/* {{{ Memcached::casByKey() */
+PHP_METHOD(Memcached, casByKey)
+{
+	php_memc_cas_impl(INTERNAL_FUNCTION_PARAM_PASSTHRU, 1);
 }
 /* }}} */
 
@@ -616,36 +691,59 @@ static void php_memc_cas_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 
 	payload = php_memc_zval_to_payload(value, &payload_len, &flags TSRMLS_CC);
 	if (payload == NULL) {
+		MEMC_G(rescode) = MEMC_RES_PAYLOAD_FAILURE;
 		RETURN_FALSE;
 	}
 	status = memcached_cas_by_key(i_obj->memc, server_key, server_key_len, key, key_len,
 								  payload, payload_len, expiration, flags, cas);
+	efree(payload);
 	if (php_memc_handle_error(status TSRMLS_CC) < 0) {
 		RETURN_FALSE;
 	}
 
-	efree(payload);
 	RETURN_TRUE;
-}
-/* }}} */
-
-/* {{{ Memcached::cas() */
-PHP_METHOD(Memcached, cas)
-{
-	php_memc_cas_impl(INTERNAL_FUNCTION_PARAM_PASSTHRU, 0);
-}
-/* }}} */
-
-/* {{{ Memcached::casByKey() */
-PHP_METHOD(Memcached, casByKey)
-{
-	php_memc_cas_impl(INTERNAL_FUNCTION_PARAM_PASSTHRU, 1);
 }
 /* }}} */
 
 /* {{{ Memcached::add() */
 PHP_METHOD(Memcached, add)
 {
+	char *key = NULL;
+	int   key_len = 0;
+	char *server_key = NULL;
+	int   server_key_len = 0;
+	zval *value;
+	time_t expiration = 0;
+	char  *payload;
+	size_t payload_len;
+	uint32_t flags = 0;
+	memcached_return status;
+	MEMC_METHOD_INIT_VARS;
+
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sz|l", &key, &key_len,
+							  &value, &expiration) == FAILURE) {
+		return;
+	}
+
+	MEMC_METHOD_FETCH_OBJECT;
+
+	if (i_obj->compression) {
+		flags |= MEMC_VAL_COMPRESSED;
+	}
+
+	payload = php_memc_zval_to_payload(value, &payload_len, &flags TSRMLS_CC);
+	if (payload == NULL) {
+		MEMC_G(rescode) = MEMC_RES_PAYLOAD_FAILURE;
+		RETURN_FALSE;
+	}
+	status = memcached_add(i_obj->memc, key, key_len,
+								  payload, payload_len, expiration, flags);
+	efree(payload);
+	if (php_memc_handle_error(status TSRMLS_CC) < 0) {
+		RETURN_FALSE;
+	}
+
+	RETURN_TRUE;
 }
 /* }}} */
 
@@ -900,6 +998,17 @@ static PHP_METHOD(Memcached, setOption)
 }
 /* }}} */
 
+/* {{{ Memcached::getResultCode() */
+static PHP_METHOD(Memcached, getResultCode)
+{
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "") == FAILURE) {
+		return;
+	}
+
+	RETURN_LONG(MEMC_G(rescode));
+}
+/* }}} */
+
 
 /****************************************
   Internal support code
@@ -957,45 +1066,20 @@ static int php_memc_handle_error(memcached_return status TSRMLS_DC)
 
 	switch (status) {
 		case MEMCACHED_SUCCESS:
-		case MEMCACHED_DATA_EXISTS:
 		case MEMCACHED_STORED:
-		case MEMCACHED_NOTFOUND:
-		case MEMCACHED_BUFFERED:
+		case MEMCACHED_DELETED:
+		case MEMCACHED_STAT:
 			result = 0;
 			break;
 
-		case MEMCACHED_FAILURE:
-		case MEMCACHED_HOST_LOOKUP_FAILURE:
-		case MEMCACHED_CONNECTION_FAILURE:
-		case MEMCACHED_CONNECTION_BIND_FAILURE:
-		case MEMCACHED_READ_FAILURE:
-		case MEMCACHED_UNKNOWN_READ_FAILURE:
-		case MEMCACHED_PROTOCOL_ERROR:
-		case MEMCACHED_CLIENT_ERROR:
-		case MEMCACHED_SERVER_ERROR:
-		case MEMCACHED_WRITE_FAILURE:
-		case MEMCACHED_CONNECTION_SOCKET_CREATE_FAILURE:
-		case MEMCACHED_NO_SERVERS:
-		{
-			char *message;
-			int   message_len;
-			zval *ex;
-			zend_class_entry *def_ex  = php_memc_get_exception_base(1 TSRMLS_CC),
-							 *memc_ex = php_memc_get_exception();
-
-			MAKE_STD_ZVAL(ex);
-			object_init_ex(ex, memc_ex);
-
-			message_len = spprintf(&message, 0, "%s", memcached_strerror(NULL, status));
-			zend_update_property_string(def_ex, ex, "message", sizeof("message")-1, message TSRMLS_CC);
-			zend_throw_exception_object(ex TSRMLS_CC);
-			efree(message);
-			result = -1;
+		case MEMCACHED_END:
+		case MEMCACHED_BUFFERED:
+			MEMC_G(rescode) = status;
+			result = 0;
 			break;
-		}
 
 		default:
-			php_error_docref(NULL TSRMLS_CC, E_WARNING, "%s", memcached_strerror(NULL, status));
+			MEMC_G(rescode) = status;
 			result = -1;
 			break;
 	}
@@ -1145,6 +1229,7 @@ static int php_memc_list_entry(void)
 static void php_memc_init_globals(zend_php_memcached_globals *php_memcached_globals_p TSRMLS_DC)
 {
 	zend_hash_init(&MEMC_G(tokens), 1, NULL, NULL, 1);
+	MEMC_G(rescode) = MEMCACHED_SUCCESS;
 }
 
 static void php_memc_destroy_globals(zend_php_memcached_globals *php_memcached_globals_p TSRMLS_DC)
@@ -1193,10 +1278,14 @@ zend_class_entry *php_memc_get_exception_base(int root TSRMLS_DC)
 /* {{{ memcached_class_methods */
 #define MEMC_ME(name, args) PHP_ME(Memcached, name, args, ZEND_ACC_PUBLIC)
 static zend_function_entry memcached_class_methods[] = {
-    MEMC_ME(__construct, NULL)
+    MEMC_ME(__construct,        NULL)
+
+	MEMC_ME(getResultCode,      NULL)
 
 	MEMC_ME(get,                NULL)
 	MEMC_ME(getByKey,           NULL)
+	MEMC_ME(getMulti,           NULL)
+	MEMC_ME(getMultiByKey,      NULL)
 	MEMC_ME(getDelayed,         NULL)
 	MEMC_ME(getDelayedByKey,    NULL)
 	MEMC_ME(fetch,              NULL)
@@ -1310,6 +1399,38 @@ static void php_memc_register_constants(INIT_FUNC_ARGS)
 	REGISTER_MEMC_CLASS_CONST_LONG(OPT_CACHE_LOOKUPS, MEMCACHED_BEHAVIOR_CACHE_LOOKUPS);
 	REGISTER_MEMC_CLASS_CONST_LONG(OPT_SERVER_FAILURE_LIMIT, MEMCACHED_BEHAVIOR_SERVER_FAILURE_LIMIT);
 
+	/*
+	 * libmemcached result codes
+	 */
+
+    REGISTER_MEMC_CLASS_CONST_LONG(RES_SUCCESS,              MEMCACHED_SUCCESS);
+    REGISTER_MEMC_CLASS_CONST_LONG(RES_FAILURE,              MEMCACHED_FAILURE);
+    REGISTER_MEMC_CLASS_CONST_LONG(RES_HOST_LOOKUP_FAILURE,  MEMCACHED_HOST_LOOKUP_FAILURE);
+    REGISTER_MEMC_CLASS_CONST_LONG(RES_UNKNOWN_READ_FAILURE, MEMCACHED_UNKNOWN_READ_FAILURE);
+    REGISTER_MEMC_CLASS_CONST_LONG(RES_PROTOCOL_ERROR,       MEMCACHED_PROTOCOL_ERROR);
+    REGISTER_MEMC_CLASS_CONST_LONG(RES_CLIENT_ERROR,         MEMCACHED_CLIENT_ERROR);
+    REGISTER_MEMC_CLASS_CONST_LONG(RES_SERVER_ERROR,         MEMCACHED_SERVER_ERROR);
+    REGISTER_MEMC_CLASS_CONST_LONG(RES_WRITE_FAILURE,        MEMCACHED_WRITE_FAILURE);
+    REGISTER_MEMC_CLASS_CONST_LONG(RES_DATA_EXISTS,          MEMCACHED_DATA_EXISTS);
+    REGISTER_MEMC_CLASS_CONST_LONG(RES_NOTSTORED,            MEMCACHED_NOTSTORED);
+    REGISTER_MEMC_CLASS_CONST_LONG(RES_NOTFOUND,             MEMCACHED_NOTFOUND);
+    REGISTER_MEMC_CLASS_CONST_LONG(RES_PARTIAL_READ,         MEMCACHED_PARTIAL_READ);
+    REGISTER_MEMC_CLASS_CONST_LONG(RES_SOME_ERRORS,          MEMCACHED_SOME_ERRORS);
+    REGISTER_MEMC_CLASS_CONST_LONG(RES_NO_SERVERS,           MEMCACHED_NO_SERVERS);
+    REGISTER_MEMC_CLASS_CONST_LONG(RES_END,                  MEMCACHED_END);
+    REGISTER_MEMC_CLASS_CONST_LONG(RES_ERRNO,                MEMCACHED_ERRNO);
+    REGISTER_MEMC_CLASS_CONST_LONG(RES_BUFFERED,             MEMCACHED_BUFFERED);
+    REGISTER_MEMC_CLASS_CONST_LONG(RES_TIMEOUT,              MEMCACHED_TIMEOUT);
+    REGISTER_MEMC_CLASS_CONST_LONG(RES_BAD_KEY_PROVIDED,     MEMCACHED_BAD_KEY_PROVIDED);
+    REGISTER_MEMC_CLASS_CONST_LONG(RES_CONNECTION_SOCKET_CREATE_FAILURE, MEMCACHED_CONNECTION_SOCKET_CREATE_FAILURE);
+
+	/*
+	 * Our result codes.
+	 */
+
+    REGISTER_MEMC_CLASS_CONST_LONG(RES_PAYLOAD_FAILURE, MEMC_RES_PAYLOAD_FAILURE);
+
+
 	#undef REGISTER_MEMC_CLASS_CONST_LONG
 }
 /* }}} */
@@ -1335,7 +1456,7 @@ PHP_MINIT_FUNCTION(memcached)
 
 #ifdef ZTS
 	ts_allocate_id(&php_memcached_globals_id, sizeof(zend_php_memcached_globals),
-				   (ts_allocate_ctor) php_mem_init_globals, (ts_allocate_dtor) php_memc_destroy_globals);
+				   (ts_allocate_ctor) php_memc_init_globals, (ts_allocate_dtor) php_memc_destroy_globals);
 #else
 	php_memc_init_globals(&php_memcached_globals TSRMLS_CC);
 #endif

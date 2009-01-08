@@ -28,6 +28,7 @@ extern zend_module_entry memcached_module_entry;
 
 ZEND_BEGIN_MODULE_GLOBALS(php_memcached)
 	HashTable tokens;
+	memcached_return rescode;
 ZEND_END_MODULE_GLOBALS(php_memcached)
 
 PHP_MEMCACHED_API zend_class_entry *php_memc_get_ce(void);
