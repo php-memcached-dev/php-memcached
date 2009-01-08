@@ -370,7 +370,6 @@ static void php_memc_getMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 
 	MEMC_METHOD_FETCH_OBJECT;
 	MEMC_G(rescode) = MEMCACHED_SUCCESS;
-	zend_hash_clean(&MEMC_G(tokens));
 
 	num_keys  = zend_hash_num_elements(Z_ARRVAL_P(keys));
 	mkeys     = safe_emalloc(num_keys, sizeof(char *), 0);
@@ -1290,6 +1289,33 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_getMultiByKey, 0, 0, 2)
 	ZEND_ARG_INFO(0, cache_cb)
 ZEND_END_ARG_INFO()
 
+static
+ZEND_BEGIN_ARG_INFO_EX(arginfo_set, 0, 0, 2)
+	ZEND_ARG_INFO(0, key)
+	ZEND_ARG_INFO(0, value)
+	ZEND_ARG_INFO(0, expiration)
+ZEND_END_ARG_INFO()
+
+static
+ZEND_BEGIN_ARG_INFO_EX(arginfo_setByKey, 0, 0, 3)
+	ZEND_ARG_INFO(0, server_key)
+	ZEND_ARG_INFO(0, key)
+	ZEND_ARG_INFO(0, value)
+	ZEND_ARG_INFO(0, expiration)
+ZEND_END_ARG_INFO()
+
+static
+ZEND_BEGIN_ARG_INFO_EX(arginfo_setMulti, 0, 0, 1)
+	ZEND_ARG_ARRAY_INFO(0, entries, 0)
+	ZEND_ARG_INFO(0, expiration)
+ZEND_END_ARG_INFO()
+
+static
+ZEND_BEGIN_ARG_INFO_EX(arginfo_setMultiByKey, 0, 0, 2)
+	ZEND_ARG_INFO(0, server_key)
+	ZEND_ARG_ARRAY_INFO(0, entries, 0)
+	ZEND_ARG_INFO(0, expiration)
+ZEND_END_ARG_INFO()
 /* }}} */
 
 /* {{{ memcached_class_methods */
@@ -1308,10 +1334,10 @@ static zend_function_entry memcached_class_methods[] = {
 	MEMC_ME(fetch,              NULL)
 	MEMC_ME(fetchAll,           NULL)
 
-	MEMC_ME(set,                NULL)
-	MEMC_ME(setByKey,           NULL)
-	MEMC_ME(setMulti,           NULL)
-	MEMC_ME(setMultiByKey,      NULL)
+	MEMC_ME(set,                arginfo_set)
+	MEMC_ME(setByKey,           arginfo_setByKey)
+	MEMC_ME(setMulti,           arginfo_setMulti)
+	MEMC_ME(setMultiByKey,      arginfo_setMultiByKey)
 
 	MEMC_ME(cas,                NULL)
 	MEMC_ME(casByKey,           NULL)
