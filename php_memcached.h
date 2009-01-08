@@ -27,7 +27,6 @@ extern zend_module_entry memcached_module_entry;
 #endif
 
 ZEND_BEGIN_MODULE_GLOBALS(php_memcached)
-	HashTable tokens;
 	memcached_return rescode;
 ZEND_END_MODULE_GLOBALS(php_memcached)
 
