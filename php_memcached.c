@@ -973,6 +973,22 @@ PHP_METHOD(Memcached, getServerByKey)
 /* {{{ Memcached::flush() */
 static PHP_METHOD(Memcached, flush)
 {
+	time_t expiration = 0;
+	memcached_return status;
+	MEMC_METHOD_INIT_VARS;
+
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|l", &expiration) == FAILURE) {
+		return;
+	}
+
+	MEMC_METHOD_FETCH_OBJECT;
+
+	status = memcached_flush(i_obj->memc, expiration);
+	if (php_memc_handle_error(status TSRMLS_CC) < 0) {
+		RETURN_FALSE;
+	}
+
+	RETURN_TRUE;
 }
 /* }}} */
 
@@ -1362,12 +1378,12 @@ zend_class_entry *php_memc_get_exception_base(int root TSRMLS_DC)
 /* }}} */
 
 /* {{{ methods arginfo */
-static 
+static
 ZEND_BEGIN_ARG_INFO_EX(arginfo___construct, 0, 0, 0)
 	ZEND_ARG_INFO(0, persistent_id)
 ZEND_END_ARG_INFO()
 
-static 
+static
 ZEND_BEGIN_ARG_INFO(arginfo_getResultCode, 0)
 ZEND_END_ARG_INFO()
 
@@ -1530,6 +1546,38 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_decrement, 0, 0, 1)
 	ZEND_ARG_INFO(0, key)
 	ZEND_ARG_INFO(0, offset)
 ZEND_END_ARG_INFO()
+
+static
+ZEND_BEGIN_ARG_INFO_EX(arginfo_flush, 0, 0, 0)
+	ZEND_ARG_INFO(0, expiration)
+ZEND_END_ARG_INFO()
+
+static
+ZEND_BEGIN_ARG_INFO_EX(arginfo_addServer, 0, 0, 2)
+	ZEND_ARG_INFO(0, host)
+	ZEND_ARG_INFO(0, port)
+	ZEND_ARG_INFO(0, weight)
+ZEND_END_ARG_INFO()
+
+static
+ZEND_BEGIN_ARG_INFO(arginfo_getServerList, 0)
+ZEND_END_ARG_INFO()
+
+static
+ZEND_BEGIN_ARG_INFO(arginfo_getServerByKey, 0)
+	ZEND_ARG_INFO(0, server_key)
+ZEND_END_ARG_INFO()
+
+static
+ZEND_BEGIN_ARG_INFO(arginfo_getOption, 0)
+	ZEND_ARG_INFO(0, option)
+ZEND_END_ARG_INFO()
+
+static
+ZEND_BEGIN_ARG_INFO(arginfo_setOption, 0)
+	ZEND_ARG_INFO(0, option)
+	ZEND_ARG_INFO(0, value)
+ZEND_END_ARG_INFO()
 /* }}} */
 
 /* {{{ memcached_class_methods */
@@ -1537,45 +1585,47 @@ ZEND_END_ARG_INFO()
 static zend_function_entry memcached_class_methods[] = {
     MEMC_ME(__construct,        arginfo___construct)
 
-	MEMC_ME(getResultCode,      arginfo_getResultCode)
+    MEMC_ME(getResultCode,      arginfo_getResultCode)
 
-	MEMC_ME(get,                arginfo_get)
-	MEMC_ME(getByKey,           arginfo_getByKey)
-	MEMC_ME(getMulti,           arginfo_getMulti)
-	MEMC_ME(getMultiByKey,      arginfo_getMultiByKey)
-	MEMC_ME(getDelayed,         NULL)
-	MEMC_ME(getDelayedByKey,    NULL)
-	MEMC_ME(fetch,              NULL)
-	MEMC_ME(fetchAll,           NULL)
+    MEMC_ME(get,                arginfo_get)
+    MEMC_ME(getByKey,           arginfo_getByKey)
+    MEMC_ME(getMulti,           arginfo_getMulti)
+    MEMC_ME(getMultiByKey,      arginfo_getMultiByKey)
+    MEMC_ME(getDelayed,         NULL)
+    MEMC_ME(getDelayedByKey,    NULL)
+    MEMC_ME(fetch,              NULL)
+    MEMC_ME(fetchAll,           NULL)
 
-	MEMC_ME(set,                arginfo_set)
-	MEMC_ME(setByKey,           arginfo_setByKey)
-	MEMC_ME(setMulti,           arginfo_setMulti)
-	MEMC_ME(setMultiByKey,      arginfo_setMultiByKey)
+    MEMC_ME(set,                arginfo_set)
+    MEMC_ME(setByKey,           arginfo_setByKey)
+    MEMC_ME(setMulti,           arginfo_setMulti)
+    MEMC_ME(setMultiByKey,      arginfo_setMultiByKey)
 
-	MEMC_ME(cas,                arginfo_cas)
-	MEMC_ME(casByKey,           arginfo_casByKey)
-	MEMC_ME(add,                arginfo_add)
-	MEMC_ME(addByKey,           arginfo_addByKey)
-	MEMC_ME(append,             arginfo_append)
-	MEMC_ME(appendByKey,        arginfo_appendByKey)
-	MEMC_ME(prepend,            arginfo_prepend)
-	MEMC_ME(prependByKey,       arginfo_prependByKey)
-	MEMC_ME(replace,            arginfo_replace)
-	MEMC_ME(replaceByKey,       arginfo_replaceByKey)
-	MEMC_ME(delete,             arginfo_delete)
-	MEMC_ME(deleteByKey,        arginfo_deleteByKey)
+    MEMC_ME(cas,                arginfo_cas)
+    MEMC_ME(casByKey,           arginfo_casByKey)
+    MEMC_ME(add,                arginfo_add)
+    MEMC_ME(addByKey,           arginfo_addByKey)
+    MEMC_ME(append,             arginfo_append)
+    MEMC_ME(appendByKey,        arginfo_appendByKey)
+    MEMC_ME(prepend,            arginfo_prepend)
+    MEMC_ME(prependByKey,       arginfo_prependByKey)
+    MEMC_ME(replace,            arginfo_replace)
+    MEMC_ME(replaceByKey,       arginfo_replaceByKey)
+    MEMC_ME(delete,             arginfo_delete)
+    MEMC_ME(deleteByKey,        arginfo_deleteByKey)
 
-	MEMC_ME(increment,          arginfo_increment)
-	MEMC_ME(decrement,          arginfo_decrement)
+    MEMC_ME(increment,          arginfo_increment)
+    MEMC_ME(decrement,          arginfo_decrement)
 
-	MEMC_ME(addServer,          NULL)
-	MEMC_ME(getServerList,      NULL)
-	MEMC_ME(getServerByKey,     NULL)
+    MEMC_ME(addServer,          arginfo_addServer)
+    MEMC_ME(getServerList,      arginfo_getServerList)
+    MEMC_ME(getServerByKey,     arginfo_getServerByKey)
 
-    MEMC_ME(getOption,   NULL)
-    MEMC_ME(setOption,   NULL)
-	{ NULL, NULL, NULL }
+    MEMC_ME(flush,              arginfo_flush)
+
+    MEMC_ME(getOption,          arginfo_getOption)
+    MEMC_ME(setOption,          arginfo_setOption)
+    { NULL, NULL, NULL }
 };
 #undef MEMC_ME
 /* }}} */
