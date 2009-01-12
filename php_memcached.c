@@ -52,6 +52,8 @@
 
 #define MEMC_VAL_COMPRESSED    (1<<0)
 #define MEMC_VAL_SERIALIZED    (1<<1)
+#define MEMC_VAL_IS_LONG       (1<<2)
+#define MEMC_VAL_IS_DOUBLE     (1<<3)
 
 #define MEMC_METHOD_INIT_VARS              \
     zval*             object  = getThis(); \
@@ -123,6 +125,7 @@ static void php_memc_store_impl(INTERNAL_FUNCTION_PARAMETERS, int op, zend_bool 
 static void php_memc_setMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key);
 static void php_memc_cas_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key);
 static void php_memc_delete_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key);
+static void php_memc_incdec_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool incr);
 
 
 /****************************************
@@ -796,6 +799,7 @@ PHP_METHOD(Memcached, deleteByKey)
 }
 /* }}} */
 
+/* {{{ -- php_memc_delete_impl */
 static void php_memc_delete_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 {
 	char *key = NULL;
@@ -831,16 +835,54 @@ static void php_memc_delete_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 
 	RETURN_TRUE;
 }
+/* }}} */
 
 /* {{{ Memcached::increment() */
 PHP_METHOD(Memcached, increment)
 {
+	php_memc_incdec_impl(INTERNAL_FUNCTION_PARAM_PASSTHRU, 1);
 }
 /* }}} */
 
 /* {{{ Memcached::decrement() */
 PHP_METHOD(Memcached, decrement)
 {
+	php_memc_incdec_impl(INTERNAL_FUNCTION_PARAM_PASSTHRU, 0);
+}
+/* }}} */
+
+/* {{{ -- php_memc_incdec_impl */
+static void php_memc_incdec_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool incr)
+{
+	char *key = NULL;
+	int   key_len = 0;
+	long  offset = 1;
+	uint64_t value;
+	memcached_return status;
+	MEMC_METHOD_INIT_VARS;
+
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|l", &key, &key_len, &offset) == FAILURE) {
+		return;
+	}
+
+	if (offset < 0) {
+		php_error_docref(NULL TSRMLS_CC, E_WARNING, "offset has to be > 0");
+		RETURN_FALSE;
+	}
+
+	MEMC_METHOD_FETCH_OBJECT;
+
+	if (incr) {
+		status = memcached_increment(i_obj->memc, key, key_len, (unsigned int)offset, &value);
+	} else {
+		status = memcached_decrement(i_obj->memc, key, key_len, (unsigned int)offset, &value);
+	}
+
+	if (php_memc_handle_error(status TSRMLS_CC) < 0) {
+		RETURN_FALSE;
+	}
+
+	RETURN_LONG((long)value);
 }
 /* }}} */
 
@@ -1142,6 +1184,11 @@ static char *php_memc_zval_to_payload(zval *value, size_t *payload_len, uint32_t
 			zval_dtor(&value_copy);
 
 			*flags &= ~MEMC_VAL_COMPRESSED;
+			if (Z_TYPE_P(value) == IS_LONG) {
+				*flags |= MEMC_VAL_IS_LONG;
+			} else if (Z_TYPE_P(value) == IS_DOUBLE) {
+				*flags |= MEMC_VAL_IS_DOUBLE;
+			}
 			break;
 		}
 
@@ -1244,7 +1291,15 @@ static int php_memc_zval_from_payload(zval *value, char *payload, size_t payload
 		PHP_VAR_UNSERIALIZE_DESTROY(var_hash);
 	} else {
 		payload[payload_len] = 0;
-		ZVAL_STRINGL(value, payload, payload_len, 1);
+		if (flags & MEMC_VAL_IS_LONG) {
+			long lval = strtol(payload, NULL, 10);
+			ZVAL_LONG(value, lval);
+		} else if (flags & MEMC_VAL_IS_DOUBLE) {
+			double dval = zend_strtod(payload, NULL);
+			ZVAL_DOUBLE(value, dval);
+		} else {
+			ZVAL_STRINGL(value, payload, payload_len, 1);
+		}
 	}
 
     if (flags & MEMC_VAL_COMPRESSED) {
@@ -1463,6 +1518,18 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_deleteByKey, 0, 0, 2)
 	ZEND_ARG_INFO(0, key)
 	ZEND_ARG_INFO(0, expiration)
 ZEND_END_ARG_INFO()
+
+static
+ZEND_BEGIN_ARG_INFO_EX(arginfo_increment, 0, 0, 1)
+	ZEND_ARG_INFO(0, key)
+	ZEND_ARG_INFO(0, offset)
+ZEND_END_ARG_INFO()
+
+static
+ZEND_BEGIN_ARG_INFO_EX(arginfo_decrement, 0, 0, 1)
+	ZEND_ARG_INFO(0, key)
+	ZEND_ARG_INFO(0, offset)
+ZEND_END_ARG_INFO()
 /* }}} */
 
 /* {{{ memcached_class_methods */
@@ -1499,8 +1566,8 @@ static zend_function_entry memcached_class_methods[] = {
 	MEMC_ME(delete,             arginfo_delete)
 	MEMC_ME(deleteByKey,        arginfo_deleteByKey)
 
-	MEMC_ME(increment,          NULL)
-	MEMC_ME(decrement,          NULL)
+	MEMC_ME(increment,          arginfo_increment)
+	MEMC_ME(decrement,          arginfo_decrement)
 
 	MEMC_ME(addServer,          NULL)
 	MEMC_ME(getServerList,      NULL)
