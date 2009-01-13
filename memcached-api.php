@@ -70,6 +70,8 @@ class Memcached {
 
 	const OPT_PREFIX_KEY;
 
+	const OPT_PREFIX_KEY;
+
 
 	public function __construct( $persistent_id = '' ) {}
 	
@@ -81,51 +83,49 @@ class Memcached {
 
 	public function getMultiByKey( $server_key, array $key, &$cas_tokens = null, $cache_cb = null ) {}
 
-	public function getDelayed( array $keys, $cache_cb = null, $value_cb = null ) {}
+	public function getDelayed( array $keys, $with_cas = null, $cache_cb = null, $value_cb = null ) {}
 
-	public function getDelayedByKey( $server_key, array $keys, $cache_cb = null, $value_cb = null ) {}
+	public function getDelayedByKey( $server_key, array $keys, $with_cas = null, $cache_cb = null, $value_cb = null ) {}
 
 	public function fetch( ) {}
 	
 	public function fetchAll( ) {}
 
-	public function set( $key, $value, $expiration ) {}
+	public function set( $key, $value, $expiration = 0 ) {}
 
-	public function setByKey( $server_key, $key, $value, $expiration ) {}
+	public function setByKey( $server_key, $key, $value, $expiration = 0 ) {}
 
-	public function setMulti( $array, $expiration ) {}
+	public function setMulti( $array, $expiration = 0 ) {}
 
-	public function setMultiByKey( $server_key, $array, $expiration ) {}
+	public function setMultiByKey( $server_key, $array, $expiration = 0 ) {}
 
-	public function getLastTokens( ) {}
+	public function cas( $token, $key, $value, $expiration = 0 ) {}
 
-	public function cas( $token, $key, $value, $expiration ) {}
+	public function casByKey( $token, $server_key, $key, $value, $expiration = 0 ) {}
 
-	public function casByKey( $token, $server_key, $key, $value, $expiration ) {}
+	public function add( $key, $value, $expiration = 0 ) {}
 
-	public function add( $key, $value, $expiration ) {}
+	public function addByKey( $server_key, $key, $value, $expiration = 0 ) {}
 
-	public function addByKey( $server_key, $key, $value, $expiration ) {}
+	public function append( $key, $value, $expiration = 0 ) {}
 
-	public function append( $key, $value, $expiration ) {}
+	public function appendByKey( $server_ke, $key, $value, $expiration = 0 ) {}
 
-	public function appendByKey( $server_ke, $key, $value, $expiration ) {}
+	public function prepend( $key, $value, $expiration = 0 ) {}
 
-	public function prepend( $key, $value, $expiration ) {}
+	public function prependByKey( $server_key, $key, $value, $expiration = 0 ) {}
 
-	public function prependByKey( $server_key, $key, $value, $expiration ) {}
+	public function replace( $key, $value, $expiration = 0 ) {}
 
-	public function replace( $key, $value, $expiration ) {}
+	public function replaceByKey( $serve_key, $key, $value, $expiration = 0 ) {}
 
-	public function replaceByKey( $serve_key, $key, $value, $expiration ) {}
+	public function delete( $key, $expiration = 0 ) {}
 
-	public function delete( $key, $expiration ) {}
+	public function deleteByKey( $key, $expiration = 0 ) {}
 
-	public function deleteByKey( $key, $expiration ) {}
+	public function increment( $key, $offset = 1) {}
 
-	public function increment( $key, $offset ) {}
-
-	public function decrement( $key, $offset ) {}
+	public function decrement( $key, $offset = 1) {}
 
 	public function getOption( $option ) {}
 	
@@ -143,6 +143,6 @@ class Memcached {
 
 class MemcachedException extends Exception {
 
-	function __construct( $errmsg = "", $errcode  = 0) {}
+	function __construct( $errmsg = "", $errcode  = 0 ) {}
 
 }

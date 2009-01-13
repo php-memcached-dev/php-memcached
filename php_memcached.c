@@ -1227,13 +1227,21 @@ static PHP_METHOD(Memcached, setOption)
 			break;
 
 		case MEMC_OPT_PREFIX_KEY:
+		{
+			char *key;
 			convert_to_string(value);
-			if (memcached_callback_set(i_obj->memc, MEMCACHED_CALLBACK_PREFIX_KEY,
-									   Z_STRVAL_P(value)) == MEMCACHED_BAD_KEY_PROVIDED) {
+			if (Z_STRLEN_P(value) == 0) {
+				key = NULL;
+			} else {
+				key = Z_STRVAL_P(value);
+			}
+			if (memcached_callback_set(i_obj->memc, MEMCACHED_CALLBACK_PREFIX_KEY, key) ==
+					MEMCACHED_BAD_KEY_PROVIDED) {
 				php_error_docref(NULL TSRMLS_CC, E_WARNING, "bad key provided");
 				RETURN_FALSE;
 			}
 			break;
+		}
 
 		default:
 			/*
