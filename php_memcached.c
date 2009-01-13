@@ -80,6 +80,7 @@
 #endif
 #endif
 
+
 typedef struct {
 	zend_object zo;
 
@@ -106,6 +107,10 @@ static zend_class_entry *memcached_ce = NULL;
 static zend_class_entry *memcached_exception_ce = NULL;
 static zend_class_entry *spl_ce_RuntimeException = NULL;
 
+#if (PHP_MAJOR_VERSION == 5 && PHP_MINOR_VERSION < 3)
+const zend_fcall_info empty_fcall_info = { 0, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0 };
+#endif
+
 ZEND_DECLARE_MODULE_GLOBALS(php_memcached)
 
 #ifdef COMPILE_DL_MEMCACHED
@@ -127,6 +132,7 @@ static void php_memc_cas_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key);
 static void php_memc_delete_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key);
 static void php_memc_incdec_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool incr);
 static void php_memc_getDelayed_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key);
+static memcached_return php_memc_do_cache_callback(zval *memc_obj, zend_fcall_info *fci, zend_fcall_info_cache *fcc, char *key, size_t key_len, zval *value TSRMLS_DC);
 
 
 /****************************************
@@ -256,18 +262,20 @@ static void php_memc_get_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 	uint32_t flags = 0;
 	uint64_t cas = 0;
 	zval *cas_token = NULL;
+	zend_fcall_info fci = empty_fcall_info;
+	zend_fcall_info_cache fcc = empty_fcall_info_cache;
 	memcached_result_st result;
 	memcached_return status = MEMCACHED_SUCCESS;
 	MEMC_METHOD_INIT_VARS;
 
 	if (by_key) {
-		if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ss|z", &server_key,
-								  &server_key_len, &key, &key_len, &cas_token) == FAILURE) {
+		if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ss|fz", &server_key,
+								  &server_key_len, &key, &key_len, &fci, &fcc, &cas_token) == FAILURE) {
 			return;
 		}
 	} else {
-		if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|z", &key, &key_len,
-								  &cas_token) == FAILURE) {
+		if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|fz", &key, &key_len,
+								  &fci, &fcc, &cas_token) == FAILURE) {
 			return;
 		}
 	}
@@ -291,11 +299,23 @@ static void php_memc_get_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 		status = MEMCACHED_SUCCESS;
 		memcached_result_create(i_obj->memc, &result);
 
-		if (memcached_fetch_result(i_obj->memc, &result, &status) == NULL
-			&& php_memc_handle_error(status) < 0) {
+		if (memcached_fetch_result(i_obj->memc, &result, &status) == NULL) {
 
-			memcached_result_free(&result);
-			RETURN_FALSE;
+			if ((status == MEMCACHED_END || status == MEMCACHED_NOTFOUND) && fci.size != 0) {
+				status = php_memc_do_cache_callback(getThis(), &fci, &fcc, key, key_len,
+													return_value TSRMLS_DC);
+				ZVAL_DOUBLE(cas_token, 0);
+			}
+
+			if (php_memc_handle_error(status) < 0) {
+				memcached_result_free(&result);
+				RETURN_FALSE;
+			}
+
+			/* if we have a callback, all processing is done */
+			if (fci.size != 0) {
+				return;
+			}
 		}
 
 		payload     = memcached_result_value(&result);
@@ -318,19 +338,94 @@ static void php_memc_get_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 
 	} else {
 
-		payload = memcached_get_by_key(i_obj->memc, server_key, server_key_len, key,
-									   key_len, &payload_len, &flags, &status);
+		size_t dummy_length;
+		uint32_t dummy_flags;
+		memcached_return dummy_status;
+
+		status = memcached_mget_by_key(i_obj->memc, server_key, server_key_len, &key, &key_len, 1);
+		payload = memcached_fetch(i_obj->memc, NULL, NULL, &payload_len, &flags, &status);
+		/* This is for historical reasons */
+		if (status == MEMCACHED_END)
+			status = MEMCACHED_NOTFOUND;
+
+		if (payload == NULL && status == MEMCACHED_NOTFOUND && fci.size != 0) {
+			status = php_memc_do_cache_callback(getThis(), &fci, &fcc, key, key_len,
+												return_value TSRMLS_DC);
+		}
+
+		(void)memcached_fetch(i_obj->memc, NULL, NULL, &dummy_length, &dummy_flags, &dummy_status);
+
 		if (php_memc_handle_error(status TSRMLS_CC) < 0) {
 			RETURN_FALSE;
 		}
-		if (php_memc_zval_from_payload(return_value, payload, payload_len, flags TSRMLS_CC) < 0) {
-			MEMC_G(rescode) = MEMC_RES_PAYLOAD_FAILURE;
-			RETURN_FALSE;
+
+		/* payload will be NULL if the callback was invoked */
+		if (payload != NULL) {
+			if (php_memc_zval_from_payload(return_value, payload, payload_len, flags TSRMLS_CC) < 0) {
+				MEMC_G(rescode) = MEMC_RES_PAYLOAD_FAILURE;
+				RETURN_FALSE;
+			}
 		}
 
 	}
 }
 /* }}} */
+
+static memcached_return php_memc_do_cache_callback(zval *memc_obj, zend_fcall_info *fci,
+												   zend_fcall_info_cache *fcc, char *key,
+												   size_t key_len, zval *value TSRMLS_DC)
+{
+	char *payload = NULL;
+	size_t payload_len = 0;
+	zval **params[3];
+	zval *retval;
+	zval *z_key;
+	uint32_t flags = 0;
+	memcached_return rc;
+    php_memc_t* i_obj;
+	memcached_return status = MEMCACHED_SUCCESS;
+
+	MAKE_STD_ZVAL(z_key);
+	ZVAL_STRINGL(z_key, key, key_len, 1);
+	ZVAL_NULL(value);
+
+	params[0] = &memc_obj;
+	params[1] = &z_key;
+	params[2] = &value;
+
+	fci->retval_ptr_ptr = &retval;
+	fci->params = params;
+	fci->param_count = 3;
+
+	if (zend_call_function(fci, fcc TSRMLS_CC) == SUCCESS && retval) {
+		i_obj = (php_memc_t *) zend_object_store_get_object(memc_obj TSRMLS_CC);
+
+		convert_to_boolean(retval);
+		if (Z_BVAL_P(retval) == 1) {
+			payload = php_memc_zval_to_payload(value, &payload_len, &flags TSRMLS_CC);
+			if (payload == NULL) {
+				status = MEMC_RES_PAYLOAD_FAILURE;
+			} else {
+				rc = memcached_set(i_obj->memc, key, key_len, payload, payload_len, 0, flags);
+				if (rc == MEMCACHED_SUCCESS || rc == MEMCACHED_BUFFERED) {
+					status = rc;
+				}
+				efree(payload);
+			}
+		} else {
+			status = MEMCACHED_NOTFOUND;
+		}
+
+		zval_ptr_dtor(&retval);
+	} else {
+		php_error_docref(NULL TSRMLS_CC, E_WARNING, "could not invoke cache callback");
+		status = MEMCACHED_FAILURE;
+	}
+
+	zval_ptr_dtor(&z_key);
+
+	return status;
+}
 
 /* {{{ Memcached::getMulti() */
 PHP_METHOD(Memcached, getMulti)
@@ -1563,16 +1658,16 @@ ZEND_END_ARG_INFO()
 static
 ZEND_BEGIN_ARG_INFO_EX(arginfo_get, 0, 0, 1)
 	ZEND_ARG_INFO(0, key)
-	ZEND_ARG_INFO(1, cas_token)
 	ZEND_ARG_INFO(0, cache_cb)
+	ZEND_ARG_INFO(1, cas_token)
 ZEND_END_ARG_INFO()
 
 static
 ZEND_BEGIN_ARG_INFO_EX(arginfo_getByKey, 0, 0, 2)
 	ZEND_ARG_INFO(0, server_key)
 	ZEND_ARG_INFO(0, key)
-	ZEND_ARG_INFO(1, cas_token)
 	ZEND_ARG_INFO(0, cache_cb)
+	ZEND_ARG_INFO(1, cas_token)
 ZEND_END_ARG_INFO()
 
 static
