@@ -79,13 +79,13 @@ class Memcached {
 
 	public function getByKey( $server_key, $key, $cache_cb = null ) {}
 
-	public function getMulti( array $keys, &$cas_token = null, &$cas_tokens = null, $cache_cb = null ) {}
+	public function getMulti( array $keys, &$cas_tokens = null ) {}
 
-	public function getMultiByKey( $server_key, array $key, &$cas_tokens = null, $cache_cb = null ) {}
+	public function getMultiByKey( $server_key, array $keys, &$cas_tokens = null ) {}
 
-	public function getDelayed( array $keys, $with_cas = null, $cache_cb = null, $value_cb = null ) {}
+	public function getDelayed( array $keys, $with_cas = null, $value_cb = null ) {}
 
-	public function getDelayedByKey( $server_key, array $keys, $with_cas = null, $cache_cb = null, $value_cb = null ) {}
+	public function getDelayedByKey( $server_key, array $keys, $with_cas = null, $value_cb = null ) {}
 
 	public function fetch( ) {}
 	
