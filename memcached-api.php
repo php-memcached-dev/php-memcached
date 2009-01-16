@@ -70,8 +70,6 @@ class Memcached {
 
 	const OPT_PREFIX_KEY;
 
-	const OPT_PREFIX_KEY;
-
 
 	public function __construct( $persistent_id = '' ) {}
 	
@@ -133,11 +131,13 @@ class Memcached {
 
 	public function addServer( $host, $port,  $weight = 0 );
 
-	public function getServerList ( ) {}
+	public function getServerList( ) {}
 
-	public function getServerByKey ( $server_key ) {}
+	public function getServerByKey( $server_key ) {}
 
-	public function flush ( ) {}
+	public function flush( ) {}
+	
+	public function getResultCode( ) {}
 
 }
 
