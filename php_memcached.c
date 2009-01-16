@@ -1211,6 +1211,77 @@ PHP_METHOD(Memcached, getServerByKey)
 }
 /* }}} */
 
+/* {{{ Memcached::getStats() */
+PHP_METHOD(Memcached, getStats)
+{
+	char *key = NULL;
+	int key_len;
+    memcached_stat_st *stats;
+	memcached_server_st *servers;
+	unsigned int i, servers_count;
+	memcached_return status;
+	char *hostport = NULL;
+	int hostport_len;
+	zval *entry;
+	MEMC_METHOD_INIT_VARS;
+
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "") == FAILURE) {
+		return;
+	}
+
+	MEMC_METHOD_FETCH_OBJECT;
+
+	stats = memcached_stat(i_obj->memc, NULL, &status);
+	if (php_memc_handle_error(status TSRMLS_CC) < 0) {
+		RETURN_FALSE;
+	}
+
+	array_init(return_value);
+	servers = memcached_server_list(i_obj->memc);
+	servers_count = memcached_server_count(i_obj->memc);
+	if (servers == NULL) {
+		return;
+	}
+
+	for (i = 0; i < servers_count; i++) {
+		hostport_len = spprintf(&hostport, 0, "%s:%d", servers[i].hostname, servers[i].port);
+
+		MAKE_STD_ZVAL(entry);
+		array_init(entry);
+
+		add_assoc_long(entry, "pid", stats[i].pid);
+		add_assoc_long(entry, "uptime", stats[i].uptime);
+		add_assoc_long(entry, "threads", stats[i].threads);
+		add_assoc_long(entry, "time", stats[i].time);
+		add_assoc_long(entry, "pointer_size", stats[i].pointer_size);
+		add_assoc_long(entry, "rusage_user_seconds", stats[i].rusage_user_seconds);
+		add_assoc_long(entry, "rusage_user_microseconds", stats[i].rusage_user_microseconds);
+		add_assoc_long(entry, "rusage_system_seconds", stats[i].rusage_system_seconds);
+		add_assoc_long(entry, "rusage_system_microseconds", stats[i].rusage_system_microseconds);
+		add_assoc_long(entry, "curr_items", stats[i].curr_items);
+		add_assoc_long(entry, "total_items", stats[i].total_items);
+		add_assoc_long(entry, "limit_maxbytes", stats[i].limit_maxbytes);
+		add_assoc_long(entry, "curr_connections", stats[i].curr_connections);
+		add_assoc_long(entry, "total_connections", stats[i].total_connections);
+		add_assoc_long(entry, "connection_structures", stats[i].connection_structures);
+		add_assoc_long(entry, "bytes", stats[i].bytes);
+		add_assoc_long(entry, "cmd_get", stats[i].cmd_get);
+		add_assoc_long(entry, "cmd_set", stats[i].cmd_set);
+		add_assoc_long(entry, "get_hits", stats[i].get_hits);
+		add_assoc_long(entry, "get_misses", stats[i].get_misses);
+		add_assoc_long(entry, "evictions", stats[i].evictions);
+		add_assoc_long(entry, "bytes_read", stats[i].bytes_read);
+		add_assoc_long(entry, "bytes_written", stats[i].bytes_written);
+		add_assoc_stringl(entry, "version", stats[i].version, strlen(stats[i].version), 1);
+
+		add_assoc_zval_ex(return_value, hostport, hostport_len+1, entry);
+		efree(hostport);
+	}
+
+	memcached_stat_free(i_obj->memc, stats);
+}
+/* }}} */
+
 /* {{{ Memcached::flush() */
 static PHP_METHOD(Memcached, flush)
 {
@@ -1964,6 +2035,10 @@ ZEND_BEGIN_ARG_INFO(arginfo_setOption, 0)
 	ZEND_ARG_INFO(0, option)
 	ZEND_ARG_INFO(0, value)
 ZEND_END_ARG_INFO()
+
+static
+ZEND_BEGIN_ARG_INFO(arginfo_getStats, 0)
+ZEND_END_ARG_INFO()
 /* }}} */
 
 /* {{{ memcached_class_methods */
@@ -2006,6 +2081,8 @@ static zend_function_entry memcached_class_methods[] = {
     MEMC_ME(addServer,          arginfo_addServer)
     MEMC_ME(getServerList,      arginfo_getServerList)
     MEMC_ME(getServerByKey,     arginfo_getServerByKey)
+
+	MEMC_ME(getStats,           arginfo_getStats)
 
     MEMC_ME(flush,              arginfo_flush)
 
