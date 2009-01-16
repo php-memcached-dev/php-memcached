@@ -18,8 +18,6 @@
 
 /* TODO
  * - check for key length in setters (maybe)
- * - throw an exception if cas fails due to token mismatch
- * - figure out append/prepend and compressed/serialized data problems
  */
 
 #ifdef HAVE_CONFIG_H
@@ -281,6 +279,11 @@ static void php_memc_get_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 		}
 	}
 
+	if (key_len == 0) {
+		MEMC_G(rescode) = MEMCACHED_BAD_KEY_PROVIDED;
+		RETURN_FALSE;
+	}
+
 	MEMC_METHOD_FETCH_OBJECT;
 	MEMC_G(rescode) = MEMCACHED_SUCCESS;
 
@@ -432,11 +435,18 @@ static void php_memc_getMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 		 zend_hash_get_current_data(Z_ARRVAL_P(keys), (void**)&entry) == SUCCESS;
 		 zend_hash_move_forward(Z_ARRVAL_P(keys))) {
 
-		if (Z_TYPE_PP(entry) == IS_STRING) {
+		if (Z_TYPE_PP(entry) == IS_STRING && Z_STRLEN_PP(entry) > 0) {
 			mkeys[i]     = Z_STRVAL_PP(entry);
 			mkeys_len[i] = Z_STRLEN_PP(entry);
 			i++;
 		}
+	}
+	
+	if (i == 0) {
+		MEMC_G(rescode) = MEMCACHED_BAD_KEY_PROVIDED;
+		efree(mkeys);
+		efree(mkeys_len);
+		RETURN_FALSE;
 	}
 
 	if (cas_tokens) {
@@ -551,11 +561,18 @@ static void php_memc_getDelayed_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_
 		 zend_hash_get_current_data(Z_ARRVAL_P(keys), (void**)&entry) == SUCCESS;
 		 zend_hash_move_forward(Z_ARRVAL_P(keys))) {
 
-		if (Z_TYPE_PP(entry) == IS_STRING) {
+		if (Z_TYPE_PP(entry) == IS_STRING && Z_STRLEN_PP(entry) > 0) {
 			mkeys[i]     = Z_STRVAL_PP(entry);
 			mkeys_len[i] = Z_STRLEN_PP(entry);
 			i++;
 		}
+	}
+
+	if (i == 0) {
+		MEMC_G(rescode) = MEMCACHED_BAD_KEY_PROVIDED;
+		efree(mkeys);
+		efree(mkeys_len);
+		RETURN_FALSE;
 	}
 
 	if (with_cas) {
@@ -892,6 +909,11 @@ static void php_memc_store_impl(INTERNAL_FUNCTION_PARAMETERS, int op, zend_bool 
 		server_key_len = key_len;
 	}
 
+	if (key_len == 0) {
+		MEMC_G(rescode) = MEMCACHED_BAD_KEY_PROVIDED;
+		RETURN_FALSE;
+	}
+
 	MEMC_METHOD_FETCH_OBJECT;
 	MEMC_G(rescode) = MEMCACHED_SUCCESS;
 
@@ -995,6 +1017,11 @@ static void php_memc_cas_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 		server_key_len = key_len;
 	}
 
+	if (key_len == 0) {
+		MEMC_G(rescode) = MEMCACHED_BAD_KEY_PROVIDED;
+		RETURN_FALSE;
+	}
+
 	MEMC_METHOD_FETCH_OBJECT;
 	MEMC_G(rescode) = MEMCACHED_SUCCESS;
 
@@ -1059,6 +1086,11 @@ static void php_memc_delete_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 		server_key_len = key_len;
 	}
 
+	if (key_len == 0) {
+		MEMC_G(rescode) = MEMCACHED_BAD_KEY_PROVIDED;
+		RETURN_FALSE;
+	}
+
 	MEMC_METHOD_FETCH_OBJECT;
 	MEMC_G(rescode) = MEMCACHED_SUCCESS;
 
@@ -1099,6 +1131,11 @@ static void php_memc_incdec_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool incr)
 
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|l", &key, &key_len, &offset) == FAILURE) {
 		return;
+	}
+
+	if (key_len == 0) {
+		MEMC_G(rescode) = MEMCACHED_BAD_KEY_PROVIDED;
+		RETURN_FALSE;
 	}
 
 	if (offset < 0) {
