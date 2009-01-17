@@ -17,7 +17,6 @@
 /* $ Id: $ */
 
 /* TODO
- * - check for key length in setters (maybe)
  */
 
 #ifdef HAVE_CONFIG_H
@@ -2135,6 +2134,9 @@ static zend_function_entry memcached_class_methods[] = {
 
 #if ZEND_MODULE_API_NO >= 20050922
 static const zend_module_dep memcached_deps[] = {
+#ifdef HAVE_MEMCACHED_SESSION
+    ZEND_MOD_REQUIRED("session")
+#endif
 #ifdef HAVE_SPL
     ZEND_MOD_REQUIRED("spl")
 #endif

@@ -8,6 +8,9 @@ PHP_ARG_ENABLE(memcached, whether to enable memcached support,
 PHP_ARG_WITH(libmemcached-dir,  for libmemcached,
 [  --with-libmemcached-dir[=DIR]   Set the path to libmemcached install prefix.], yes)
 
+PHP_ARG_ENABLE(memcached-session, whether to enable memcached session handler support,
+[  --disable-memcached-session      Disable memcached session handler support], yes, no)
+
 if test -z "$PHP_ZLIB_DIR"; then
 PHP_ARG_WITH(zlib-dir, for ZLIB,
 [  --with-zlib-dir[=DIR]   Set the path to ZLIB install prefix.], no)
@@ -55,6 +58,45 @@ if test "$PHP_MEMCACHED" != "no"; then
     PHP_ADD_INCLUDE($PHP_ZLIB_INCDIR)
   fi
 
+  if test "$PHP_MEMCACHED_SESSION" != "no"; then
+    AC_MSG_CHECKING([for session includes])
+    session_inc_path=""
+
+    if test -f "$abs_srcdir/include/php/ext/session/php_session.h"; then
+      session_inc_path="$abs_srcdir/include/php"
+    elif test -f "$abs_srcdir/ext/session/php_session.h"; then
+      session_inc_path="$abs_srcdir"
+    elif test -f "$phpincludedir/ext/session/php_session.h"; then
+      session_inc_path="$phpincludedir"
+    else
+      for i in php php4 php5 php6; do
+        if test -f "$prefix/include/$i/ext/session/php_session.h"; then
+          session_inc_path="$prefix/include/$i"
+        fi
+      done
+    fi
+
+    if test "$session_inc_path" = ""; then
+      AC_MSG_ERROR([Cannot find php_session.h])
+    else
+      AC_MSG_RESULT([$session_inc_path])
+    fi
+  fi
+
+  AC_MSG_CHECKING([for memcached session support])
+  if test "$PHP_MEMCACHED_SESSION" != "no"; then
+    AC_MSG_RESULT([enabled])
+    AC_DEFINE(HAVE_MEMCACHED_SESSION,1,[Whether memcache session handler is enabled])
+    SESSION_INCLUDES="-I$session_inc_path"
+    ifdef([PHP_ADD_EXTENSION_DEP],
+    [
+      PHP_ADD_EXTENSION_DEP(memcached, session)
+    ])
+  else
+    SESSION_INCLUDES=""
+    AC_MSG_RESULT([disabled])
+  fi
+
   if test "$PHP_LIBMEMCACHED_DIR" != "no" && test "$PHP_LIBMEMCACHED_DIR" != "yes"; then
     if test -r "$PHP_LIBMEMCACHED_DIR/include/libmemcached/memcached.h"; then
       PHP_LIBMEMCACHED_DIR="$PHP_LIBMEMCACHED_DIR"
@@ -80,11 +122,11 @@ if test "$PHP_MEMCACHED" != "no"; then
     PHP_ADD_LIBRARY_WITH_PATH(memcached, $PHP_LIBMEMCACHED_DIR/lib, MEMCACHED_SHARED_LIBADD)
 
     PHP_SUBST(MEMCACHED_SHARED_LIBADD)
-    PHP_NEW_EXTENSION(memcached, php_memcached.c , $ext_shared)
+    PHP_NEW_EXTENSION(memcached, php_memcached.c , $ext_shared,,$SESSION_INCLUDES)
 
     ifdef([PHP_ADD_EXTENSION_DEP],
     [
-      PHP_ADD_EXTENSION_DEP(pdo, spl, true)
+      PHP_ADD_EXTENSION_DEP(memcached, spl, true)
     ])
 
   fi
