@@ -440,7 +440,7 @@ static void php_memc_getMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 			i++;
 		}
 	}
-	
+
 	if (i == 0) {
 		MEMC_G(rescode) = MEMCACHED_BAD_KEY_PROVIDED;
 		efree(mkeys);
@@ -1849,6 +1849,68 @@ static int php_memc_do_result_callback(zval *memc_obj, zend_fcall_info *fci,
 
 /* }}} */
 
+/* {{{ session support */
+ps_module ps_mod_memcached = {
+	PS_MOD(memcached)
+};
+
+PS_OPEN_FUNC(memcached)
+{
+	memcached_st *memc_sess;
+	memcached_server_st *servers;
+	memcached_return status;
+
+	servers = memcached_servers_parse((char *)save_path);
+	if (servers) {
+		memc_sess = memcached_create(NULL);
+		if (memc_sess) {
+			status = memcached_server_push(memc_sess, servers);
+			if (status == MEMCACHED_SUCCESS) {
+				PS_SET_MOD_DATA(memc_sess);
+				return SUCCESS;
+			}
+		} else {
+			php_error_docref(NULL TSRMLS_CC, E_WARNING, "failed to parse session.save_path");
+		}
+	} else {
+		php_error_docref(NULL TSRMLS_CC, E_WARNING, "failed to parse session.save_path");
+	}
+
+	PS_SET_MOD_DATA(NULL);
+	return FAILURE;
+
+}
+
+PS_CLOSE_FUNC(memcached)
+{
+	memcached_st *memc_sess = PS_GET_MOD_DATA();
+
+	if (memc_sess) {
+		memcached_free(memc_sess);
+		PS_SET_MOD_DATA(NULL);
+	}
+
+	return SUCCESS;
+}
+
+PS_READ_FUNC(memcached)
+{
+}
+
+PS_WRITE_FUNC(memcached)
+{
+}
+
+PS_DESTROY_FUNC(memcached)
+{
+}
+
+PS_GC_FUNC(memcached)
+{
+	return SUCCESS;
+}
+/* }}} */
+
 /* {{{ methods arginfo */
 static
 ZEND_BEGIN_ARG_INFO_EX(arginfo___construct, 0, 0, 0)
@@ -2266,6 +2328,10 @@ PHP_MINIT_FUNCTION(memcached)
 				   (ts_allocate_ctor) php_memc_init_globals, (ts_allocate_dtor) php_memc_destroy_globals);
 #else
 	php_memc_init_globals(&php_memcached_globals TSRMLS_CC);
+#endif
+
+#if HAVE_MEMCACHED_SESSION
+    php_session_register_module(ps_memcached_ptr);
 #endif
 
 	return SUCCESS;
