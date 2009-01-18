@@ -17,6 +17,7 @@
 /* $ Id: $ */
 
 /* TODO
+ * - add compression threshold
  */
 
 #ifdef HAVE_CONFIG_H
