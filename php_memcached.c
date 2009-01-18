@@ -17,6 +17,7 @@
 /* $ Id: $ */
 
 /* TODO
+ * - check that payload is freed after get
  */
 
 #ifdef HAVE_CONFIG_H
@@ -1690,6 +1691,11 @@ static int php_memc_list_entry(void)
 static void php_memc_init_globals(zend_php_memcached_globals *php_memcached_globals_p TSRMLS_DC)
 {
 	MEMC_G(rescode) = MEMCACHED_SUCCESS;
+#if HAVE_MEMCACHED_SESSION
+	MEMC_G(sess_locked) = 0;
+	MEMC_G(sess_lock_key) = NULL;
+	MEMC_G(sess_lock_key_len) = 0;
+#endif
 }
 
 static void php_memc_destroy_globals(zend_php_memcached_globals *php_memcached_globals_p TSRMLS_DC)
@@ -1853,8 +1859,8 @@ static int php_memc_do_result_callback(zval *memc_obj, zend_fcall_info *fci,
 #if HAVE_MEMCACHED_SESSION
 
 #define MEMC_SESS_LOCK_ATTEMPTS   30
-#define MEMC_SESS_LOCK_WAIT       100000
-#define MEMC_SESS_LOCK_EXPIRATION 30
+#define MEMC_SESS_LOCK_WAIT       1000000
+#define MEMC_SESS_LOCK_EXPIRATION 160
 
 ps_module ps_mod_memcached = {
 	PS_MOD(memcached)
@@ -1944,6 +1950,10 @@ PS_READ_FUNC(memcached)
 	uint32_t flags = 0;
 	memcached_return status;
 	memcached_st *memc_sess = PS_GET_MOD_DATA();
+
+	if (php_memc_sess_lock(memc_sess, key TSRMLS_CC) < 0) {
+		return FAILURE;
+	}
 
 	sess_key_len = spprintf(&sess_key, 0, "memc.sess.key.%s", key);
 	payload = memcached_get(memc_sess, sess_key, sess_key_len, &payload_len, &flags, &status);
