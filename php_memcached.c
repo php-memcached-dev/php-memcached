@@ -17,7 +17,6 @@
 /* $ Id: $ */
 
 /* TODO
- * - check that payload is freed after get
  */
 
 #ifdef HAVE_CONFIG_H
@@ -344,6 +343,7 @@ static void php_memc_get_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 
 		size_t dummy_length;
 		uint32_t dummy_flags;
+		int rc;
 		memcached_return dummy_status;
 
 		status = memcached_mget_by_key(i_obj->memc, server_key, server_key_len, &key, &key_len, 1);
@@ -360,12 +360,17 @@ static void php_memc_get_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 		(void)memcached_fetch(i_obj->memc, NULL, NULL, &dummy_length, &dummy_flags, &dummy_status);
 
 		if (php_memc_handle_error(status TSRMLS_CC) < 0) {
+			if (payload) {
+				free(payload);
+			}
 			RETURN_FALSE;
 		}
 
 		/* payload will be NULL if the callback was invoked */
 		if (payload != NULL) {
-			if (php_memc_zval_from_payload(return_value, payload, payload_len, flags TSRMLS_CC) < 0) {
+			rc = php_memc_zval_from_payload(return_value, payload, payload_len, flags TSRMLS_CC);
+			free(payload);
+			if (rc < 0) {
 				MEMC_G(rescode) = MEMC_RES_PAYLOAD_FAILURE;
 				RETURN_FALSE;
 			}
@@ -1859,8 +1864,8 @@ static int php_memc_do_result_callback(zval *memc_obj, zend_fcall_info *fci,
 #if HAVE_MEMCACHED_SESSION
 
 #define MEMC_SESS_LOCK_ATTEMPTS   30
-#define MEMC_SESS_LOCK_WAIT       1000000
-#define MEMC_SESS_LOCK_EXPIRATION 160
+#define MEMC_SESS_LOCK_WAIT       100000
+#define MEMC_SESS_LOCK_EXPIRATION 30
 
 ps_module ps_mod_memcached = {
 	PS_MOD(memcached)
