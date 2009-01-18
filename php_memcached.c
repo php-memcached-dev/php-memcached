@@ -1912,7 +1912,7 @@ PS_OPEN_FUNC(memcached)
 				return SUCCESS;
 			}
 		} else {
-			php_error_docref(NULL TSRMLS_CC, E_ERROR, "could not allocate libmemcached structure");
+			php_error_docref(NULL TSRMLS_CC, E_WARNING, "could not allocate libmemcached structure");
 		}
 	} else {
 		php_error_docref(NULL TSRMLS_CC, E_WARNING, "failed to parse session.save_path");
