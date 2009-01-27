@@ -17,7 +17,6 @@
 /* $ Id: $ */
 
 /* TODO
- * - add compression threshold
  */
 
 #ifdef HAVE_CONFIG_H
@@ -43,11 +42,20 @@
 
 #include "php_memcached.h"
 
+/*
+ * Custom options
+ */
 #define MEMC_OPT_COMPRESSION   -1001
 #define MEMC_OPT_PREFIX_KEY    -1002
 
+/*
+ * Custom result codes
+ */
 #define MEMC_RES_PAYLOAD_FAILURE -1001
 
+/*
+ * Payload value flags
+ */
 #define MEMC_VAL_COMPRESSED    (1<<0)
 #define MEMC_VAL_SERIALIZED    (1<<1)
 #define MEMC_VAL_IS_LONG       (1<<2)
@@ -55,6 +63,7 @@
 
 #define MEMC_COMPRESS_THRESHOLD 100
 
+/* {{{ Helper macros */
 #define MEMC_METHOD_INIT_VARS              \
     zval*             object  = getThis(); \
     php_memc_t*       i_obj   = NULL;      \
@@ -79,8 +88,11 @@
       }
 #endif
 #endif
+/* }}} */
 
-
+/*
+ * Structures and definitions
+ */
 typedef struct {
 	zend_object zo;
 
@@ -140,7 +152,8 @@ static int php_memc_do_result_callback(zval *memc_obj, zend_fcall_info *fci, zen
   Method implementations
 ****************************************/
 
-/* {{{ Memcached::__construct() */
+/* {{{ Memcached::__construct([string persisten_id]))
+   Creates a Memcached object, optionally using persistent memcache connection */
 static PHP_METHOD(Memcached, __construct)
 {
 	zval *object = getThis();
@@ -237,14 +250,16 @@ static PHP_METHOD(Memcached, __construct)
 }
 /* }}} */
 
-/* {{{ Memcached::get() */
+/* {{{ Memcached::get(string key [, mixed callback [, double &cas_token ] ])
+   Returns a value for the given key or false */
 PHP_METHOD(Memcached, get)
 {
 	php_memc_get_impl(INTERNAL_FUNCTION_PARAM_PASSTHRU, 0);
 }
 /* }}} */
 
-/* {{{ Memcached::getByKey() */
+/* {{{ Memcached::getByKey(string server_key, string key [, mixed callback [, double &cas_token ] ])
+   Returns a value for key from the server identified by the server key or false */
 PHP_METHOD(Memcached, getByKey)
 {
 	php_memc_get_impl(INTERNAL_FUNCTION_PARAM_PASSTHRU, 1);
@@ -383,14 +398,16 @@ static void php_memc_get_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 }
 /* }}} */
 
-/* {{{ Memcached::getMulti() */
+/* {{{ Memcached::getMulti(array keys [, array &cas_tokens ])
+   Returns values for the given keys or false */
 PHP_METHOD(Memcached, getMulti)
 {
 	php_memc_getMulti_impl(INTERNAL_FUNCTION_PARAM_PASSTHRU, 0);
 }
 /* }}} */
 
-/* {{{ Memcached::getMultiByKey() */
+/* {{{ Memcached::getMultiByKey(string server_key, array keys [, array &cas_tokens ])
+   Returns values for the given keys from the server identified by the server key or false */
 PHP_METHOD(Memcached, getMultiByKey)
 {
 	php_memc_getMulti_impl(INTERNAL_FUNCTION_PARAM_PASSTHRU, 1);
@@ -514,14 +531,16 @@ static void php_memc_getMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 }
 /* }}} */
 
-/* {{{ Memcached::getDelayed() */
+/* {{{ Memcached::getDelayed(array keys [, bool with_cas [, mixed callback ] ])
+   Sends a request for the given keys and returns immediately */
 PHP_METHOD(Memcached, getDelayed)
 {
 	php_memc_getDelayed_impl(INTERNAL_FUNCTION_PARAM_PASSTHRU, 0);
 }
 /* }}} */
 
-/* {{{ Memcached::getDelayedByKey() */
+/* {{{ Memcached::getDelayedByKey(string server_key, array keys [, bool with_cas [, mixed callback ] ])
+   Sends a request for the given keys from the server identified by the server key and returns immediately */
 PHP_METHOD(Memcached, getDelayedByKey)
 {
 	php_memc_getDelayed_impl(INTERNAL_FUNCTION_PARAM_PASSTHRU, 1);
@@ -626,7 +645,8 @@ static void php_memc_getDelayed_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_
 }
 /* }}} */
 
-/* {{{ Memcached::fetch() */
+/* {{{ Memcached::fetch()
+   Returns the next result from a previous delayed request */
 PHP_METHOD(Memcached, fetch)
 {
 	char *res_key = NULL;
@@ -678,7 +698,8 @@ PHP_METHOD(Memcached, fetch)
 }
 /* }}} */
 
-/* {{{ Memcached::fetchAll() */
+/* {{{ Memcached::fetchAll()
+   Returns all the results from a previous delayed request */
 PHP_METHOD(Memcached, fetchAll)
 {
 	char *res_key = NULL;
@@ -737,28 +758,32 @@ PHP_METHOD(Memcached, fetchAll)
 }
 /* }}} */
 
-/* {{{ Memcached::set() */
+/* {{{ Memcached::set(string key, mixed value [, int expiration ])
+   Sets the value for the given key */
 PHP_METHOD(Memcached, set)
 {
 	php_memc_store_impl(INTERNAL_FUNCTION_PARAM_PASSTHRU, MEMC_OP_SET, 0);
 }
 /* }}} */
 
-/* {{{ Memcached::setByKey() */
+/* {{{ Memcached::setByKey(string server_key, string key, mixed value [, int expiration ])
+   Sets the value for the given key on the server identified by the server key */
 PHP_METHOD(Memcached, setByKey)
 {
 	php_memc_store_impl(INTERNAL_FUNCTION_PARAM_PASSTHRU, MEMC_OP_SET, 1);
 }
 /* }}} */
 
-/* {{{ Memcached::setMulti() */
+/* {{{ Memcached::setMulti(array entries [, int expiration ])
+   Sets the keys/values specified in the entries array */
 PHP_METHOD(Memcached, setMulti)
 {
 	php_memc_setMulti_impl(INTERNAL_FUNCTION_PARAM_PASSTHRU, 0);
 }
 /* }}} */
 
-/* {{{ Memcached::setMultiByKey() */
+/* {{{ Memcached::setMultiByKey(string server_key, array entries [, int expiration ])
+   Sets the keys/values specified in the entries array on the server identified by the given server key */
 PHP_METHOD(Memcached, setMultiByKey)
 {
 	php_memc_setMulti_impl(INTERNAL_FUNCTION_PARAM_PASSTHRU, 1);
@@ -832,56 +857,64 @@ static void php_memc_setMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 }
 /* }}} */
 
-/* {{{ Memcached::add() */
+/* {{{ Memcached::add(string key, mixed value [, int expiration ])
+   Sets the value for the given key, failing if the key already exists */
 PHP_METHOD(Memcached, add)
 {
 	php_memc_store_impl(INTERNAL_FUNCTION_PARAM_PASSTHRU, MEMC_OP_ADD, 0);
 }
 /* }}} */
 
-/* {{{ Memcached::addByKey() */
+/* {{{ Memcached::addByKey(string server_key, string key, mixed value [, int expiration ])
+   Sets the value for the given key on the server identified by the sever key, failing if the key already exists */
 PHP_METHOD(Memcached, addByKey)
 {
 	php_memc_store_impl(INTERNAL_FUNCTION_PARAM_PASSTHRU, MEMC_OP_ADD, 1);
 }
 /* }}} */
 
-/* {{{ Memcached::append() */
+/* {{{ Memcached::append(string key, mixed value)
+   Appends the value to existing one for the key */
 PHP_METHOD(Memcached, append)
 {
 	php_memc_store_impl(INTERNAL_FUNCTION_PARAM_PASSTHRU, MEMC_OP_APPEND, 0);
 }
 /* }}} */
 
-/* {{{ Memcached::appendByKey() */
+/* {{{ Memcached::appendByKey(string server_key, string key, mixed value)
+   Appends the value to existing one for the key on the server identified by the server key */
 PHP_METHOD(Memcached, appendByKey)
 {
 	php_memc_store_impl(INTERNAL_FUNCTION_PARAM_PASSTHRU, MEMC_OP_APPEND, 1);
 }
 /* }}} */
 
-/* {{{ Memcached::prepend() */
+/* {{{ Memcached::prepend(string key, mixed value)
+   Prepends the value to existing one for the key */
 PHP_METHOD(Memcached, prepend)
 {
 	php_memc_store_impl(INTERNAL_FUNCTION_PARAM_PASSTHRU, MEMC_OP_PREPEND, 0);
 }
 /* }}} */
 
-/* {{{ Memcached::prependByKey() */
+/* {{{ Memcached::prependByKey(string server_key, string key, mixed value)
+   Prepends the value to existing one for the key on the server identified by the server key */
 PHP_METHOD(Memcached, prependByKey)
 {
 	php_memc_store_impl(INTERNAL_FUNCTION_PARAM_PASSTHRU, MEMC_OP_PREPEND, 1);
 }
 /* }}} */
 
-/* {{{ Memcached::replace() */
+/* {{{ Memcached::replace(string key, mixed value [, int expiration ])
+   Replaces the value for the given key, failing if the key doesn't exist */
 PHP_METHOD(Memcached, replace)
 {
 	php_memc_store_impl(INTERNAL_FUNCTION_PARAM_PASSTHRU, MEMC_OP_REPLACE, 0);
 }
 /* }}} */
 
-/* {{{ Memcached::replaceByKey() */
+/* {{{ Memcached::replaceByKey(string server_key, string key, mixed value [, int expiration ])
+   Replaces the value for the given key on the server identified by the server key, failing if the key doesn't exist */
 PHP_METHOD(Memcached, replaceByKey)
 {
 	php_memc_store_impl(INTERNAL_FUNCTION_PARAM_PASSTHRU, MEMC_OP_REPLACE, 1);
@@ -980,14 +1013,16 @@ static void php_memc_store_impl(INTERNAL_FUNCTION_PARAMETERS, int op, zend_bool 
 }
 /* }}} */
 
-/* {{{ Memcached::cas() */
+/* {{{ Memcached::cas(double cas_token, string key, mixed value [, int expiration ])
+   Sets the value for the given key, failing if the cas_token doesn't match the one in memcache */
 PHP_METHOD(Memcached, cas)
 {
 	php_memc_cas_impl(INTERNAL_FUNCTION_PARAM_PASSTHRU, 0);
 }
 /* }}} */
 
-/* {{{ Memcached::casByKey() */
+/* {{{ Memcached::casByKey(double cas_token, string server_key, string key, mixed value [, int expiration ])
+   Sets the value for the given key on the server identified by the server_key, failing if the cas_token doesn't match the one in memcache */
 PHP_METHOD(Memcached, casByKey)
 {
 	php_memc_cas_impl(INTERNAL_FUNCTION_PARAM_PASSTHRU, 1);
@@ -1055,14 +1090,16 @@ static void php_memc_cas_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 }
 /* }}} */
 
-/* {{{ Memcached::delete() */
+/* {{{ Memcached::delete(string key [, int expiration ])
+   Deletes the given key */
 PHP_METHOD(Memcached, delete)
 {
 	php_memc_delete_impl(INTERNAL_FUNCTION_PARAM_PASSTHRU, 0);
 }
 /* }}} */
 
-/* {{{ Memcached::deleteByKey() */
+/* {{{ Memcached::deleteByKey(string server_key, string key [, int expiration ])
+   Deletes the given key from the server identified by the server key */
 PHP_METHOD(Memcached, deleteByKey)
 {
 	php_memc_delete_impl(INTERNAL_FUNCTION_PARAM_PASSTHRU, 1);
@@ -1113,14 +1150,16 @@ static void php_memc_delete_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 }
 /* }}} */
 
-/* {{{ Memcached::increment() */
+/* {{{ Memcached::increment(string key [, int delta ])
+   Increments the value for the given key by delta, defaulting to 1 */
 PHP_METHOD(Memcached, increment)
 {
 	php_memc_incdec_impl(INTERNAL_FUNCTION_PARAM_PASSTHRU, 1);
 }
 /* }}} */
 
-/* {{{ Memcached::decrement() */
+/* {{{ Memcached::decrement(string key [, int delta ])
+   Decrements the value for the given key by delta, defaulting to 1 */
 PHP_METHOD(Memcached, decrement)
 {
 	php_memc_incdec_impl(INTERNAL_FUNCTION_PARAM_PASSTHRU, 0);
@@ -1168,7 +1207,8 @@ static void php_memc_incdec_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool incr)
 }
 /* }}} */
 
-/* {{{ Memcached::addServer() */
+/* {{{ Memcached::addServer(string hostname, int port [, int weight ])
+   Adds the given memcache server to the list */
 PHP_METHOD(Memcached, addServer)
 {
 	char *host;
@@ -1194,7 +1234,8 @@ PHP_METHOD(Memcached, addServer)
 }
 /* }}} */
 
-/* {{{ Memcached::getServerList() */
+/* {{{ Memcached::getServerList()
+   Returns the list of the memcache servers in use */
 PHP_METHOD(Memcached, getServerList)
 {
 	memcached_server_st *servers;
@@ -1226,7 +1267,8 @@ PHP_METHOD(Memcached, getServerList)
 }
 /* }}} */
 
-/* {{{ Memcached::getServerByKey() */
+/* {{{ Memcached::getServerByKey(string server_key)
+   Returns the server identified by the given server key */
 PHP_METHOD(Memcached, getServerByKey)
 {
 	char *server_key;
@@ -1256,7 +1298,8 @@ PHP_METHOD(Memcached, getServerByKey)
 }
 /* }}} */
 
-/* {{{ Memcached::getStats() */
+/* {{{ Memcached::getStats()
+   Returns statistics for the memcache servers */
 PHP_METHOD(Memcached, getStats)
 {
 	char *key = NULL;
@@ -1327,7 +1370,8 @@ PHP_METHOD(Memcached, getStats)
 }
 /* }}} */
 
-/* {{{ Memcached::flush() */
+/* {{{ Memcached::flush([ int expiration ])
+   Flushes the data on all the servers */
 static PHP_METHOD(Memcached, flush)
 {
 	time_t expiration = 0;
@@ -1350,7 +1394,8 @@ static PHP_METHOD(Memcached, flush)
 }
 /* }}} */
 
-/* {{{ Memcached::getOption() */
+/* {{{ Memcached::getOption(int option)
+   Returns the value for the given option constant */
 static PHP_METHOD(Memcached, getOption)
 {
 	long option;
@@ -1399,7 +1444,8 @@ static PHP_METHOD(Memcached, getOption)
 }
 /* }}} */
 
-/* {{{ Memcached::setOption() */
+/* {{{ Memcached::setOption(int option, mixed value)
+   Sets the value for the given option constant */
 static PHP_METHOD(Memcached, setOption)
 {
 	long option;
@@ -1453,7 +1499,8 @@ static PHP_METHOD(Memcached, setOption)
 }
 /* }}} */
 
-/* {{{ Memcached::getResultCode() */
+/* {{{ Memcached::getResultCode()
+   Returns the result code from the last operation */
 static PHP_METHOD(Memcached, getResultCode)
 {
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "") == FAILURE) {
