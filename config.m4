@@ -104,6 +104,7 @@ if test "$PHP_MEMCACHED" != "no"; then
       AC_MSG_ERROR([Can't find libmemcached headers under "$PHP_LIBMEMCACHED_DIR"])
     fi
   else
+    PHP_LIBMEMCACHED_DIR="no"
     for i in /usr /usr/local; do
 	    if test -r "$i/include/libmemcached/memcached.h"; then
 	  	  PHP_LIBMEMCACHED_DIR=$i

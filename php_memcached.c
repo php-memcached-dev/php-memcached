@@ -252,7 +252,7 @@ PHP_METHOD(Memcached, getByKey)
 static void php_memc_get_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 {
 	char *key = NULL;
-	int   key_len = 0;
+	size_t key_len = 0;
 	char *server_key = NULL;
 	int   server_key_len = 0;
 	char  *payload = NULL;
@@ -1890,7 +1890,7 @@ static int php_memc_sess_lock(memcached_st *memc, const char *key TSRMLS_DC)
 			MEMC_G(sess_lock_key_len) = lock_key_len;
 			return 0;
 		}
-		usleep((useconds_t)MEMC_SESS_LOCK_WAIT);
+		usleep(MEMC_SESS_LOCK_WAIT);
 	}
 
 	efree(lock_key);
@@ -1949,7 +1949,7 @@ PS_CLOSE_FUNC(memcached)
 PS_READ_FUNC(memcached)
 {
 	char *payload = NULL;
-	int payload_len = 0;
+	size_t payload_len = 0;
 	char *sess_key = NULL;
 	int sess_key_len = 0;
 	uint32_t flags = 0;
