@@ -53,6 +53,8 @@
 #define MEMC_VAL_IS_LONG       (1<<2)
 #define MEMC_VAL_IS_DOUBLE     (1<<3)
 
+#define MEMC_COMPRESS_THRESHOLD 100
+
 #define MEMC_METHOD_INIT_VARS              \
     zval*             object  = getThis(); \
     php_memc_t*       i_obj   = NULL;      \
@@ -1589,6 +1591,11 @@ static char *php_memc_zval_to_payload(zval *value, size_t *payload_len, uint32_t
 			*flags |= MEMC_VAL_SERIALIZED;
 			break;
 		}
+	}
+
+	/* turn off compression for values below the threshold */
+	if (buf.len < MEMC_COMPRESS_THRESHOLD) {
+		*flags &= ~MEMC_VAL_COMPRESSED;
 	}
 
 	if (*flags & MEMC_VAL_COMPRESSED) {
