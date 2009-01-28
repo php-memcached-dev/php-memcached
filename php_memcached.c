@@ -42,20 +42,20 @@
 
 #include "php_memcached.h"
 
-/*
- * Custom options
- */
+/****************************************
+  Custom options
+****************************************/
 #define MEMC_OPT_COMPRESSION   -1001
 #define MEMC_OPT_PREFIX_KEY    -1002
 
-/*
- * Custom result codes
- */
+/****************************************
+  Custom result codes
+****************************************/
 #define MEMC_RES_PAYLOAD_FAILURE -1001
 
-/*
- * Payload value flags
- */
+/****************************************
+  Payload value flags
+****************************************/
 #define MEMC_VAL_COMPRESSED    (1<<0)
 #define MEMC_VAL_SERIALIZED    (1<<1)
 #define MEMC_VAL_IS_LONG       (1<<2)
@@ -63,7 +63,9 @@
 
 #define MEMC_COMPRESS_THRESHOLD 100
 
-/* {{{ Helper macros */
+/****************************************
+  Helper macros
+****************************************/
 #define MEMC_METHOD_INIT_VARS              \
     zval*             object  = getThis(); \
     php_memc_t*       i_obj   = NULL;      \
@@ -88,11 +90,10 @@
       }
 #endif
 #endif
-/* }}} */
 
-/*
- * Structures and definitions
- */
+/****************************************
+  Structures and definitions
+****************************************/
 typedef struct {
 	zend_object zo;
 
@@ -184,6 +185,10 @@ static PHP_METHOD(Memcached, __construct)
 			}
 		}
 
+		/*
+		 * If persistent memcache object is found under the given ID, skip constructor.
+		 * Otherwise, create a new persistent object.
+		 */
 		if (pi_obj) {
 			skip_ctor = 1;
 		} else {
@@ -308,8 +313,13 @@ static void php_memc_get_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 
 		uint64_t orig_cas_flag;
 
+		/*
+		 * Enable CAS support, but only if it is currently disabled.
+		 */
 		orig_cas_flag = memcached_behavior_get(i_obj->memc, MEMCACHED_BEHAVIOR_SUPPORT_CAS);
-		memcached_behavior_set(i_obj->memc, MEMCACHED_BEHAVIOR_SUPPORT_CAS, 1);
+		if (orig_cas_flag == 0) {
+			memcached_behavior_set(i_obj->memc, MEMCACHED_BEHAVIOR_SUPPORT_CAS, 1);
+		}
 
 		status = memcached_mget_by_key(i_obj->memc, server_key, server_key_len, &key, &key_len, 1);
 
@@ -322,6 +332,11 @@ static void php_memc_get_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 
 		if (memcached_fetch_result(i_obj->memc, &result, &status) == NULL) {
 
+			/*
+			 * If the result wasn't found, and we have the read-through callback, invoke
+			 * it to get the value. The CAS token will be 0, because we cannot generate it
+			 * ourselves.
+			 */
 			if ((status == MEMCACHED_END || status == MEMCACHED_NOTFOUND) && fci.size != 0) {
 				status = php_memc_do_cache_callback(getThis(), &fci, &fcc, key, key_len,
 													return_value TSRMLS_DC);
@@ -354,7 +369,13 @@ static void php_memc_get_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 		ZVAL_DOUBLE(cas_token, (double)cas);
 
 		memcached_result_free(&result);
-		memcached_behavior_set(i_obj->memc, MEMCACHED_BEHAVIOR_SUPPORT_CAS, orig_cas_flag);
+
+		/*
+		 * Restore the CAS support flag, but only if we had to turn it on.
+		 */
+		if (orig_cas_flag == 0) {
+			memcached_behavior_set(i_obj->memc, MEMCACHED_BEHAVIOR_SUPPORT_CAS, orig_cas_flag);
+		}
 		return;
 
 	} else {
@@ -370,6 +391,10 @@ static void php_memc_get_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 		if (status == MEMCACHED_END)
 			status = MEMCACHED_NOTFOUND;
 
+		/*
+		 * If payload wasn't found and we have a read-through callback, invoke it to get
+		 * the value. The callback will take care of storing the value back into memcache.
+		 */
 		if (payload == NULL && status == MEMCACHED_NOTFOUND && fci.size != 0) {
 			status = php_memc_do_cache_callback(getThis(), &fci, &fcc, key, key_len,
 												return_value TSRMLS_DC);
@@ -456,6 +481,10 @@ static void php_memc_getMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 	mkeys     = safe_emalloc(num_keys, sizeof(char *), 0);
 	mkeys_len = safe_emalloc(num_keys, sizeof(size_t), 0);
 
+	/*
+	 * Create the array of keys for libmemcached. If none of the keys were valid
+	 * (strings), set bad key result code and return.
+	 */
 	for (zend_hash_internal_pointer_reset(Z_ARRVAL_P(keys));
 		 zend_hash_get_current_data(Z_ARRVAL_P(keys), (void**)&entry) == SUCCESS;
 		 zend_hash_move_forward(Z_ARRVAL_P(keys))) {
@@ -474,15 +503,25 @@ static void php_memc_getMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 		RETURN_FALSE;
 	}
 
+	/*
+	 * Enable CAS support, but only if it is currently disabled.
+	 */
 	if (cas_tokens) {
 		orig_cas_flag = memcached_behavior_get(i_obj->memc, MEMCACHED_BEHAVIOR_SUPPORT_CAS);
-		memcached_behavior_set(i_obj->memc, MEMCACHED_BEHAVIOR_SUPPORT_CAS, 1);
+		if (orig_cas_flag == 0) {
+			memcached_behavior_set(i_obj->memc, MEMCACHED_BEHAVIOR_SUPPORT_CAS, 1);
+		}
 	}
 
 	status = memcached_mget_by_key(i_obj->memc, server_key, server_key_len, mkeys, mkeys_len, i);
 
+	/*
+	 * Restore the CAS support flag, but only if we had to turn it on.
+	 */
 	if (cas_tokens) {
-		memcached_behavior_set(i_obj->memc, MEMCACHED_BEHAVIOR_SUPPORT_CAS, orig_cas_flag);
+		if (orig_cas_flag == 0) {
+			memcached_behavior_set(i_obj->memc, MEMCACHED_BEHAVIOR_SUPPORT_CAS, orig_cas_flag);
+		}
 	}
 
 	efree(mkeys);
@@ -491,6 +530,10 @@ static void php_memc_getMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 		RETURN_FALSE;
 	}
 
+	/*
+	 * Iterate through the result set and create the result array. The CAS tokens are
+	 * returned as doubles, because we cannot store potential 64-bit values in longs.
+	 */
 	if (cas_tokens) {
 		zval_dtor(cas_tokens);
 		array_init(cas_tokens);
@@ -580,6 +623,10 @@ static void php_memc_getDelayed_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_
 	MEMC_METHOD_FETCH_OBJECT;
 	MEMC_G(rescode) = MEMCACHED_SUCCESS;
 
+	/*
+	 * Create the array of keys for libmemcached. If none of the keys were valid
+	 * (strings), set bad key result code and return.
+	 */
 	num_keys  = zend_hash_num_elements(Z_ARRVAL_P(keys));
 	mkeys     = safe_emalloc(num_keys, sizeof(char *), 0);
 	mkeys_len = safe_emalloc(num_keys, sizeof(size_t), 0);
@@ -602,15 +649,28 @@ static void php_memc_getDelayed_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_
 		RETURN_FALSE;
 	}
 
+	/*
+	 * Enable CAS support, but only if it is currently disabled.
+	 */
 	if (with_cas) {
 		orig_cas_flag = memcached_behavior_get(i_obj->memc, MEMCACHED_BEHAVIOR_SUPPORT_CAS);
-		memcached_behavior_set(i_obj->memc, MEMCACHED_BEHAVIOR_SUPPORT_CAS, 1);
+		if (orig_cas_flag == 0) {
+			memcached_behavior_set(i_obj->memc, MEMCACHED_BEHAVIOR_SUPPORT_CAS, 1);
+		}
 	}
 
+	/*
+	 * Issue the request, but collect results only if the result callback is provided.
+	 */
 	status = memcached_mget_by_key(i_obj->memc, server_key, server_key_len, mkeys, mkeys_len, i);
 
+	/*
+	 * Restore the CAS support flag, but only if we had to turn it on.
+	 */
 	if (with_cas) {
-		memcached_behavior_set(i_obj->memc, MEMCACHED_BEHAVIOR_SUPPORT_CAS, orig_cas_flag);
+		if (orig_cas_flag == 0) {
+			memcached_behavior_set(i_obj->memc, MEMCACHED_BEHAVIOR_SUPPORT_CAS, orig_cas_flag);
+		}
 	}
 
 	efree(mkeys);
@@ -620,7 +680,10 @@ static void php_memc_getDelayed_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_
 	}
 
 	if (fci.size != 0) {
-		/* we have a result callback */
+		/*
+		 * We have a result callback. Iterate through the result set and invoke the
+		 * callback for each one.
+		 */
 		memcached_result_st result;
 
 		memcached_result_create(i_obj->memc, &result);
@@ -959,6 +1022,11 @@ static void php_memc_store_impl(INTERNAL_FUNCTION_PARAMETERS, int op, zend_bool 
 	MEMC_G(rescode) = MEMCACHED_SUCCESS;
 
 	if (i_obj->compression) {
+		/*
+		 * When compression is enabled, we cannot do appends/prepends because that would
+		 * corrupt the compressed values. It is up to the user to fetch the value,
+		 * append/prepend new data, and store it again.
+		 */
 		if (op == MEMC_OP_APPEND || op == MEMC_OP_PREPEND) {
 			php_error_docref(NULL TSRMLS_CC, E_WARNING, "cannot append/prepend with compression turned on");
 			return;
