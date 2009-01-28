@@ -1,50 +1,65 @@
 <?xml version="1.0"?>
-<!DOCTYPE package SYSTEM "http://pear.php.net/dtd/package-1.0">
-<package>
-
-  <name>memcached</name>
-  <summary>libmemcached extension</summary>
-  <description>
-  Extension for interfacing with memcache servers via libmemcached library.
-  </description>
-
-  <license>PHP</license>
-
-  <configureoptions>
-   <configureoption name="with-memcached" default="autodetect" prompt="memcached installation directory?" />
-  </configureoptions>
-
-  <maintainers>
-    <maintainer>
-      <user>andrei</user>
-      <name>Andrei Zmievski</name>
-      <email>andrei@php.net</email>
-      <role>lead</role>
-    </maintainer>
-  </maintainers>
-
+<package packagerversion="1.4.11" version="2.0" xmlns="http://pear.php.net/dtd/package-2.0" xmlns:tasks="http://pear.php.net/dtd/tasks-1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://pear.php.net/dtd/tasks-1.0
+http://pear.php.net/dtd/tasks-1.0.xsd
+http://pear.php.net/dtd/package-2.0
+http://pear.php.net/dtd/package-2.0.xsd">
+ <name>memcached</name>
+ <channel>pecl.php.net</channel>
+ <summary>PHP extension for interfacing with memcached via libmemcached library</summary>
+ <description>
+  This extension uses libmemcached library to provide API for communicating with memcached servers.
+ </description>
+ <lead>
+  <name>Andrei Zmievski</name>
+  <user>andrei</user>
+  <email>andrei@php.net</email>
+  <active>yes</active>
+ </lead>
+ <date>2009-01-28</date>
+ <version>
+  <release>0.1.0</release>
+  <api>0.1.0</api>
+ </version>
+ <stability>
+  <release>beta</release>
+  <api>beta</api>
+ </stability>
+ <license uri="http://www.php.net/license">PHP</license>
+ <notes>Initial PECL release</notes>
+ <contents>
+  <dir name="/">
+   <file role='doc' name='EXPERIMENTAL'/>
+   <file role='doc' name='README'/>
+   <file role='doc' name='CREDITS'/>
+   <file role='doc' name='memcached-api.php'/>
+   <file role='src' name='config.m4'/>
+   <file role='src' name='config.w32'/>
+   <file role='src' name='php_memcached.c'/>
+   <file role='src' name='php_memcached.h'/>
+  </dir> <!-- / -->
+ </contents>
+ <dependencies>
+  <required>
+   <php>
+    <min>5.2.0</min>
+    <max>6.0.0</max>
+    <exclude>6.0.0</exclude>
+   </php>
+   <pearinstaller>
+    <min>1.4.0b1</min>
+   </pearinstaller>
+  </required>
+ </dependencies>
+ <providesextension>memcached</providesextension>
+ <extsrcrelease/>
+ <changelog>
   <release>
-    <version>0.0.1</version>
-    <state>devel</state>
-    <notes>unknown</notes>
-    <date>2008-12-14</date>
+   <stability><release>beta</release><api>beta</api></stability>
+   <version><release>0.1.0</release><api>0.1.0</api></version>
+   <date>2009-01-28</date>
+   <notes>
+- Initial PECL release
+   </notes>
   </release>
-  <changelog>
-
-  </changelog>
-  <deps>
-    <dep type="php" rel="ge" version="4.0.0"/>
-  </deps>
-
-  <filelist>
-    <dir name="/">
-      <file role='doc' name='EXPERIMENTAL'/>
-      <file role='doc' name='CREDITS'/>
-      <file role='src' name='config.m4'/>
-      <file role='src' name='memcached.dsp'/>
-      <file role='src' name='config.w32'/>
-      <file role='src' name='php_memcached.c'/>
-      <file role='src' name='php_memcached.h'/>
-    </dir>
-  </filelist>
+ </changelog>
 </package>
