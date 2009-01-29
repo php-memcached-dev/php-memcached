@@ -2587,6 +2587,7 @@ PHP_MINFO_FUNCTION(memcached)
 	php_info_print_table_header(2, "memcached support", "enabled");
 	php_info_print_table_row(2, "Version", PHP_MEMCACHED_VERSION);
 	php_info_print_table_row(2, "Revision", "$Revision: 1.107 $");
+	php_info_print_table_row(2, "libmemcached version", memcached_lib_version());
 	php_info_print_table_end();
 }
 /* }}} */
