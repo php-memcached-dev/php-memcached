@@ -860,7 +860,7 @@ static void php_memc_setMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 	char *server_key = NULL;
 	int   server_key_len = 0;
 	time_t expiration = 0;
-	zval *value, **entry;
+	zval **entry;
 	char *str_key;
 	uint  str_key_len;
 	ulong num_key;
@@ -1370,8 +1370,6 @@ PHP_METHOD(Memcached, getServerByKey)
    Returns statistics for the memcache servers */
 PHP_METHOD(Memcached, getStats)
 {
-	char *key = NULL;
-	int key_len;
     memcached_stat_st *stats;
 	memcached_server_st *servers;
 	unsigned int i, servers_count;
@@ -1937,8 +1935,6 @@ static int php_memc_do_result_callback(zval *memc_obj, zend_fcall_info *fci,
 	zval *z_result;
 	uint32_t flags = 0;
 	int rc = 0;
-    php_memc_t* i_obj;
-	memcached_return status = MEMCACHED_SUCCESS;
 
 	params[0] = &memc_obj;
 	params[1] = &z_result;
@@ -1999,7 +1995,6 @@ static int php_memc_sess_lock(memcached_st *memc, const char *key TSRMLS_DC)
 {
 	char *lock_key = NULL;
 	int lock_key_len = 0;
-	int key_len = strlen(key);
 	int attempts = MEMC_SESS_LOCK_ATTEMPTS;
 	time_t expiration = time(NULL) + MEMC_SESS_LOCK_EXPIRATION;
 	memcached_return status;
