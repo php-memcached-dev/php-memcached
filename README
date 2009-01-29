@@ -1,1 +1,11 @@
 This is a PHP extension for interfacing with memcached via libmemcached library.
+
+
+Resources
+---------
+
+ libmemcached:
+   http://tangent.org/552/libmemcached.html
+
+ memcached:
+   http://www.danga.com/memcached/
