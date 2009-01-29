@@ -15,7 +15,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <email>andrei@php.net</email>
   <active>yes</active>
  </lead>
- <date>2009-01-28</date>
+ <date>2009-01-29</date>
  <version>
   <release>0.1.0</release>
   <api>0.1.0</api>
@@ -57,7 +57,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <release>
    <stability><release>beta</release><api>beta</api></stability>
    <version><release>0.1.0</release><api>0.1.0</api></version>
-   <date>2009-01-28</date>
+   <date>2009-01-29</date>
    <notes>
 - Initial PECL release
    </notes>
