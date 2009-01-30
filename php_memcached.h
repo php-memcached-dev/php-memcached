@@ -19,6 +19,8 @@
 #ifndef PHP_MEMCACHED_H
 #define PHP_MEMCACHED_H
 
+#include <libmemcached/memcached.h>
+
 extern zend_module_entry memcached_module_entry;
 #define phpext_memcached_ptr &memcached_module_entry
 
