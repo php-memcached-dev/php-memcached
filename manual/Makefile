@@ -1,4 +1,5 @@
 # test 
+# line 2
 all: html
 
 confcheck:
