@@ -1,4 +1,4 @@
-# 
+# test 
 all: html
 
 confcheck:
