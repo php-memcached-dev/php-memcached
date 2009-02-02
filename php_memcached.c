@@ -1548,6 +1548,25 @@ static PHP_METHOD(Memcached, setOption)
 			break;
 		}
 
+		case MEMCACHED_BEHAVIOR_KETAMA_WEIGHTED:
+			flag = (memcached_behavior) option;
+			convert_to_long(value);
+			if (memcached_behavior_set(i_obj->memc, flag, (uint64_t)Z_LVAL_P(value)) == MEMCACHED_FAILURE) {
+				php_error_docref(NULL TSRMLS_CC, E_WARNING, "error setting memcached option");
+				RETURN_FALSE;
+			}
+
+			/*
+			 * This is necessary because libmemcached does not reset hash/distribution
+			 * options on false case, like it does for MEMCACHED_BEHAVIOR_KETAMA
+			 * (non-weighted) case. We have to clean up ourselves.
+			 */
+			if (!Z_LVAL_P(value)) {
+				i_obj->memc->hash = 0;
+				i_obj->memc->distribution = 0;
+			}
+			break;
+
 		default:
 			/*
 			 * Assume that it's a libmemcached behavior option.
@@ -2483,6 +2502,7 @@ static void php_memc_register_constants(INIT_FUNC_ARGS)
 	REGISTER_MEMC_CLASS_CONST_LONG(OPT_DISTRIBUTION, MEMCACHED_BEHAVIOR_DISTRIBUTION);
 	REGISTER_MEMC_CLASS_CONST_LONG(DISTRIBUTION_MODULA, MEMCACHED_DISTRIBUTION_MODULA);
 	REGISTER_MEMC_CLASS_CONST_LONG(DISTRIBUTION_CONSISTENT, MEMCACHED_DISTRIBUTION_CONSISTENT);
+	REGISTER_MEMC_CLASS_CONST_LONG(OPT_LIBKETAMA_COMPATIBLE, MEMCACHED_BEHAVIOR_KETAMA_WEIGHTED);
 	REGISTER_MEMC_CLASS_CONST_LONG(OPT_BUFFER_WRITES, MEMCACHED_BEHAVIOR_BUFFER_REQUESTS);
 	REGISTER_MEMC_CLASS_CONST_LONG(OPT_BINARY_PROTOCOL, MEMCACHED_BEHAVIOR_BINARY_PROTOCOL);
 	REGISTER_MEMC_CLASS_CONST_LONG(OPT_NO_BLOCK, MEMCACHED_BEHAVIOR_NO_BLOCK);
@@ -2586,7 +2606,6 @@ PHP_MINFO_FUNCTION(memcached)
 	php_info_print_table_start();
 	php_info_print_table_header(2, "memcached support", "enabled");
 	php_info_print_table_row(2, "Version", PHP_MEMCACHED_VERSION);
-	php_info_print_table_row(2, "Revision", "$Revision: 1.2 $");
 	php_info_print_table_row(2, "libmemcached version", memcached_lib_version());
 	php_info_print_table_end();
 }
