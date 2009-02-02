@@ -36,7 +36,9 @@ class Memcached {
 
 	const OPT_DISTRIBUTION_CONSISTENT;
 
-	const OPT_BUFER_REQUESTS;
+	const OPT_LIBKETAMA_COMPATIBLE;
+
+	const OPT_BUFFER_REQUESTS;
 
 	const OPT_BINARY_PROTOCOL;
 
@@ -129,7 +131,9 @@ class Memcached {
 	
 	public function setOption( $option, $value ) {}
 
-	public function addServer( $host, $port,  $weight = 0 );
+	public function addServer( $host, $port,  $weight = 0 ) {}
+
+	public function addServers( array $servers ) {}
 
 	public function getServerList( ) {}
 

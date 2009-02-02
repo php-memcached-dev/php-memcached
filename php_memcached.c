@@ -1302,6 +1302,71 @@ PHP_METHOD(Memcached, addServer)
 }
 /* }}} */
 
+/* {{{ Memcached::addServers(array servers)
+   Adds the given memcache servers to the server list */
+PHP_METHOD(Memcached, addServers)
+{
+	zval *servers;
+	zval **entry;
+	zval **z_host, **z_port, **z_weight = NULL;
+	uint32_t weight = 0;
+	int   entry_size, i = 0;
+	memcached_server_st *list = NULL;
+	memcached_return status;
+	MEMC_METHOD_INIT_VARS;
+
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "a/", &servers) == FAILURE) {
+		return;
+	}
+
+	MEMC_METHOD_FETCH_OBJECT;
+	MEMC_G(rescode) = MEMCACHED_SUCCESS;
+
+	for (zend_hash_internal_pointer_reset(Z_ARRVAL_P(servers)), i = 0;
+		 zend_hash_get_current_data(Z_ARRVAL_P(servers), (void **)&entry) == SUCCESS;
+		 zend_hash_move_forward(Z_ARRVAL_P(servers)), i++) {
+
+		if (Z_TYPE_PP(entry) != IS_ARRAY) {
+			php_error_docref(NULL TSRMLS_CC, E_WARNING, "server list entry #%d is not an array", i+1);
+			continue;
+		}
+
+		entry_size = zend_hash_num_elements(Z_ARRVAL_PP(entry));
+
+		if (entry_size > 1) {
+			zend_hash_index_find(Z_ARRVAL_PP(entry), 0, (void **)&z_host);
+			zend_hash_index_find(Z_ARRVAL_PP(entry), 1, (void **)&z_port);
+			convert_to_string_ex(z_host);
+			convert_to_long_ex(z_port);
+
+			weight = 0;
+			if (entry_size > 2) {
+				zend_hash_index_find(Z_ARRVAL_PP(entry), 2, (void **)&z_weight);
+				convert_to_long_ex(z_weight);
+				weight = Z_LVAL_PP(z_weight);
+			}
+
+			list = memcached_server_list_append_with_weight(list, Z_STRVAL_PP(z_host),
+															Z_LVAL_PP(z_port), weight, &status);
+
+			if (php_memc_handle_error(status TSRMLS_CC) == 0) {
+				continue;
+			}
+		}
+
+		php_error_docref(NULL TSRMLS_CC, E_WARNING, "could not add entry #%d to the server list", i+1);
+	}
+
+	status = memcached_server_push(i_obj->memc, list);
+	memcached_server_list_free(list);
+	if (php_memc_handle_error(status TSRMLS_CC) < 0) {
+		RETURN_FALSE;
+	}
+
+	RETURN_TRUE;
+}
+/* }}} */
+
 /* {{{ Memcached::getServerList()
    Returns the list of the memcache servers in use */
 PHP_METHOD(Memcached, getServerList)
@@ -2363,6 +2428,11 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_addServer, 0, 0, 2)
 ZEND_END_ARG_INFO()
 
 static
+ZEND_BEGIN_ARG_INFO(arginfo_addServers, 0)
+	ZEND_ARG_ARRAY_INFO(0, servers, 0)
+ZEND_END_ARG_INFO()
+
+static
 ZEND_BEGIN_ARG_INFO(arginfo_getServerList, 0)
 ZEND_END_ARG_INFO()
 
@@ -2425,6 +2495,7 @@ static zend_function_entry memcached_class_methods[] = {
     MEMC_ME(decrement,          arginfo_decrement)
 
     MEMC_ME(addServer,          arginfo_addServer)
+    MEMC_ME(addServers,         arginfo_addServers)
     MEMC_ME(getServerList,      arginfo_getServerList)
     MEMC_ME(getServerByKey,     arginfo_getServerByKey)
 
