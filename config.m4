@@ -3,13 +3,16 @@ dnl $ Id: $
 dnl vim:se ts=2 sw=2 et:
 
 PHP_ARG_ENABLE(memcached, whether to enable memcached support,
-[  --enable-memcached       Enable memcached support])
+[  --enable-memcached               Enable memcached support])
 
 PHP_ARG_WITH(libmemcached-dir,  for libmemcached,
 [  --with-libmemcached-dir[=DIR]   Set the path to libmemcached install prefix.], yes)
 
 PHP_ARG_ENABLE(memcached-session, whether to enable memcached session handler support,
 [  --disable-memcached-session      Disable memcached session handler support], yes, no)
+
+PHP_ARG_ENABLE(memcached-igbinary, whether to enable memcached serializer support,
+[  --enable-memcached-igbinary      Enable memcached igbinary serializer support], no, no)
 
 if test -z "$PHP_ZLIB_DIR"; then
 PHP_ARG_WITH(zlib-dir, for ZLIB,
@@ -83,6 +86,31 @@ if test "$PHP_MEMCACHED" != "no"; then
     fi
   fi
 
+  if test "$PHP_MEMCACHED_IGBINARY" != "no"; then
+    AC_MSG_CHECKING([for igbinary includes])
+    igbinary_inc_path=""
+
+    if test -f "$abs_srcdir/include/php/ext/igbinary/igbinary.h"; then
+      igbinary_inc_path="$abs_srcdir/include/php"
+    elif test -f "$abs_srcdir/ext/igbinary/igbinary.h"; then
+      igbinary_inc_path="$abs_srcdir"
+    elif test -f "$phpincludedir/ext/session/igbinary.h"; then
+      igbinary_inc_path="$phpincludedir"
+    else
+      for i in php php4 php5 php6; do
+        if test -f "$prefix/include/$i/ext/igbinary/igbinary.h"; then
+          igbinary_inc_path="$prefix/include/$i"
+        fi
+      done
+    fi
+
+    if test "$igbinary_inc_path" = ""; then
+      AC_MSG_ERROR([Cannot find igbinary.h])
+    else
+      AC_MSG_RESULT([$igbinary_inc_path])
+    fi
+  fi
+
   AC_MSG_CHECKING([for memcached session support])
   if test "$PHP_MEMCACHED_SESSION" != "no"; then
     AC_MSG_RESULT([enabled])
@@ -94,6 +122,20 @@ if test "$PHP_MEMCACHED" != "no"; then
     ])
   else
     SESSION_INCLUDES=""
+    AC_MSG_RESULT([disabled])
+  fi
+
+  AC_MSG_CHECKING([for memcached igbinary support])
+  if test "$PHP_MEMCACHED_IGBINARY" != "no"; then
+    AC_MSG_RESULT([enabled])
+    AC_DEFINE(HAVE_MEMCACHED_IGBINARY,1,[Whether memcache igbinary serializer is enabled])
+    IGBINARY_INCLUDES="-I$igbinary_inc_path"
+    ifdef([PHP_ADD_EXTENSION_DEP],
+    [
+      PHP_ADD_EXTENSION_DEP(memcached, igbinary)
+    ])
+  else
+    IGBINARY_INCLUDES=""
     AC_MSG_RESULT([disabled])
   fi
 
@@ -123,7 +165,7 @@ if test "$PHP_MEMCACHED" != "no"; then
     PHP_ADD_LIBRARY_WITH_PATH(memcached, $PHP_LIBMEMCACHED_DIR/lib, MEMCACHED_SHARED_LIBADD)
 
     PHP_SUBST(MEMCACHED_SHARED_LIBADD)
-    PHP_NEW_EXTENSION(memcached, php_memcached.c , $ext_shared,,$SESSION_INCLUDES)
+    PHP_NEW_EXTENSION(memcached, php_memcached.c , $ext_shared,,$SESSION_INCLUDES $IGBINARY_INCLUDES)
 
     ifdef([PHP_ADD_EXTENSION_DEP],
     [
