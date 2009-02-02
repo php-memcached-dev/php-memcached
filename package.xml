@@ -25,7 +25,11 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <api>beta</api>
  </stability>
  <license uri="http://www.php.net/license">PHP</license>
- <notes>Initial PECL release</notes>
+ <notes>
+- Add OPT_LIBKETAMA_COMPATIBLE option.
+- Implement addServers() method.
+- Swap internal compressed and serialized flags to be compatible with other clients.
+ </notes>
  <contents>
   <dir name="/">
    <file role='doc' name='EXPERIMENTAL'/>
