@@ -56,8 +56,8 @@
 /****************************************
   Payload value flags
 ****************************************/
-#define MEMC_VAL_COMPRESSED    (1<<0)
-#define MEMC_VAL_SERIALIZED    (1<<1)
+#define MEMC_VAL_SERIALIZED    (1<<0)
+#define MEMC_VAL_COMPRESSED    (1<<1)
 #define MEMC_VAL_IS_LONG       (1<<2)
 #define MEMC_VAL_IS_DOUBLE     (1<<3)
 
