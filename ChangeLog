@@ -1,0 +1,11 @@
+memcached extension changelog
+
+Version 0.1.1
+-------------
+	* Add OPT_LIBKETAMA_COMPATIBLE option.
+	* Implement addServers() method.
+	* Swap internal compressed and serialized flags to be compatible with other clients.
+
+Version 0.1.0
+-------------
+	* Initial release
