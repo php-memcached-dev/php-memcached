@@ -45,6 +45,10 @@
 
 #include "php_memcached.h"
 
+#ifdef HAVE_MEMCACHED_IGBINARY
+#include "ext/igbinary/igbinary.h"
+#endif
+
 /****************************************
   Custom options
 ****************************************/
@@ -1077,6 +1081,10 @@ static void php_memc_store_impl(INTERNAL_FUNCTION_PARAMETERS, int op, zend_bool 
 		flags |= MEMC_VAL_COMPRESSED;
 	}
 
+	if (i_obj->serializer == SERIALIZER_IGBINARY) {
+		flags |= MEMC_VAL_IGBINARY;
+	}
+
 	payload = php_memc_zval_to_payload(value, &payload_len, &flags TSRMLS_CC);
 	if (op == MEMC_OP_APPEND || op == MEMC_OP_PREPEND) {
 		zval_ptr_dtor(&value);
@@ -1186,6 +1194,10 @@ static void php_memc_cas_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 
 	if (i_obj->compression) {
 		flags |= MEMC_VAL_COMPRESSED;
+	}
+
+	if (i_obj->serializer == SERIALIZER_IGBINARY) {
+		flags |= MEMC_VAL_IGBINARY;
 	}
 
 	payload = php_memc_zval_to_payload(value, &payload_len, &flags TSRMLS_CC);
@@ -1614,6 +1626,7 @@ static PHP_METHOD(Memcached, getOption)
 			switch (i_obj->serializer) {
 				case SERIALIZER_IGBINARY:
 					RETURN_STRINGL("igbinary", sizeof("igbinary")-1, 1);
+					break;
 
 				default: // SERIALIZER_PHP
 					RETURN_STRINGL("php", sizeof("php")-1, 1);
@@ -1707,11 +1720,12 @@ static PHP_METHOD(Memcached, setOption)
 			/* php serializator */
 			if (strcasecmp(Z_STRVAL_P(value), "php") == 0) {
 				i_obj->serializer = SERIALIZER_PHP;
+
 			} else {
+				i_obj->serializer = SERIALIZER_PHP;
 				php_error_docref(NULL TSRMLS_CC, E_WARNING, "invalid serializator provided");
 				RETURN_FALSE;
 			}
-			i_obj->serializer = SERIALIZER_PHP;
 
 			break;
 		}
@@ -1832,6 +1846,7 @@ static char *php_memc_zval_to_payload(zval *value, size_t *payload_len, uint32_t
 
 		case IS_STRING:
 			smart_str_appendl(&buf, Z_STRVAL_P(value), Z_STRLEN_P(value));
+			*flags &= ~MEMC_VAL_IGBINARY;
 			break;
 
 		case IS_LONG:
@@ -1847,6 +1862,7 @@ static char *php_memc_zval_to_payload(zval *value, size_t *payload_len, uint32_t
 			zval_dtor(&value_copy);
 
 			*flags &= ~MEMC_VAL_COMPRESSED;
+			*flags &= ~MEMC_VAL_IGBINARY;
 			if (Z_TYPE_P(value) == IS_LONG) {
 				*flags |= MEMC_VAL_IS_LONG;
 			} else if (Z_TYPE_P(value) == IS_DOUBLE) {
@@ -1857,17 +1873,26 @@ static char *php_memc_zval_to_payload(zval *value, size_t *payload_len, uint32_t
 
 		default:
 		{
-			php_serialize_data_t var_hash;
+#if HAVE_MEMCACHED_IGBINARY
+			if (*flags & MEMC_VAL_IGBINARY) {
+				igbinary_serialize((uint8_t **) &buf.c, &buf.len, value);
 
-			PHP_VAR_SERIALIZE_INIT(var_hash);
-			php_var_serialize(&buf, &value, &var_hash TSRMLS_CC);
-			PHP_VAR_SERIALIZE_DESTROY(var_hash);
+			} else {
+#endif
+				php_serialize_data_t var_hash;
 
-			if (!buf.c) {
-				php_error_docref(NULL TSRMLS_CC, E_WARNING, "could not serialize value");
-				smart_str_free(&buf);
-				return NULL;
+				PHP_VAR_SERIALIZE_INIT(var_hash);
+				php_var_serialize(&buf, &value, &var_hash TSRMLS_CC);
+				PHP_VAR_SERIALIZE_DESTROY(var_hash);
+
+				if (!buf.c) {
+					php_error_docref(NULL TSRMLS_CC, E_WARNING, "could not serialize value");
+					smart_str_free(&buf);
+					return NULL;
+				}
+#if HAVE_MEMCACHED_IGBINARY
 			}
+#endif
 
 			*flags |= MEMC_VAL_SERIALIZED;
 			break;
@@ -1942,7 +1967,23 @@ static int php_memc_zval_from_payload(zval *value, char *payload, size_t payload
         }
 	}
 
-	if (flags & MEMC_VAL_SERIALIZED) {
+	if (flags & MEMC_VAL_SERIALIZED && flags & MEMC_VAL_IGBINARY) {
+#if HAVE_MEMCACHED_IGBINARY
+		if (igbinary_unserialize((uint8_t *)payload, payload_len, &value)) {
+			ZVAL_FALSE(value);
+
+			if (flags & MEMC_VAL_COMPRESSED) {
+				efree(payload);
+			}
+
+			php_error_docref(NULL TSRMLS_CC, E_WARNING, "could not unserialize value with igbinary");
+			return -1;
+		}
+#else
+		php_error_docref(NULL TSRMLS_CC, E_WARNING, "could not unserialize value, no igbinary support");
+		return -1;
+#endif
+	} else if (flags & MEMC_VAL_SERIALIZED) {
 		const char *payload_tmp = payload;
 		php_unserialize_data_t var_hash;
 
