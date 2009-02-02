@@ -37,6 +37,7 @@ ZEND_BEGIN_MODULE_GLOBALS(php_memcached)
 	char* sess_lock_key;
 	int   sess_lock_key_len;
 #endif
+	int   serializer;
 ZEND_END_MODULE_GLOBALS(php_memcached)
 
 PHP_MEMCACHED_API zend_class_entry *php_memc_get_ce(void);
@@ -49,7 +50,7 @@ PHP_RINIT_FUNCTION(memcached);
 PHP_RSHUTDOWN_FUNCTION(memcached);
 PHP_MINFO_FUNCTION(memcached);
 
-#define PHP_MEMCACHED_VERSION "0.1.3"
+#define PHP_MEMCACHED_VERSION "0.1.3-igbinary-1"
 
 #ifdef ZTS
 #define MEMC_G(v) TSRMG(php_memcached_globals_id, zend_memcache_globals *, v)

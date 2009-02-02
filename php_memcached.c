@@ -63,6 +63,7 @@
 #define MEMC_VAL_COMPRESSED    (1<<1)
 #define MEMC_VAL_IS_LONG       (1<<2)
 #define MEMC_VAL_IS_DOUBLE     (1<<3)
+#define MEMC_VAL_IGBINARY      (1<<4)
 
 #define MEMC_COMPRESS_THRESHOLD 100
 
@@ -97,16 +98,24 @@
 /****************************************
   Structures and definitions
 ****************************************/
+enum memcached_serializer {
+	SERIALIZER_PHP = 1,
+	SERIALIZER_IGBINARY = 2,
+};
+
+static int le_memc;
 typedef struct {
 	zend_object zo;
 
 	memcached_st *memc;
 
-	unsigned is_persistent:1;
+	unsigned is_persistent;
 	const char *plist_key;
 	int plist_key_len;
 
-	unsigned compression:1;
+	unsigned compression;
+
+	enum memcached_serializer serializer;
 } php_memc_t;
 
 enum {
@@ -259,6 +268,8 @@ static PHP_METHOD(Memcached, __construct)
 			/* not reached */
 		}
 	}
+
+	i_obj->serializer = MEMC_G(serializer);
 }
 /* }}} */
 
@@ -1946,6 +1957,11 @@ static void php_memc_init_globals(zend_php_memcached_globals *php_memcached_glob
 	MEMC_G(sess_lock_key) = NULL;
 	MEMC_G(sess_lock_key_len) = 0;
 #endif
+#if HAVE_MEMCACHE_IGBINARY
+	MEMC_G(serializer) = SERIALIZER_IGBINARY;
+#else
+	MEMC_G(serializer) = SERIALIZER_PHP;
+#endif
 }
 
 static void php_memc_destroy_globals(zend_php_memcached_globals *php_memcached_globals_p TSRMLS_DC)
@@ -2522,6 +2538,9 @@ static const zend_module_dep memcached_deps[] = {
 #ifdef HAVE_MEMCACHED_SESSION
     ZEND_MOD_REQUIRED("session")
 #endif
+#ifdef HAVA_MEMCACHED_IGBINARY
+	ZEND_MOD_REQUIRED("igbinary")
+#endif
 #ifdef HAVE_SPL
     ZEND_MOD_REQUIRED("spl")
 #endif
@@ -2622,6 +2641,12 @@ static void php_memc_register_constants(INIT_FUNC_ARGS)
 	 */
 
     REGISTER_MEMC_CLASS_CONST_LONG(RES_PAYLOAD_FAILURE, MEMC_RES_PAYLOAD_FAILURE);
+
+	/*
+	 * Serializer types.
+	 */
+	REGISTER_MEMC_CLASS_CONST_LONG(SERIALIZER_PHP, SERIALIZER_PHP);
+	REGISTER_MEMC_CLASS_CONST_LONG(SERIALIZER_IGBINARY, SERIALIZER_IGBINARY);
 
 
 	#undef REGISTER_MEMC_CLASS_CONST_LONG
