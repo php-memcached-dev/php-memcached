@@ -44,3 +44,4 @@ Release_TS_inline
 Debug_TS
 memcached*.tgz
 run-tests.php
+cscope.out
