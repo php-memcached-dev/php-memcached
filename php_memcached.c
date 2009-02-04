@@ -292,12 +292,12 @@ static void php_memc_get_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 	MEMC_METHOD_INIT_VARS;
 
 	if (by_key) {
-		if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ss|fz", &server_key,
+		if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ss|f!z", &server_key,
 								  &server_key_len, &key, &key_len, &fci, &fcc, &cas_token) == FAILURE) {
 			return;
 		}
 	} else {
-		if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|fz", &key, &key_len,
+		if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|f!z", &key, &key_len,
 								  &fci, &fcc, &cas_token) == FAILURE) {
 			return;
 		}
@@ -334,12 +334,16 @@ static void php_memc_get_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 
 		if (memcached_fetch_result(i_obj->memc, &result, &status) == NULL) {
 
+			/* This is for historical reasons */
+			if (status == MEMCACHED_END)
+				status = MEMCACHED_NOTFOUND;
+
 			/*
 			 * If the result wasn't found, and we have the read-through callback, invoke
 			 * it to get the value. The CAS token will be 0, because we cannot generate it
 			 * ourselves.
 			 */
-			if ((status == MEMCACHED_END || status == MEMCACHED_NOTFOUND) && fci.size != 0) {
+			if (status == MEMCACHED_NOTFOUND && fci.size != 0) {
 				status = php_memc_do_cache_callback(getThis(), &fci, &fcc, key, key_len,
 													return_value TSRMLS_DC);
 				ZVAL_DOUBLE(cas_token, 0);
@@ -611,12 +615,12 @@ static void php_memc_getDelayed_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_
 	MEMC_METHOD_INIT_VARS;
 
 	if (by_key) {
-		if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sa|bf", &server_key,
+		if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sa|bf!", &server_key,
 								  &server_key_len, &keys, &with_cas, &fci, &fcc) == FAILURE) {
 			return;
 		}
 	} else {
-		if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "a|bf", &keys, &with_cas,
+		if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "a|bf!", &keys, &with_cas,
 								  &fci, &fcc) == FAILURE) {
 			return;
 		}
