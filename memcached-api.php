@@ -95,9 +95,9 @@ class Memcached {
 
 	public function setByKey( $server_key, $key, $value, $expiration = 0 ) {}
 
-	public function setMulti( $array, $expiration = 0 ) {}
+	public function setMulti( array $items, $expiration = 0 ) {}
 
-	public function setMultiByKey( $server_key, $array, $expiration = 0 ) {}
+	public function setMultiByKey( $server_key, array $items, $expiration = 0 ) {}
 
 	public function cas( $token, $key, $value, $expiration = 0 ) {}
 
@@ -119,9 +119,9 @@ class Memcached {
 
 	public function replaceByKey( $serve_key, $key, $value, $expiration = 0 ) {}
 
-	public function delete( $key, $expiration = 0 ) {}
+	public function delete( $key, $time = 0 ) {}
 
-	public function deleteByKey( $key, $expiration = 0 ) {}
+	public function deleteByKey( $key, $time = 0 ) {}
 
 	public function increment( $key, $offset = 1) {}
 
@@ -139,7 +139,7 @@ class Memcached {
 
 	public function getServerByKey( $server_key ) {}
 
-	public function flush( ) {}
+	public function flush( $delay = 0 ) {}
 	
 	public function getResultCode( ) {}
 

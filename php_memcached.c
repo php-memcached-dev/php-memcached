@@ -17,6 +17,8 @@
 /* $ Id: $ */
 
 /* TODO
+ * - set LIBKETAMA_COMPATIBLE as the default?
+ * - add payload flag for IS_BOOL?
  */
 
 #ifdef HAVE_CONFIG_H
@@ -837,16 +839,16 @@ PHP_METHOD(Memcached, setByKey)
 }
 /* }}} */
 
-/* {{{ Memcached::setMulti(array entries [, int expiration ])
-   Sets the keys/values specified in the entries array */
+/* {{{ Memcached::setMulti(array items [, int expiration ])
+   Sets the keys/values specified in the items array */
 PHP_METHOD(Memcached, setMulti)
 {
 	php_memc_setMulti_impl(INTERNAL_FUNCTION_PARAM_PASSTHRU, 0);
 }
 /* }}} */
 
-/* {{{ Memcached::setMultiByKey(string server_key, array entries [, int expiration ])
-   Sets the keys/values specified in the entries array on the server identified by the given server key */
+/* {{{ Memcached::setMultiByKey(string server_key, array items [, int expiration ])
+   Sets the keys/values specified in the items array on the server identified by the given server key */
 PHP_METHOD(Memcached, setMultiByKey)
 {
 	php_memc_setMulti_impl(INTERNAL_FUNCTION_PARAM_PASSTHRU, 1);
@@ -991,6 +993,8 @@ static void php_memc_store_impl(INTERNAL_FUNCTION_PARAMETERS, int op, zend_bool 
 	int   key_len = 0;
 	char *server_key = NULL;
 	int   server_key_len = 0;
+	char *s_value = NULL;
+	int   s_value_len = 0;
 	zval *value;
 	time_t expiration = 0;
 	char  *payload;
@@ -1000,14 +1004,32 @@ static void php_memc_store_impl(INTERNAL_FUNCTION_PARAMETERS, int op, zend_bool 
 	MEMC_METHOD_INIT_VARS;
 
 	if (by_key) {
-		if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ssz|l", &server_key,
-								  &server_key_len, &key, &key_len, &value, &expiration) == FAILURE) {
-			return;
+		if (op == MEMC_OP_APPEND || op == MEMC_OP_PREPEND) {
+			if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sss", &server_key,
+									  &server_key_len, &key, &key_len, &s_value, &s_value_len, &expiration) == FAILURE) {
+				return;
+			}
+			MAKE_STD_ZVAL(value);
+			ZVAL_STRINGL(value, s_value, s_value_len, 1);
+		} else {
+			if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ssz|l", &server_key,
+									  &server_key_len, &key, &key_len, &value, &expiration) == FAILURE) {
+				return;
+			}
 		}
 	} else {
-		if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sz|l", &key, &key_len,
-								  &value, &expiration) == FAILURE) {
-			return;
+		if (op == MEMC_OP_APPEND || op == MEMC_OP_PREPEND) {
+			if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ss", &key, &key_len,
+									  &s_value, &s_value_len) == FAILURE) {
+				return;
+			}
+			MAKE_STD_ZVAL(value);
+			ZVAL_STRINGL(value, s_value, s_value_len, 1);
+		} else {
+			if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sz|l", &key, &key_len,
+									  &value, &expiration) == FAILURE) {
+				return;
+			}
 		}
 		server_key     = key;
 		server_key_len = key_len;
@@ -1035,6 +1057,9 @@ static void php_memc_store_impl(INTERNAL_FUNCTION_PARAMETERS, int op, zend_bool 
 	}
 
 	payload = php_memc_zval_to_payload(value, &payload_len, &flags TSRMLS_CC);
+	if (op == MEMC_OP_APPEND || op == MEMC_OP_PREPEND) {
+		zval_ptr_dtor(&value);
+	}
 	if (payload == NULL) {
 		MEMC_G(rescode) = MEMC_RES_PAYLOAD_FAILURE;
 		RETURN_FALSE;
@@ -1158,7 +1183,7 @@ static void php_memc_cas_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 }
 /* }}} */
 
-/* {{{ Memcached::delete(string key [, int expiration ])
+/* {{{ Memcached::delete(string key [, int time ])
    Deletes the given key */
 PHP_METHOD(Memcached, delete)
 {
@@ -1166,7 +1191,7 @@ PHP_METHOD(Memcached, delete)
 }
 /* }}} */
 
-/* {{{ Memcached::deleteByKey(string server_key, string key [, int expiration ])
+/* {{{ Memcached::deleteByKey(string server_key, string key [, int time ])
    Deletes the given key from the server identified by the server key */
 PHP_METHOD(Memcached, deleteByKey)
 {
@@ -1501,22 +1526,22 @@ PHP_METHOD(Memcached, getStats)
 }
 /* }}} */
 
-/* {{{ Memcached::flush([ int expiration ])
+/* {{{ Memcached::flush([ int delay ])
    Flushes the data on all the servers */
 static PHP_METHOD(Memcached, flush)
 {
-	time_t expiration = 0;
+	time_t delay = 0;
 	memcached_return status;
 	MEMC_METHOD_INIT_VARS;
 
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|l", &expiration) == FAILURE) {
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|l", &delay) == FAILURE) {
 		return;
 	}
 
 	MEMC_METHOD_FETCH_OBJECT;
 	MEMC_G(rescode) = MEMCACHED_SUCCESS;
 
-	status = memcached_flush(i_obj->memc, expiration);
+	status = memcached_flush(i_obj->memc, delay);
 	if (php_memc_handle_error(status TSRMLS_CC) < 0) {
 		RETURN_FALSE;
 	}
@@ -2302,14 +2327,14 @@ ZEND_END_ARG_INFO()
 
 static
 ZEND_BEGIN_ARG_INFO_EX(arginfo_setMulti, 0, 0, 1)
-	ZEND_ARG_ARRAY_INFO(0, entries, 0)
+	ZEND_ARG_ARRAY_INFO(0, items, 0)
 	ZEND_ARG_INFO(0, expiration)
 ZEND_END_ARG_INFO()
 
 static
 ZEND_BEGIN_ARG_INFO_EX(arginfo_setMultiByKey, 0, 0, 2)
 	ZEND_ARG_INFO(0, server_key)
-	ZEND_ARG_ARRAY_INFO(0, entries, 0)
+	ZEND_ARG_ARRAY_INFO(0, items, 0)
 	ZEND_ARG_INFO(0, expiration)
 ZEND_END_ARG_INFO()
 
@@ -2393,14 +2418,14 @@ ZEND_END_ARG_INFO()
 static
 ZEND_BEGIN_ARG_INFO_EX(arginfo_delete, 0, 0, 1)
 	ZEND_ARG_INFO(0, key)
-	ZEND_ARG_INFO(0, expiration)
+	ZEND_ARG_INFO(0, time)
 ZEND_END_ARG_INFO()
 
 static
 ZEND_BEGIN_ARG_INFO_EX(arginfo_deleteByKey, 0, 0, 2)
 	ZEND_ARG_INFO(0, server_key)
 	ZEND_ARG_INFO(0, key)
-	ZEND_ARG_INFO(0, expiration)
+	ZEND_ARG_INFO(0, time)
 ZEND_END_ARG_INFO()
 
 static
@@ -2417,7 +2442,7 @@ ZEND_END_ARG_INFO()
 
 static
 ZEND_BEGIN_ARG_INFO_EX(arginfo_flush, 0, 0, 0)
-	ZEND_ARG_INFO(0, expiration)
+	ZEND_ARG_INFO(0, delay)
 ZEND_END_ARG_INFO()
 
 static
