@@ -1,3 +1,5 @@
+Description
+-----------
 This extension uses libmemcached library to provide API for communicating with
 memcached servers.
 
@@ -7,8 +9,5 @@ by alleviating database load.
 
 Resources
 ---------
- libmemcached:
-   http://tangent.org/552/libmemcached.html
-
- memcached:
-   http://www.danga.com/memcached/
+ * [libmemcached](http://tangent.org/552/libmemcached.html)
+ * [memcached](http://www.danga.com/memcached/)
