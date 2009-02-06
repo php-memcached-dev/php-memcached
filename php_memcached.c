@@ -915,7 +915,7 @@ static void php_memc_setMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 			server_key_len = str_key_len;
 		}
 		status = memcached_set_by_key(i_obj->memc, server_key, server_key_len, str_key,
-									  str_key_len, payload, payload_len, expiration, flags);
+									  str_key_len-1, payload, payload_len, expiration, flags);
 		efree(payload);
 
 		if (php_memc_handle_error(status TSRMLS_CC) < 0) {
