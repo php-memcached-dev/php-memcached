@@ -1,5 +1,9 @@
 memcached extension changelog
 
+Version 0.1.3
+-------------
+	* Bludgeon bug #15896 (Memcached setMulti error) into submission.
+
 Version 0.1.2
 -------------
 	* Fix bug #15896 (Memcached setMulti error).

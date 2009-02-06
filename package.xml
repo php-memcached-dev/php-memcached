@@ -17,8 +17,8 @@ http://pear.php.net/dtd/package-2.0.xsd">
  </lead>
  <date>2009-02-06</date>
  <version>
-  <release>0.1.2</release>
-  <api>0.1.2</api>
+  <release>0.1.3</release>
+  <api>0.1.3</api>
  </version>
  <stability>
   <release>beta</release>
@@ -26,13 +26,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
  </stability>
  <license uri="http://www.php.net/license">PHP</license>
  <notes>
-- Fix bug #15896 (Memcached setMulti error).
-- Check for empty key in getServerByKey().
-- Allow passing 'null' for callbacks.
-- get() with cas token fetching wasn't erroring out properly.
-- Rename certain parameters in the API to be more clear.
-- Allow only strings as the append/prepend value.
-- Remove expiration parameter from append/prepend.
+- Bludgeon bug #15896 (Memcached setMulti error) into submission.
  </notes>
  <contents>
   <dir name="/">
@@ -65,6 +59,15 @@ http://pear.php.net/dtd/package-2.0.xsd">
  <changelog>
   <release>
    <stability><release>beta</release><api>beta</api></stability>
+   <version><release>0.1.3</release><api>0.1.3</api></version>
+   <date>2009-02-06</date>
+   <notes>
+- Bludgeon bug #15896 (Memcached setMulti error) into submission.
+   </notes>
+  </release>
+
+  <release>
+   <stability><release>beta</release><api>beta</api></stability>
    <version><release>0.1.2</release><api>0.1.2</api></version>
    <date>2009-02-06</date>
    <notes>
@@ -77,6 +80,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
 - Remove expiration parameter from append/prepend.
    </notes>
   </release>
+
   <release>
    <stability><release>beta</release><api>beta</api></stability>
    <version><release>0.1.1</release><api>0.1.1</api></version>
@@ -87,6 +91,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
 - Swap internal compressed and serialized flags to be compatible with other clients.
    </notes>
   </release>
+
   <release>
    <stability><release>beta</release><api>beta</api></stability>
    <version><release>0.1.0</release><api>0.1.0</api></version>
