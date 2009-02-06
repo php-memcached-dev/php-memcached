@@ -140,6 +140,8 @@ class Memcached {
 	public function getServerByKey( $server_key ) {}
 
 	public function flush( $delay = 0 ) {}
+
+	public function getStats( ) {}
 	
 	public function getResultCode( ) {}
 
