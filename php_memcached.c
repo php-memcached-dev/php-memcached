@@ -19,6 +19,7 @@
 /* TODO
  * - set LIBKETAMA_COMPATIBLE as the default?
  * - add payload flag for IS_BOOL?
+ * - add getVersion()
  */
 
 #ifdef HAVE_CONFIG_H
@@ -1383,6 +1384,7 @@ PHP_METHOD(Memcached, addServers)
 			}
 		}
 
+		/* catch-all for all errors */
 		php_error_docref(NULL TSRMLS_CC, E_WARNING, "could not add entry #%d to the server list", i+1);
 	}
 
@@ -1441,6 +1443,11 @@ PHP_METHOD(Memcached, getServerByKey)
 
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &server_key, &server_key_len) == FAILURE) {
 		return;
+	}
+
+	if (server_key_len == 0) {
+		MEMC_G(rescode) = MEMCACHED_BAD_KEY_PROVIDED;
+		RETURN_FALSE;
 	}
 
 	MEMC_METHOD_FETCH_OBJECT;
