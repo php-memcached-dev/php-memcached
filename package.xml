@@ -15,10 +15,10 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <email>andrei@php.net</email>
   <active>yes</active>
  </lead>
- <date>2009-02-02</date>
+ <date>2009-02-06</date>
  <version>
-  <release>0.1.1</release>
-  <api>0.1.1</api>
+  <release>0.1.2</release>
+  <api>0.1.2</api>
  </version>
  <stability>
   <release>beta</release>
@@ -26,14 +26,18 @@ http://pear.php.net/dtd/package-2.0.xsd">
  </stability>
  <license uri="http://www.php.net/license">PHP</license>
  <notes>
-- Add OPT_LIBKETAMA_COMPATIBLE option.
-- Implement addServers() method.
-- Swap internal compressed and serialized flags to be compatible with other clients.
+- Fix bug #15896 (Memcached setMulti error).
+- Check for empty key in getServerByKey().
+- Allow passing 'null' for callbacks.
+- get() with cas token fetching wasn't erroring out properly.
+- Rename certain parameters in the API to be more clear.
+- Allow only strings as the append/prepend value.
+- Remove expiration parameter from append/prepend.
  </notes>
  <contents>
   <dir name="/">
    <file role='doc' name='EXPERIMENTAL'/>
-   <file role='doc' name='README'/>
+   <file role='doc' name='README.markdown'/>
    <file role='doc' name='CREDITS'/>
    <file role='doc' name='LICENSE'/>
    <file role='doc' name='ChangeLog'/>
@@ -59,6 +63,20 @@ http://pear.php.net/dtd/package-2.0.xsd">
  <providesextension>memcached</providesextension>
  <extsrcrelease/>
  <changelog>
+  <release>
+   <stability><release>beta</release><api>beta</api></stability>
+   <version><release>0.1.2</release><api>0.1.2</api></version>
+   <date>2009-02-06</date>
+   <notes>
+- Fix bug #15896 (Memcached setMulti error).
+- Check for empty key in getServerByKey().
+- Allow passing 'null' for callbacks.
+- get() with cas token fetching wasn't erroring out properly.
+- Rename certain parameters in the API to be more clear.
+- Allow only strings as the append/prepend value.
+- Remove expiration parameter from append/prepend.
+   </notes>
+  </release>
   <release>
    <stability><release>beta</release><api>beta</api></stability>
    <version><release>0.1.1</release><api>0.1.1</api></version>

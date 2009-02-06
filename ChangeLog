@@ -1,5 +1,15 @@
 memcached extension changelog
 
+Version 0.1.2
+-------------
+	* Fix bug #15896 (Memcached setMulti error).
+	* Check for empty key in getServerByKey().
+	* Allow passing 'null' for callbacks.
+	* get() with cas token fetching wasn't erroring out properly.
+	* Rename certain parameters in the API to be more clear.
+	* Allow only strings as the append/prepend value.
+	* Remove expiration parameter from append/prepend.
+
 Version 0.1.1
 -------------
 	* Add OPT_LIBKETAMA_COMPATIBLE option.
