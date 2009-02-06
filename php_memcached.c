@@ -912,7 +912,7 @@ static void php_memc_setMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 
 		if (!by_key) {
 			server_key     = str_key;
-			server_key_len = str_key_len;
+			server_key_len = str_key_len-1;
 		}
 		status = memcached_set_by_key(i_obj->memc, server_key, server_key_len, str_key,
 									  str_key_len-1, payload, payload_len, expiration, flags);
