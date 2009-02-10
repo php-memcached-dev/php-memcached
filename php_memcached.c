@@ -125,6 +125,10 @@ static zend_class_entry *spl_ce_RuntimeException = NULL;
 
 #if (PHP_MAJOR_VERSION == 5 && PHP_MINOR_VERSION < 3)
 const zend_fcall_info empty_fcall_info = { 0, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0 };
+#undef ZEND_BEGIN_ARG_INFO_EX
+#define ZEND_BEGIN_ARG_INFO_EX(name, pass_rest_by_reference, return_reference, required_num_args)   \
+    static zend_arg_info name[] = {                                                                       \
+        { NULL, 0, NULL, 0, 0, 0, pass_rest_by_reference, return_reference, required_num_args },
 #endif
 
 ZEND_DECLARE_MODULE_GLOBALS(php_memcached)
@@ -2261,23 +2265,19 @@ PS_GC_FUNC(memcached)
 /* }}} */
 
 /* {{{ methods arginfo */
-static
 ZEND_BEGIN_ARG_INFO_EX(arginfo___construct, 0, 0, 0)
 	ZEND_ARG_INFO(0, persistent_id)
 ZEND_END_ARG_INFO()
 
-static
 ZEND_BEGIN_ARG_INFO(arginfo_getResultCode, 0)
 ZEND_END_ARG_INFO()
 
-static
 ZEND_BEGIN_ARG_INFO_EX(arginfo_get, 0, 0, 1)
 	ZEND_ARG_INFO(0, key)
 	ZEND_ARG_INFO(0, cache_cb)
 	ZEND_ARG_INFO(1, cas_token)
 ZEND_END_ARG_INFO()
 
-static
 ZEND_BEGIN_ARG_INFO_EX(arginfo_getByKey, 0, 0, 2)
 	ZEND_ARG_INFO(0, server_key)
 	ZEND_ARG_INFO(0, key)
@@ -2285,27 +2285,23 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_getByKey, 0, 0, 2)
 	ZEND_ARG_INFO(1, cas_token)
 ZEND_END_ARG_INFO()
 
-static
 ZEND_BEGIN_ARG_INFO_EX(arginfo_getMulti, 0, 0, 1)
 	ZEND_ARG_ARRAY_INFO(0, keys, 0)
 	ZEND_ARG_INFO(1, cas_tokens)
 ZEND_END_ARG_INFO()
 
-static
 ZEND_BEGIN_ARG_INFO_EX(arginfo_getMultiByKey, 0, 0, 2)
 	ZEND_ARG_INFO(0, server_key)
 	ZEND_ARG_ARRAY_INFO(0, keys, 0)
 	ZEND_ARG_INFO(1, cas_tokens)
 ZEND_END_ARG_INFO()
 
-static
 ZEND_BEGIN_ARG_INFO_EX(arginfo_getDelayed, 0, 0, 1)
 	ZEND_ARG_ARRAY_INFO(0, keys, 0)
 	ZEND_ARG_INFO(0, with_cas)
 	ZEND_ARG_INFO(0, value_cb)
 ZEND_END_ARG_INFO()
 
-static
 ZEND_BEGIN_ARG_INFO_EX(arginfo_getDelayedByKey, 0, 0, 2)
 	ZEND_ARG_INFO(0, server_key)
 	ZEND_ARG_ARRAY_INFO(0, keys, 0)
@@ -2313,22 +2309,18 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_getDelayedByKey, 0, 0, 2)
 	ZEND_ARG_INFO(0, value_cb)
 ZEND_END_ARG_INFO()
 
-static
 ZEND_BEGIN_ARG_INFO(arginfo_fetch, 0)
 ZEND_END_ARG_INFO()
 
-static
 ZEND_BEGIN_ARG_INFO(arginfo_fetchAll, 0)
 ZEND_END_ARG_INFO()
 
-static
 ZEND_BEGIN_ARG_INFO_EX(arginfo_set, 0, 0, 2)
 	ZEND_ARG_INFO(0, key)
 	ZEND_ARG_INFO(0, value)
 	ZEND_ARG_INFO(0, expiration)
 ZEND_END_ARG_INFO()
 
-static
 ZEND_BEGIN_ARG_INFO_EX(arginfo_setByKey, 0, 0, 3)
 	ZEND_ARG_INFO(0, server_key)
 	ZEND_ARG_INFO(0, key)
@@ -2336,27 +2328,23 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_setByKey, 0, 0, 3)
 	ZEND_ARG_INFO(0, expiration)
 ZEND_END_ARG_INFO()
 
-static
 ZEND_BEGIN_ARG_INFO_EX(arginfo_setMulti, 0, 0, 1)
 	ZEND_ARG_ARRAY_INFO(0, items, 0)
 	ZEND_ARG_INFO(0, expiration)
 ZEND_END_ARG_INFO()
 
-static
 ZEND_BEGIN_ARG_INFO_EX(arginfo_setMultiByKey, 0, 0, 2)
 	ZEND_ARG_INFO(0, server_key)
 	ZEND_ARG_ARRAY_INFO(0, items, 0)
 	ZEND_ARG_INFO(0, expiration)
 ZEND_END_ARG_INFO()
 
-static
 ZEND_BEGIN_ARG_INFO_EX(arginfo_add, 0, 0, 2)
 	ZEND_ARG_INFO(0, key)
 	ZEND_ARG_INFO(0, value)
 	ZEND_ARG_INFO(0, expiration)
 ZEND_END_ARG_INFO()
 
-static
 ZEND_BEGIN_ARG_INFO_EX(arginfo_addByKey, 0, 0, 3)
 	ZEND_ARG_INFO(0, server_key)
 	ZEND_ARG_INFO(0, key)
@@ -2364,14 +2352,12 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_addByKey, 0, 0, 3)
 	ZEND_ARG_INFO(0, expiration)
 ZEND_END_ARG_INFO()
 
-static
 ZEND_BEGIN_ARG_INFO_EX(arginfo_replace, 0, 0, 2)
 	ZEND_ARG_INFO(0, key)
 	ZEND_ARG_INFO(0, value)
 	ZEND_ARG_INFO(0, expiration)
 ZEND_END_ARG_INFO()
 
-static
 ZEND_BEGIN_ARG_INFO_EX(arginfo_replaceByKey, 0, 0, 3)
 	ZEND_ARG_INFO(0, server_key)
 	ZEND_ARG_INFO(0, key)
@@ -2379,14 +2365,12 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_replaceByKey, 0, 0, 3)
 	ZEND_ARG_INFO(0, expiration)
 ZEND_END_ARG_INFO()
 
-static
 ZEND_BEGIN_ARG_INFO_EX(arginfo_append, 0, 0, 2)
 	ZEND_ARG_INFO(0, key)
 	ZEND_ARG_INFO(0, value)
 	ZEND_ARG_INFO(0, expiration)
 ZEND_END_ARG_INFO()
 
-static
 ZEND_BEGIN_ARG_INFO_EX(arginfo_appendByKey, 0, 0, 3)
 	ZEND_ARG_INFO(0, server_key)
 	ZEND_ARG_INFO(0, key)
@@ -2394,14 +2378,12 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_appendByKey, 0, 0, 3)
 	ZEND_ARG_INFO(0, expiration)
 ZEND_END_ARG_INFO()
 
-static
 ZEND_BEGIN_ARG_INFO_EX(arginfo_prepend, 0, 0, 2)
 	ZEND_ARG_INFO(0, key)
 	ZEND_ARG_INFO(0, value)
 	ZEND_ARG_INFO(0, expiration)
 ZEND_END_ARG_INFO()
 
-static
 ZEND_BEGIN_ARG_INFO_EX(arginfo_prependByKey, 0, 0, 3)
 	ZEND_ARG_INFO(0, server_key)
 	ZEND_ARG_INFO(0, key)
@@ -2409,7 +2391,6 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_prependByKey, 0, 0, 3)
 	ZEND_ARG_INFO(0, expiration)
 ZEND_END_ARG_INFO()
 
-static
 ZEND_BEGIN_ARG_INFO_EX(arginfo_cas, 0, 0, 3)
 	ZEND_ARG_INFO(0, cas_token)
 	ZEND_ARG_INFO(0, key)
@@ -2417,7 +2398,6 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_cas, 0, 0, 3)
 	ZEND_ARG_INFO(0, expiration)
 ZEND_END_ARG_INFO()
 
-static
 ZEND_BEGIN_ARG_INFO_EX(arginfo_casByKey, 0, 0, 4)
 	ZEND_ARG_INFO(0, cas_token)
 	ZEND_ARG_INFO(0, server_key)
@@ -2426,69 +2406,57 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_casByKey, 0, 0, 4)
 	ZEND_ARG_INFO(0, expiration)
 ZEND_END_ARG_INFO()
 
-static
 ZEND_BEGIN_ARG_INFO_EX(arginfo_delete, 0, 0, 1)
 	ZEND_ARG_INFO(0, key)
 	ZEND_ARG_INFO(0, time)
 ZEND_END_ARG_INFO()
 
-static
 ZEND_BEGIN_ARG_INFO_EX(arginfo_deleteByKey, 0, 0, 2)
 	ZEND_ARG_INFO(0, server_key)
 	ZEND_ARG_INFO(0, key)
 	ZEND_ARG_INFO(0, time)
 ZEND_END_ARG_INFO()
 
-static
 ZEND_BEGIN_ARG_INFO_EX(arginfo_increment, 0, 0, 1)
 	ZEND_ARG_INFO(0, key)
 	ZEND_ARG_INFO(0, offset)
 ZEND_END_ARG_INFO()
 
-static
 ZEND_BEGIN_ARG_INFO_EX(arginfo_decrement, 0, 0, 1)
 	ZEND_ARG_INFO(0, key)
 	ZEND_ARG_INFO(0, offset)
 ZEND_END_ARG_INFO()
 
-static
 ZEND_BEGIN_ARG_INFO_EX(arginfo_flush, 0, 0, 0)
 	ZEND_ARG_INFO(0, delay)
 ZEND_END_ARG_INFO()
 
-static
 ZEND_BEGIN_ARG_INFO_EX(arginfo_addServer, 0, 0, 2)
 	ZEND_ARG_INFO(0, host)
 	ZEND_ARG_INFO(0, port)
 	ZEND_ARG_INFO(0, weight)
 ZEND_END_ARG_INFO()
 
-static
 ZEND_BEGIN_ARG_INFO(arginfo_addServers, 0)
 	ZEND_ARG_ARRAY_INFO(0, servers, 0)
 ZEND_END_ARG_INFO()
 
-static
 ZEND_BEGIN_ARG_INFO(arginfo_getServerList, 0)
 ZEND_END_ARG_INFO()
 
-static
 ZEND_BEGIN_ARG_INFO(arginfo_getServerByKey, 0)
 	ZEND_ARG_INFO(0, server_key)
 ZEND_END_ARG_INFO()
 
-static
 ZEND_BEGIN_ARG_INFO(arginfo_getOption, 0)
 	ZEND_ARG_INFO(0, option)
 ZEND_END_ARG_INFO()
 
-static
 ZEND_BEGIN_ARG_INFO(arginfo_setOption, 0)
 	ZEND_ARG_INFO(0, option)
 	ZEND_ARG_INFO(0, value)
 ZEND_END_ARG_INFO()
 
-static
 ZEND_BEGIN_ARG_INFO(arginfo_getStats, 0)
 ZEND_END_ARG_INFO()
 /* }}} */
