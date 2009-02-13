@@ -1622,16 +1622,8 @@ static PHP_METHOD(Memcached, getOption)
 		}
 
 		case MEMC_OPT_SERIALIZER:
-		{
-			switch (i_obj->serializer) {
-				case SERIALIZER_IGBINARY:
-					RETURN_STRINGL("igbinary", sizeof("igbinary")-1, 1);
-					break;
-
-				default: // SERIALIZER_PHP
-					RETURN_STRINGL("php", sizeof("php")-1, 1);
-			}
-		}
+			RETURN_LONG((long)i_obj->serializer);
+			break;
 
 		case MEMCACHED_BEHAVIOR_SOCKET_SEND_SIZE:
 		case MEMCACHED_BEHAVIOR_SOCKET_RECV_SIZE:
@@ -1710,20 +1702,19 @@ static PHP_METHOD(Memcached, setOption)
 
 		case MEMC_OPT_SERIALIZER:
 		{
-			convert_to_string(value);
-			/* igbinary serializator */
+			convert_to_long(value);
+			/* igbinary serializer */
 #if HAVE_MEMCACHED_IGBINARY
-			if (strcasecmp(Z_STRVAL_P(value), "igbinary") == 0) {
+			if (Z_LVAL_P(value) == SERIALIZER_IGBINARY) {
 				i_obj->serializer = SERIALIZER_IGBINARY;
 			} else
 #endif
-			/* php serializator */
-			if (strcasecmp(Z_STRVAL_P(value), "php") == 0) {
+			/* php serializer */
+			if (Z_LVAL_P(value) == SERIALIZER_PHP) {
 				i_obj->serializer = SERIALIZER_PHP;
-
 			} else {
 				i_obj->serializer = SERIALIZER_PHP;
-				php_error_docref(NULL TSRMLS_CC, E_WARNING, "invalid serializator provided");
+				php_error_docref(NULL TSRMLS_CC, E_WARNING, "invalid serializer provided");
 				RETURN_FALSE;
 			}
 
@@ -1967,37 +1958,40 @@ static int php_memc_zval_from_payload(zval *value, char *payload, size_t payload
         }
 	}
 
-	if (flags & MEMC_VAL_SERIALIZED && flags & MEMC_VAL_IGBINARY) {
+	if (flags & MEMC_VAL_SERIALIZED) {
+
+		if (flags & MEMC_VAL_IGBINARY) {
 #if HAVE_MEMCACHED_IGBINARY
-		if (igbinary_unserialize((uint8_t *)payload, payload_len, &value)) {
-			ZVAL_FALSE(value);
+			if (igbinary_unserialize((uint8_t *)payload, payload_len, &value)) {
+				ZVAL_FALSE(value);
 
-			if (flags & MEMC_VAL_COMPRESSED) {
-				efree(payload);
+				if (flags & MEMC_VAL_COMPRESSED) {
+					efree(payload);
+				}
+
+				php_error_docref(NULL TSRMLS_CC, E_WARNING, "could not unserialize value with igbinary");
+				return -1;
 			}
-
-			php_error_docref(NULL TSRMLS_CC, E_WARNING, "could not unserialize value with igbinary");
-			return -1;
-		}
 #else
-		php_error_docref(NULL TSRMLS_CC, E_WARNING, "could not unserialize value, no igbinary support");
-		return -1;
-#endif
-	} else if (flags & MEMC_VAL_SERIALIZED) {
-		const char *payload_tmp = payload;
-		php_unserialize_data_t var_hash;
-
-		PHP_VAR_UNSERIALIZE_INIT(var_hash);
-		if (!php_var_unserialize(&value, (const unsigned char **)&payload_tmp, payload_tmp + payload_len, &var_hash TSRMLS_CC)) {
-			ZVAL_FALSE(value);
-			PHP_VAR_UNSERIALIZE_DESTROY(var_hash);
-			if (flags & MEMC_VAL_COMPRESSED) {
-				efree(payload);
-			}
-			php_error_docref(NULL TSRMLS_CC, E_WARNING, "could not unserialize value");
+			php_error_docref(NULL TSRMLS_CC, E_WARNING, "could not unserialize value, no igbinary support");
 			return -1;
+#endif
+		} else {
+			const char *payload_tmp = payload;
+			php_unserialize_data_t var_hash;
+
+			PHP_VAR_UNSERIALIZE_INIT(var_hash);
+			if (!php_var_unserialize(&value, (const unsigned char **)&payload_tmp, payload_tmp + payload_len, &var_hash TSRMLS_CC)) {
+				ZVAL_FALSE(value);
+				PHP_VAR_UNSERIALIZE_DESTROY(var_hash);
+				if (flags & MEMC_VAL_COMPRESSED) {
+					efree(payload);
+				}
+				php_error_docref(NULL TSRMLS_CC, E_WARNING, "could not unserialize value");
+				return -1;
+			}
+			PHP_VAR_UNSERIALIZE_DESTROY(var_hash);
 		}
-		PHP_VAR_UNSERIALIZE_DESTROY(var_hash);
 	} else {
 		payload[payload_len] = 0;
 		if (flags & MEMC_VAL_IS_LONG) {

@@ -11,7 +11,7 @@ PHP_ARG_WITH(libmemcached-dir,  for libmemcached,
 PHP_ARG_ENABLE(memcached-session, whether to enable memcached session handler support,
 [  --disable-memcached-session      Disable memcached session handler support], yes, no)
 
-PHP_ARG_ENABLE(memcached-igbinary, whether to enable memcached serializer support,
+PHP_ARG_ENABLE(memcached-igbinary, whether to enable memcached igbinary serializer support,
 [  --enable-memcached-igbinary      Enable memcached igbinary serializer support], no, no)
 
 if test -z "$PHP_ZLIB_DIR"; then
