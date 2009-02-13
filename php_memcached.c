@@ -114,11 +114,11 @@ typedef struct {
 
 	memcached_st *memc;
 
-	unsigned is_persistent;
+	unsigned is_persistent:1;
 	const char *plist_key;
 	int plist_key_len;
 
-	unsigned compression;
+	unsigned compression:1;
 
 	enum memcached_serializer serializer;
 } php_memc_t;
