@@ -346,7 +346,7 @@ static void php_memc_get_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 
 		status = memcached_mget_by_key(i_obj->memc, server_key, server_key_len, &key, &key_len, 1);
 
-		if (php_memc_handle_error(status) < 0) {
+		if (php_memc_handle_error(status TSRMLS_CC) < 0) {
 			RETURN_FALSE;
 		}
 
@@ -366,11 +366,11 @@ static void php_memc_get_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 			 */
 			if (status == MEMCACHED_NOTFOUND && fci.size != 0) {
 				status = php_memc_do_cache_callback(getThis(), &fci, &fcc, key, key_len,
-													return_value TSRMLS_DC);
+													return_value TSRMLS_CC);
 				ZVAL_DOUBLE(cas_token, 0);
 			}
 
-			if (php_memc_handle_error(status) < 0) {
+			if (php_memc_handle_error(status TSRMLS_CC) < 0) {
 				memcached_result_free(&result);
 				RETURN_FALSE;
 			}
@@ -424,7 +424,7 @@ static void php_memc_get_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 		 */
 		if (payload == NULL && status == MEMCACHED_NOTFOUND && fci.size != 0) {
 			status = php_memc_do_cache_callback(getThis(), &fci, &fcc, key, key_len,
-												return_value TSRMLS_DC);
+												return_value TSRMLS_CC);
 		}
 
 		(void)memcached_fetch(i_obj->memc, NULL, NULL, &dummy_length, &dummy_flags, &dummy_status);
@@ -553,7 +553,7 @@ static void php_memc_getMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 
 	efree(mkeys);
 	efree(mkeys_len);
-	if (php_memc_handle_error(status) < 0) {
+	if (php_memc_handle_error(status TSRMLS_CC) < 0) {
 		RETURN_FALSE;
 	}
 
@@ -594,7 +594,7 @@ static void php_memc_getMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 
 	memcached_result_free(&result);
 
-	if (status != MEMCACHED_END && php_memc_handle_error(status) < 0) {
+	if (status != MEMCACHED_END && php_memc_handle_error(status TSRMLS_CC) < 0) {
 		zval_dtor(return_value);
 		RETURN_FALSE;
 	}
@@ -702,7 +702,7 @@ static void php_memc_getDelayed_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_
 
 	efree(mkeys);
 	efree(mkeys_len);
-	if (php_memc_handle_error(status) < 0) {
+	if (php_memc_handle_error(status TSRMLS_CC) < 0) {
 		RETURN_FALSE;
 	}
 
@@ -726,7 +726,7 @@ static void php_memc_getDelayed_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_
 		if (status == MEMCACHED_END) {
 			status = MEMCACHED_SUCCESS;
 		}
-		if (php_memc_handle_error(status) < 0) {
+		if (php_memc_handle_error(status TSRMLS_CC) < 0) {
 			RETURN_FALSE;
 		}
 	}
@@ -841,7 +841,7 @@ PHP_METHOD(Memcached, fetchAll)
 
 	memcached_result_free(&result);
 
-	if (status != MEMCACHED_END && php_memc_handle_error(status) < 0) {
+	if (status != MEMCACHED_END && php_memc_handle_error(status TSRMLS_CC) < 0) {
 		zval_dtor(return_value);
 		RETURN_FALSE;
 	}
