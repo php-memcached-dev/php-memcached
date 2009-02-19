@@ -5,7 +5,7 @@ Memcached options
 --FILE--
 <?php 
 $m = new Memcached();
-$m->setOption(Memcached::OPT_SERIALIZER, "php");
+$m->setOption(Memcached::OPT_SERIALIZER, Memcached::SERIALIZER_PHP);
 
 var_dump($m->getOption(Memcached::OPT_COMPRESSION));
 var_dump($m->getOption(Memcached::OPT_SERIALIZER));
@@ -20,7 +20,7 @@ var_dump($m->getOption(Memcached::OPT_HASH) == Memcached::HASH_MURMUR);
 ?>
 --EXPECTF--
 bool(true)
-string(3) "php"
+int(1)
 
 Warning: Memcached::getOption(): no servers defined in %s on line %d
 NULL
