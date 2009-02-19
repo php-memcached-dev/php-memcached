@@ -18,7 +18,6 @@
 
 /* TODO
  * - set LIBKETAMA_COMPATIBLE as the default?
- * - add payload flag for IS_BOOL?
  * - add getVersion()
  */
 
@@ -68,8 +67,8 @@
 #define MEMC_VAL_COMPRESSED    (1<<1)
 #define MEMC_VAL_IS_LONG       (1<<2)
 #define MEMC_VAL_IS_DOUBLE     (1<<3)
-#define MEMC_VAL_IS_BOOL       (1<<4)
-#define MEMC_VAL_IGBINARY      (1<<5)
+#define MEMC_VAL_IGBINARY      (1<<4)
+#define MEMC_VAL_IS_BOOL       (1<<5)
 
 #define MEMC_COMPRESS_THRESHOLD 100
 
