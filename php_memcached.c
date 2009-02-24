@@ -18,7 +18,6 @@
 
 /* TODO
  * - set LIBKETAMA_COMPATIBLE as the default?
- * - add getVersion()
  */
 
 #ifdef HAVE_CONFIG_H
@@ -1569,6 +1568,50 @@ PHP_METHOD(Memcached, getStats)
 }
 /* }}} */
 
+
+/* {{{ Memcached::getVersion()
+   Returns the version of each memcached server in the pool */
+PHP_METHOD(Memcached, getVersion)
+{
+	memcached_server_st *servers;
+	unsigned int i, servers_count;
+	char *hostport = NULL;
+	char version[16];
+	int hostport_len, version_len;
+	memcached_return status = MEMCACHED_SUCCESS;
+	MEMC_METHOD_INIT_VARS;
+
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "") == FAILURE) {
+		return;
+	}
+
+	MEMC_METHOD_FETCH_OBJECT;
+
+	array_init(return_value);
+	servers = memcached_server_list(i_obj->memc);
+	servers_count = memcached_server_count(i_obj->memc);
+	if (servers == NULL) {
+		return;
+	}
+
+	status = memcached_version(i_obj->memc);
+	if (php_memc_handle_error(status TSRMLS_CC) < 0) {
+		zval_dtor(return_value);
+		RETURN_FALSE;
+	}
+
+	for (i = 0; i < servers_count; i++) {
+		hostport_len = spprintf(&hostport, 0, "%s:%d", servers[i].hostname, servers[i].port);
+		version_len = snprintf(version, sizeof(version), "%d.%d.%d",
+							   servers[i].major_version, servers[i].minor_version,
+							   servers[i].micro_version);
+
+		add_assoc_stringl_ex(return_value, hostport, hostport_len+1, version, version_len, 1);
+		efree(hostport);
+	}
+}
+/* }}} */
+
 /* {{{ Memcached::flush([ int delay ])
    Flushes the data on all the servers */
 static PHP_METHOD(Memcached, flush)
@@ -2554,6 +2597,9 @@ ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO(arginfo_getStats, 0)
 ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO(arginfo_getVersion, 0)
+ZEND_END_ARG_INFO()
 /* }}} */
 
 /* {{{ memcached_class_methods */
@@ -2599,6 +2645,7 @@ static zend_function_entry memcached_class_methods[] = {
     MEMC_ME(getServerByKey,     arginfo_getServerByKey)
 
 	MEMC_ME(getStats,           arginfo_getStats)
+	MEMC_ME(getVersion,         arginfo_getVersion)
 
     MEMC_ME(flush,              arginfo_flush)
 
