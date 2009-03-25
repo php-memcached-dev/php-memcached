@@ -51,7 +51,7 @@ PHP_MINFO_FUNCTION(memcached);
 #define PHP_MEMCACHED_VERSION "0.1.4"
 
 #ifdef ZTS
-#define MEMC_G(v) TSRMG(php_memcached_globals_id, zend_php_memcache_globals *, v)
+#define MEMC_G(v) TSRMG(php_memcached_globals_id, zend_php_memcached_globals *, v)
 #else
 #define MEMC_G(v) (php_memcached_globals.v)
 #endif
