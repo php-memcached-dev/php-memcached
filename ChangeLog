@@ -1,5 +1,13 @@
 memcached extension changelog
 
+Version 0.1.5
+-------------
+	* Implement getVersion().
+	* Add support for preserving boolean value types.
+	* Fix crash when child class does not call constructor.
+	* Fix bug #16084 (Crash when addServers is called with an associative array).
+	* ZTS compilation fixes.
+
 Version 0.1.4
 -------------
 	* Fix compilation against PHP 5.3.

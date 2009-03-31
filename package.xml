@@ -15,10 +15,10 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <email>andrei@php.net</email>
   <active>yes</active>
  </lead>
- <date>2009-02-13</date>
+ <date>2009-03-31</date>
  <version>
-  <release>0.1.4</release>
-  <api>0.1.4</api>
+  <release>0.1.5</release>
+  <api>0.1.5</api>
  </version>
  <stability>
   <release>beta</release>
@@ -26,8 +26,11 @@ http://pear.php.net/dtd/package-2.0.xsd">
  </stability>
  <license uri="http://www.php.net/license">PHP</license>
  <notes>
-- Fix compilation against PHP 5.3.
-- Add support for 'igbinary' serializer (Oleg Grenrus)
+- Implement getVersion().
+- Add support for preserving boolean value types.
+- Fix crash when child class does not call constructor.
+- Fix bug #16084 (Crash when addServers is called with an associative array).
+- ZTS compilation fixes.
  </notes>
  <contents>
   <dir name="/">
@@ -58,6 +61,19 @@ http://pear.php.net/dtd/package-2.0.xsd">
  <providesextension>memcached</providesextension>
  <extsrcrelease/>
  <changelog>
+  <release>
+   <stability><release>beta</release><api>beta</api></stability>
+   <version><release>0.1.5</release><api>0.1.5</api></version>
+   <date>2009-03-31</date>
+   <notes>
+- Implement getVersion().
+- Add support for preserving boolean value types.
+- Fix crash when child class does not call constructor.
+- Fix bug #16084 (Crash when addServers is called with an associative array).
+- ZTS compilation fixes.
+   </notes>
+  </release>
+
   <release>
    <stability><release>beta</release><api>beta</api></stability>
    <version><release>0.1.4</release><api>0.1.4</api></version>

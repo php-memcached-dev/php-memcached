@@ -48,7 +48,7 @@ PHP_MINIT_FUNCTION(memcached);
 PHP_MSHUTDOWN_FUNCTION(memcached);
 PHP_MINFO_FUNCTION(memcached);
 
-#define PHP_MEMCACHED_VERSION "0.1.4"
+#define PHP_MEMCACHED_VERSION "0.1.5"
 
 #ifdef ZTS
 #define MEMC_G(v) TSRMG(php_memcached_globals_id, zend_php_memcached_globals *, v)
