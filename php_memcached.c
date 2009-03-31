@@ -2723,6 +2723,16 @@ static void php_memc_register_constants(INIT_FUNC_ARGS)
 	REGISTER_MEMC_CLASS_CONST_LONG(OPT_PREFIX_KEY,  MEMC_OPT_PREFIX_KEY);
 	REGISTER_MEMC_CLASS_CONST_LONG(OPT_SERIALIZER,  MEMC_OPT_SERIALIZER);
 
+
+	/*
+	 * Indicate whether igbinary serializer is available
+	 */
+#ifdef HAVE_MEMCACHED_IGBINARY
+	REGISTER_MEMC_CLASS_CONST_BOOL(IGBINARY_SUPPORT, 1);
+#else
+	REGISTER_MEMC_CLASS_CONST_BOOL(IGBINARY_SUPPORT, 0);
+#endif
+
 	/*
 	 * libmemcached behavior options
 	 */
