@@ -1395,14 +1395,32 @@ PHP_METHOD(Memcached, addServers)
 		entry_size = zend_hash_num_elements(Z_ARRVAL_PP(entry));
 
 		if (entry_size > 1) {
-			zend_hash_index_find(Z_ARRVAL_PP(entry), 0, (void **)&z_host);
-			zend_hash_index_find(Z_ARRVAL_PP(entry), 1, (void **)&z_port);
+			zend_hash_internal_pointer_reset(Z_ARRVAL_PP(entry));
+
+			/* Check that we have a host */
+			if (zend_hash_get_current_data(Z_ARRVAL_PP(entry), (void **)&z_host) == FAILURE) {
+				php_error_docref(NULL TSRMLS_CC, E_WARNING, "could not get server host for entry #%d", i+1);
+				continue;
+			}
+
+			/* Check that we have a port */
+			if (zend_hash_move_forward(Z_ARRVAL_PP(entry)) == FAILURE ||
+				zend_hash_get_current_data(Z_ARRVAL_PP(entry), (void **)&z_port) == FAILURE) {
+				php_error_docref(NULL TSRMLS_CC, E_WARNING, "could not get server port for entry #%d", i+1);
+				continue;
+			}
+
 			convert_to_string_ex(z_host);
 			convert_to_long_ex(z_port);
 
 			weight = 0;
 			if (entry_size > 2) {
-				zend_hash_index_find(Z_ARRVAL_PP(entry), 2, (void **)&z_weight);
+				/* Try to get weight */
+				if (zend_hash_move_forward(Z_ARRVAL_PP(entry)) == FAILURE ||
+					zend_hash_get_current_data(Z_ARRVAL_PP(entry), (void **)&z_weight) == FAILURE) {
+					php_error_docref(NULL TSRMLS_CC, E_WARNING, "could not get server weight for entry #%d", i+1);
+				}
+
 				convert_to_long_ex(z_weight);
 				weight = Z_LVAL_PP(z_weight);
 			}
@@ -1567,7 +1585,6 @@ PHP_METHOD(Memcached, getStats)
 	memcached_stat_free(i_obj->memc, stats);
 }
 /* }}} */
-
 
 /* {{{ Memcached::getVersion()
    Returns the version of each memcached server in the pool */
