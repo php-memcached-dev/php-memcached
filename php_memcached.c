@@ -18,6 +18,8 @@
 
 /* TODO
  * - set LIBKETAMA_COMPATIBLE as the default?
+ * - consider setOptions()
+ * - fix unserialize(serialize($memc)) 
  */
 
 #ifdef HAVE_CONFIG_H
