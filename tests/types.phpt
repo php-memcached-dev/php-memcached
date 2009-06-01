@@ -36,17 +36,17 @@ $data = array(
 	array('object_dummy', new testclass()),
 );
 
+foreach ($data as $key => $value) {
+	$m->delete($key);
+}
+
 foreach ($data as $types) {
 	$m->set($types[0], $types[1]);
 	$actual = $m->get($types[0]);
-	$cas = null;
-	$actual_cas = $m->get($types[0], $cas);
-	if ($types[1] !== $actual || $types[1] !== $actual_cas) {
-		if (isset($cas) && is_object($types[1])
+	if ($types[1] !== $actual) {
+		if (is_object($types[1])
 			&& $types[1] == $actual
-			&& $types[1] == $actual_cas
-			&& get_class($types[1]) == get_class($actual)
-			&& get_class($types[1]) == get_class($actual_cas)) {
+			&& get_class($types[1]) == get_class($actual)) {
 			continue;
 		}
 		echo "=== $types[0] ===\n";
@@ -54,11 +54,7 @@ foreach ($data as $types) {
 		var_dump($types[1]);
 		echo "Actual: ";
 		var_dump($actual);
-		echo "Actual CAS: ";
-		var_dump($actual_cas);
-		echo "Cas: ", $cas, "\n";
 	}
-
 }
 
 ?>

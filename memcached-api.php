@@ -75,9 +75,9 @@ class Memcached {
 
 	public function __construct( $persistent_id = '' ) {}
 	
-	public function get( $key, &$cas_token = null, $cache_cb = null ) {}
+	public function get( $key, $cache_cb = null, &$cas_token = null ) {}
 
-	public function getByKey( $server_key, $key, $cache_cb = null ) {}
+	public function getByKey( $server_key, $key, $cache_cb = null, &$cas_token = null ) {}
 
 	public function getMulti( array $keys, &$cas_tokens = null, $flags = 0 ) {}
 
