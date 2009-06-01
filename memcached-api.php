@@ -79,9 +79,9 @@ class Memcached {
 
 	public function getByKey( $server_key, $key, $cache_cb = null ) {}
 
-	public function getMulti( array $keys, &$cas_tokens = null ) {}
+	public function getMulti( array $keys, &$cas_tokens = null, $preserve_order = false ) {}
 
-	public function getMultiByKey( $server_key, array $keys, &$cas_tokens = null ) {}
+	public function getMultiByKey( $server_key, array $keys, &$cas_tokens = null, $preserve_order = false ) {}
 
 	public function getDelayed( array $keys, $with_cas = null, $value_cb = null ) {}
 
