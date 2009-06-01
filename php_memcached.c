@@ -19,7 +19,7 @@
 /* TODO
  * - set LIBKETAMA_COMPATIBLE as the default?
  * - consider setOptions()
- * - fix unserialize(serialize($memc)) 
+ * - fix unserialize(serialize($memc))
  */
 
 #ifdef HAVE_CONFIG_H
@@ -70,6 +70,12 @@
 #define MEMC_VAL_IS_DOUBLE     (1<<3)
 #define MEMC_VAL_IGBINARY      (1<<4)
 #define MEMC_VAL_IS_BOOL       (1<<5)
+
+/****************************************
+  "get" operation flags
+****************************************/
+#define MEMC_GET_PRESERVE_ORDER (1<<0)
+
 
 #define MEMC_COMPRESS_THRESHOLD 100
 
@@ -490,26 +496,28 @@ static void php_memc_getMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 	zval *cas_tokens = NULL;
 	uint64_t orig_cas_flag;
 	zval *value;
-	zend_bool preserve_order = 0;  
+	long get_flags = 0;
 	int i = 0;
+	zend_bool preserve_order;
 	memcached_result_st result;
 	memcached_return status = MEMCACHED_SUCCESS;
 	MEMC_METHOD_INIT_VARS;
 
 	if (by_key) {
-		if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sa|zb", &server_key,
-								  &server_key_len, &keys, &cas_tokens,&preserve_order) == FAILURE) {
+		if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sa|zl", &server_key,
+								  &server_key_len, &keys, &cas_tokens, &get_flags) == FAILURE) {
 			return;
 		}
 	} else {
-		if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "a|zb", &keys, &cas_tokens, &preserve_order) == FAILURE) {
+		if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "a|zl", &keys, &cas_tokens, &get_flags) == FAILURE) {
 			return;
 		}
 	}
-    
+
 	MEMC_METHOD_FETCH_OBJECT;
 	MEMC_G(rescode) = MEMCACHED_SUCCESS;
 
+	preserve_order = (get_flags & MEMC_GET_PRESERVE_ORDER);
 	num_keys  = zend_hash_num_elements(Z_ARRVAL_P(keys));
 	mkeys     = safe_emalloc(num_keys, sizeof(char *), 0);
 	mkeys_len = safe_emalloc(num_keys, sizeof(size_t), 0);
@@ -526,8 +534,8 @@ static void php_memc_getMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 		if (Z_TYPE_PP(entry) == IS_STRING && Z_STRLEN_PP(entry) > 0) {
 			mkeys[i]     = Z_STRVAL_PP(entry);
 			mkeys_len[i] = Z_STRLEN_PP(entry);
-			if(preserve_order) {
-			 add_assoc_null_ex(return_value, mkeys[i], mkeys_len[i]+1);
+			if (preserve_order) {
+				add_assoc_null_ex(return_value, mkeys[i], mkeys_len[i]+1);
 			}
 			i++;
 		}
@@ -575,7 +583,7 @@ static void php_memc_getMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 		zval_dtor(cas_tokens);
 		array_init(cas_tokens);
 	}
-	
+
 	status = MEMCACHED_SUCCESS;
 	memcached_result_create(i_obj->memc, &result);
 	while ((memcached_fetch_result(i_obj->memc, &result, &status)) != NULL) {
@@ -2450,14 +2458,14 @@ ZEND_END_ARG_INFO()
 ZEND_BEGIN_ARG_INFO_EX(arginfo_getMulti, 0, 0, 1)
 	ZEND_ARG_ARRAY_INFO(0, keys, 0)
 	ZEND_ARG_INFO(1, cas_tokens)
-	ZEND_ARG_INFO(0, preserve_order)
+	ZEND_ARG_INFO(0, flags)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_getMultiByKey, 0, 0, 2)
 	ZEND_ARG_INFO(0, server_key)
 	ZEND_ARG_ARRAY_INFO(0, keys, 0)
 	ZEND_ARG_INFO(1, cas_tokens)
-	ZEND_ARG_INFO(0, preserve_order)
+	ZEND_ARG_INFO(0, flags)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_getDelayed, 0, 0, 1)
@@ -2811,6 +2819,10 @@ static void php_memc_register_constants(INIT_FUNC_ARGS)
 	REGISTER_MEMC_CLASS_CONST_LONG(SERIALIZER_PHP, SERIALIZER_PHP);
 	REGISTER_MEMC_CLASS_CONST_LONG(SERIALIZER_IGBINARY, SERIALIZER_IGBINARY);
 
+	/*
+	 * Flags.
+	 */
+	REGISTER_MEMC_CLASS_CONST_LONG(GET_PRESERVE_ORDER, MEMC_GET_PRESERVE_ORDER);
 
 	#undef REGISTER_MEMC_CLASS_CONST_LONG
 }
