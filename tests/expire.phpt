@@ -15,8 +15,8 @@ if (!$set || $v != 'foo') {
 sleep(3);
 $v = $m->get('will_expire');
 
-if (!is_null($v)) {
-	echo "Wanted a null value from get of expired value. Got:\n";
+if ($v !== false) {
+	echo "Wanted a false value from get of expired value. Got:\n";
 	var_dump($v);
 }
 ?>

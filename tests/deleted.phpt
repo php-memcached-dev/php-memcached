@@ -11,8 +11,8 @@ $m->set('eisaleeoo', "foo");
 $m->delete('eisaleeoo');
 $v = $m->get('eisaleeoo');
 
-if (!is_null($v)) {
-	echo "Vanted a null value from get. Got:\n";
+if ($v !== false) {
+	echo "Vanted a false value from get. Got:\n";
 	var_dump($v);
 }
 ?>
