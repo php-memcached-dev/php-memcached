@@ -1,5 +1,20 @@
 memcached extension changelog
 
+Version 0.2.0
+-------------
+	* Add JSON serializer support, requires PHP 5.2.10+.
+	* Add HAVE_JSON and HAVE_IGBINARY class constants that indicate
+	  whether the respective serializers are available.
+	* Add 'flags' parameter to getMulti() and getMultiByKey().
+	* Add GET_PRESERVE_ORDER class constant that can be used with
+	  abovementioned flags parameter to make the order of the keys in the
+	  response match the request.
+	* Fix an issue with retrieving 0-length payloads (FALSE boolean value).
+	* Refactor the way payload types are stored in memcached flags to optimize
+	  the structure and allow for future expansion. WARNING! You have to flush
+	  the cache when upgrading to this version.
+	* Add several tests.
+
 Version 0.1.5
 -------------
 	* Implement getVersion().

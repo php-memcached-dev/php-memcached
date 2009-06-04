@@ -15,10 +15,10 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <email>andrei@php.net</email>
   <active>yes</active>
  </lead>
- <date>2009-03-31</date>
+ <date>2009-06-04</date>
  <version>
-  <release>0.1.5</release>
-  <api>0.1.5</api>
+  <release>0.2.0</release>
+  <api>0.2.0</api>
  </version>
  <stability>
   <release>beta</release>
@@ -26,11 +26,17 @@ http://pear.php.net/dtd/package-2.0.xsd">
  </stability>
  <license uri="http://www.php.net/license">PHP</license>
  <notes>
-- Implement getVersion().
-- Add support for preserving boolean value types.
-- Fix crash when child class does not call constructor.
-- Fix bug #16084 (Crash when addServers is called with an associative array).
-- ZTS compilation fixes.
+- Refactor the way payload types are stored in memcached flags to optimize the structure
+  and allow for future expansion. WARNING! You have to flush the cache when upgrading from
+  an older version.
+- Add JSON serializer support, requires PHP 5.2.10+.
+- Add HAVE_JSON and HAVE_IGBINARY class constants that indicate whether the respective
+  serializers are available.
+- Add 'flags' parameter to getMulti() and getMultiByKey().
+- Add GET_PRESERVE_ORDER class constant that can be used with abovementioned flags
+  parameter to make the order of the keys in the response match the request.
+- Fix an issue with retrieving 0-length payloads (FALSE boolean value).
+- Add several tests.
  </notes>
  <contents>
   <dir name="/">
@@ -61,6 +67,25 @@ http://pear.php.net/dtd/package-2.0.xsd">
  <providesextension>memcached</providesextension>
  <extsrcrelease/>
  <changelog>
+  <release>
+   <stability><release>beta</release><api>beta</api></stability>
+   <version><release>0.2.0</release><api>0.2.0</api></version>
+   <date>2009-06-04</date>
+   <notes>
+- Refactor the way payload types are stored in memcached flags to optimize the structure
+  and allow for future expansion. WARNING! You have to flush the cache when upgrading from
+  an older version.
+- Add JSON serializer support, requires PHP 5.2.10+.
+- Add HAVE_JSON and HAVE_IGBINARY class constants that indicate whether the respective
+  serializers are available.
+- Add 'flags' parameter to getMulti() and getMultiByKey().
+- Add GET_PRESERVE_ORDER class constant that can be used with abovementioned flags
+  parameter to make the order of the keys in the response match the request.
+- Fix an issue with retrieving 0-length payloads (FALSE boolean value).
+- Add several tests.
+   </notes>
+  </release>
+
   <release>
    <stability><release>beta</release><api>beta</api></stability>
    <version><release>0.1.5</release><api>0.1.5</api></version>
