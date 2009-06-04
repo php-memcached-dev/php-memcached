@@ -2802,9 +2802,18 @@ static void php_memc_register_constants(INIT_FUNC_ARGS)
 	 * Indicate whether igbinary serializer is available
 	 */
 #ifdef HAVE_MEMCACHED_IGBINARY
-	REGISTER_MEMC_CLASS_CONST_LONG(IGBINARY_SUPPORT, 1);
+	REGISTER_MEMC_CLASS_CONST_LONG(HAVE_IGBINARY, 1);
 #else
-	REGISTER_MEMC_CLASS_CONST_LONG(IGBINARY_SUPPORT, 0);
+	REGISTER_MEMC_CLASS_CONST_LONG(HAVE_IGBINARY, 0);
+#endif
+
+	/*
+	 * Indicate whether json serializer is available
+	 */
+#ifdef HAVE_JSON_API
+	REGISTER_MEMC_CLASS_CONST_LONG(HAVE_JSON, 1);
+#else
+	REGISTER_MEMC_CLASS_CONST_LONG(HAVE_JSON, 0);
 #endif
 
 	/*
