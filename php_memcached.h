@@ -66,6 +66,11 @@ extern ps_module ps_mod_memcached;
 PS_FUNCS(memcached);
 #endif
 
+/* json serializer */
+#if (PHP_MAJOR_VERSION > 5) || (PHP_MAJOR_VERSION == 5 && PHP_MINOR_VERSION > 2) || (PHP_MAJOR_VERSION ==5 && PHP_MINOR_VERSION == 2 && PHP_RELEASE_VERSION > 9)
+#define HAVE_JSON_API 1
+#endif
+
 #endif /* PHP_MEMCACHED_H */
 
 
