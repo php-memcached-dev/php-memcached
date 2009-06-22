@@ -1841,6 +1841,31 @@ static PHP_METHOD(Memcached, getResultCode)
 }
 /* }}} */
 
+/* {{{ Memcached::getResultMessage()
+   Returns the result message from the last operation */
+static PHP_METHOD(Memcached, getResultMessage)
+{
+	MEMC_METHOD_INIT_VARS;
+
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "") == FAILURE) {
+		return;
+	}
+
+	MEMC_METHOD_FETCH_OBJECT;
+
+	switch (MEMC_G(rescode)) {
+		case MEMC_RES_PAYLOAD_FAILURE:
+			RETURN_STRING("PAYLOAD FAILURE", 1);
+			break;
+
+		default:
+			RETURN_STRING(memcached_strerror(i_obj->memc, MEMC_G(rescode)), 1);
+			break;
+	}
+
+}
+/* }}} */
+
 
 /****************************************
   Internal support code
@@ -2499,6 +2524,9 @@ ZEND_END_ARG_INFO()
 ZEND_BEGIN_ARG_INFO(arginfo_getResultCode, 0)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO(arginfo_getResultMessage, 0)
+ZEND_END_ARG_INFO()
+
 ZEND_BEGIN_ARG_INFO_EX(arginfo_get, 0, 0, 1)
 	ZEND_ARG_INFO(0, key)
 	ZEND_ARG_INFO(0, cache_cb)
@@ -2699,6 +2727,7 @@ static zend_function_entry memcached_class_methods[] = {
     MEMC_ME(__construct,        arginfo___construct)
 
     MEMC_ME(getResultCode,      arginfo_getResultCode)
+    MEMC_ME(getResultMessage,   arginfo_getResultMessage)
 
     MEMC_ME(get,                arginfo_get)
     MEMC_ME(getByKey,           arginfo_getByKey)
