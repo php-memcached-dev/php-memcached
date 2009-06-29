@@ -2358,22 +2358,29 @@ static int php_memc_do_result_callback(zval *memc_obj, zend_fcall_info *fci,
 /* {{{ session support */
 #if HAVE_MEMCACHED_SESSION
 
-#define MEMC_SESS_LOCK_ATTEMPTS   30
-#define MEMC_SESS_LOCK_WAIT       100000
+#define MEMC_SESS_LOCK_WAIT       150000
 #define MEMC_SESS_LOCK_EXPIRATION 30
 
 ps_module ps_mod_memcached = {
 	PS_MOD(memcached)
 };
 
-
 static int php_memc_sess_lock(memcached_st *memc, const char *key TSRMLS_DC)
 {
 	char *lock_key = NULL;
 	int lock_key_len = 0;
-	int attempts = MEMC_SESS_LOCK_ATTEMPTS;
-	time_t expiration = time(NULL) + MEMC_SESS_LOCK_EXPIRATION;
+	long attempts;
+	long lock_maxwait;
+	time_t expiration;
 	memcached_return status;
+	/* set max timeout for session_start = max_execution_time.  (c) Andrei Darashenka, Richter & Poweleit GmbH */
+
+	lock_maxwait = zend_ini_long(ZEND_STRL("max_execution_time"), 0);
+	if (lock_maxwait <= 0) {
+		lock_maxwait = MEMC_SESS_LOCK_EXPIRATION;
+	}
+	expiration  = time(NULL) + lock_maxwait + 1;
+	attempts = lock_maxwait * 1000000 / MEMC_SESS_LOCK_WAIT;
 
 	lock_key_len = spprintf(&lock_key, 0, "memc.sess.lock_key.%s", key);
 	while (attempts--) {
