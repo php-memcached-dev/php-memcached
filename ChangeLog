@@ -1,5 +1,13 @@
 memcached extension changelog
 
+Version 1.0.0
+-------------
+	* First stable release.
+	* Add getResultMessage() method.
+	* Fix OPT_RECV_TIMEOUT definition.
+	* Initialize Session lock wait to max execution time (if max execution
+	  time is unlimited, default to 30 seconds).
+
 Version 0.2.0
 -------------
 	* Add JSON serializer support, requires PHP 5.2.10+.

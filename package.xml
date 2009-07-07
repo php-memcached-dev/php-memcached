@@ -15,28 +15,22 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <email>andrei@php.net</email>
   <active>yes</active>
  </lead>
- <date>2009-06-04</date>
+ <date>2009-07-07</date>
  <version>
-  <release>0.2.0</release>
-  <api>0.2.0</api>
+  <release>1.0.0</release>
+  <api>1.0.0</api>
  </version>
  <stability>
-  <release>beta</release>
-  <api>beta</api>
+  <release>stable</release>
+  <api>stable</api>
  </stability>
  <license uri="http://www.php.net/license">PHP</license>
  <notes>
-- Refactor the way payload types are stored in memcached flags to optimize the structure
-  and allow for future expansion. WARNING! You have to flush the cache when upgrading from
-  an older version.
-- Add JSON serializer support, requires PHP 5.2.10+.
-- Add HAVE_JSON and HAVE_IGBINARY class constants that indicate whether the respective
-  serializers are available.
-- Add 'flags' parameter to getMulti() and getMultiByKey().
-- Add GET_PRESERVE_ORDER class constant that can be used with abovementioned flags
-  parameter to make the order of the keys in the response match the request.
-- Fix an issue with retrieving 0-length payloads (FALSE boolean value).
-- Add several tests.
+- First stable release.
+- Add getResultMessage() method.
+- Fix OPT_RECV_TIMEOUT definition.
+- Initialize Session lock wait to max execution time (if max execution
+  time is unlimited, default to 30 seconds).
  </notes>
  <contents>
   <dir name="/">
@@ -67,6 +61,19 @@ http://pear.php.net/dtd/package-2.0.xsd">
  <providesextension>memcached</providesextension>
  <extsrcrelease/>
  <changelog>
+  <release>
+   <stability><release>stable</release><api>stable</api></stability>
+   <version><release>1.0.0</release><api>1.0.0</api></version>
+   <date>2009-07-04</date>
+   <notes>
+- First stable release.
+- Add getResultMessage() method.
+- Fix OPT_RECV_TIMEOUT definition.
+- Initialize Session lock wait to max execution time (if max execution
+  time is unlimited, default to 30 seconds).
+   </notes>
+  </release>
+
   <release>
    <stability><release>beta</release><api>beta</api></stability>
    <version><release>0.2.0</release><api>0.2.0</api></version>

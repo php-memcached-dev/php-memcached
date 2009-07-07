@@ -145,6 +145,8 @@ class Memcached {
 	
 	public function getResultCode( ) {}
 
+	public function getResultMessage( ) {}
+
 }
 
 class MemcachedException extends Exception {
