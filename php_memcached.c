@@ -2046,7 +2046,7 @@ static char *php_memc_zval_to_payload(zval *value, size_t *payload_len, uint32_t
 		unsigned long payload_comp_len = buf.len + (buf.len / 500) + 25 + 1;
 		char *payload_comp = emalloc(payload_comp_len);
 
-		if (compress(payload_comp, &payload_comp_len, buf.c, buf.len) != Z_OK) {
+		if (compress((Bytef *)payload_comp, (uLongf *)&payload_comp_len, (const Bytef *)buf.c, buf.len) != Z_OK) {
 			php_error_docref(NULL TSRMLS_CC, E_WARNING, "could not compress value");
 			free(payload_comp);
 			smart_str_free(&buf);
@@ -2098,7 +2098,7 @@ static int php_memc_zval_from_payload(zval *value, char *payload, size_t payload
 			length = (unsigned long)payload_len * (1 << factor++);
 			buf = erealloc(buf, length + 1);
 			memset(buf, 0, length + 1);
-			status = uncompress(buf, &length, payload, payload_len);
+			status = uncompress((Bytef *)buf, (uLongf *)&length, (const Bytef *)payload, payload_len);
 		} while ((status==Z_BUF_ERROR) && (factor < maxfactor));
 
         payload = emalloc(length + 1);
@@ -2142,7 +2142,7 @@ static int php_memc_zval_from_payload(zval *value, char *payload, size_t payload
 			php_unserialize_data_t var_hash;
 
 			PHP_VAR_UNSERIALIZE_INIT(var_hash);
-			if (!php_var_unserialize(&value, (const unsigned char **)&payload_tmp, payload_tmp + payload_len, &var_hash TSRMLS_CC)) {
+			if (!php_var_unserialize(&value, (const unsigned char **)&payload_tmp, (const unsigned char *)payload_tmp + payload_len, &var_hash TSRMLS_CC)) {
 				ZVAL_FALSE(value);
 				PHP_VAR_UNSERIALIZE_DESTROY(var_hash);
 				if (flags & MEMC_VAL_COMPRESSED) {
