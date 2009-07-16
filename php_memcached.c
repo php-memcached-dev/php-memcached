@@ -48,7 +48,7 @@
 #ifdef HAVE_MEMCACHED_IGBINARY
 #include "ext/igbinary/igbinary.h"
 #endif
-#ifdef HAVE_MEMCACHED_IGBINARY
+#ifdef HAVE_JSON_API
 #include "ext/json/php_json.h"
 #endif
 
