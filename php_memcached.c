@@ -45,11 +45,14 @@
 
 #include "php_memcached.h"
 
-#ifdef HAVE_MEMCACHED_IGBINARY
+#if HAVE_MEMCACHED_IGBINARY
 #include "ext/igbinary/igbinary.h"
 #endif
-#ifdef HAVE_JSON_API
+#if HAVE_JSON_API
 #include "ext/json/php_json.h"
+#endif
+#if HAVE_JSON_API_5_3
+#include "ext/json/JSON_parser.h"
 #endif
 
 /****************************************
@@ -1993,7 +1996,12 @@ static char *php_memc_zval_to_payload(zval *value, size_t *payload_len, uint32_t
 #if HAVE_JSON_API
 				case SERIALIZER_JSON:
 				{
+
+#if HAVE_JSON_API_5_2
 					php_json_encode(&buf, value TSRMLS_CC);
+#elif HAVE_JSON_API_5_3
+					php_json_encode(&buf, value, 0 TSRMLS_CC); //options
+#endif
 					buf.c[buf.len] = 0;
 					MEMC_VAL_SET_TYPE(*flags, MEMC_VAL_IS_JSON);
 					break;
@@ -2157,9 +2165,13 @@ static int php_memc_zval_from_payload(zval *value, char *payload, size_t payload
 			break;
 
 		case MEMC_VAL_IS_JSON:
-#if HAVE_JSON_API
+#if HAVE_JSON_API_5_2
 			php_json_decode(value, payload, payload_len, 0 TSRMLS_CC);
-#else
+#elif HAVE_JSON_API_5_3
+			php_json_decode(value, payload, payload_len, 0, JSON_PARSER_DEFAULT_DEPTH TSRMLS_CC);
+#endif
+
+#if (!HAVE_JSON_API)
 			php_error_docref(NULL TSRMLS_CC, E_WARNING, "could not unserialize value, no json support");
 			return -1;
 #endif
@@ -2791,7 +2803,7 @@ static const zend_module_dep memcached_deps[] = {
 #ifdef HAVE_MEMCACHED_SESSION
     ZEND_MOD_REQUIRED("session")
 #endif
-#ifdef HAVA_MEMCACHED_IGBINARY
+#ifdef HAVE_MEMCACHED_IGBINARY
 	ZEND_MOD_REQUIRED("igbinary")
 #endif
 #ifdef HAVE_SPL
@@ -2837,7 +2849,7 @@ static void php_memc_register_constants(INIT_FUNC_ARGS)
 	/*
 	 * Indicate whether igbinary serializer is available
 	 */
-#ifdef HAVE_MEMCACHED_IGBINARY
+#if HAVE_MEMCACHED_IGBINARY
 	REGISTER_MEMC_CLASS_CONST_LONG(HAVE_IGBINARY, 1);
 #else
 	REGISTER_MEMC_CLASS_CONST_LONG(HAVE_IGBINARY, 0);
@@ -2846,7 +2858,7 @@ static void php_memc_register_constants(INIT_FUNC_ARGS)
 	/*
 	 * Indicate whether json serializer is available
 	 */
-#ifdef HAVE_JSON_API
+#if HAVE_JSON_API
 	REGISTER_MEMC_CLASS_CONST_LONG(HAVE_JSON, 1);
 #else
 	REGISTER_MEMC_CLASS_CONST_LONG(HAVE_JSON, 0);
@@ -2996,6 +3008,12 @@ PHP_MINFO_FUNCTION(memcached)
 	php_info_print_table_row(2, "igbinary support", "yes");
 #else
 	php_info_print_table_row(2, "igbinary support", "no");
+#endif
+
+#if HAVE_JSON_API
+	php_info_print_table_row(2, "json support", "yes");
+#else
+	php_info_print_table_row(2, "json support", "no");
 #endif
 
 	php_info_print_table_end();
