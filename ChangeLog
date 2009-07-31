@@ -2,7 +2,7 @@ memcached extension changelog
 
 Version 1.0.1
 -------------
-	* Fix php_json.h inclusion.
+	* Fix JSON API handling to account for PHP 5.2/5.3 version differences.
 
 Version 1.0.0
 -------------
