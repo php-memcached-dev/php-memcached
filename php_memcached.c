@@ -181,6 +181,7 @@ PHP_INI_BEGIN()
 #if HAVE_MEMCACHED_SESSION
 	STD_PHP_INI_ENTRY("memcached.sess_locking",		"1",		PHP_INI_ALL, OnUpdateBool,		sess_locking_enabled,	zend_php_memcached_globals,	php_memcached_globals)
 	STD_PHP_INI_ENTRY("memcached.sess_lock_wait",	"150000",	PHP_INI_ALL, OnUpdateLongGEZero,sess_lock_wait,			zend_php_memcached_globals,	php_memcached_globals)
+	STD_PHP_INI_ENTRY("memcached.sess_prefix",		"memc.sess.key.",	PHP_INI_ALL, OnUpdateString, sess_prefix,		zend_php_memcached_globals,	php_memcached_globals)
 #endif
 PHP_INI_END()
 /* }}} */
@@ -2211,6 +2212,7 @@ static void php_memc_init_globals(zend_php_memcached_globals *php_memcached_glob
 	MEMC_G(rescode) = MEMCACHED_SUCCESS;
 #if HAVE_MEMCACHED_SESSION
 	MEMC_G(sess_locking_enabled) = 1;
+	MEMC_G(sess_prefix) = NULL;
 	MEMC_G(sess_lock_wait) = 0;
 	MEMC_G(sess_locked) = 0;
 	MEMC_G(sess_lock_key) = NULL;
@@ -2409,7 +2411,7 @@ static int php_memc_sess_lock(memcached_st *memc, const char *key TSRMLS_DC)
 	expiration  = time(NULL) + lock_maxwait + 1;
 	attempts = lock_maxwait * 1000000 / lock_wait;
 
-	lock_key_len = spprintf(&lock_key, 0, "memc.sess.lock_key.%s", key);
+	lock_key_len = spprintf(&lock_key, 0, "lock.%s", key);
 	while (attempts--) {
 		status = memcached_add(memc, lock_key, lock_key_len, "1", sizeof("1")-1, expiration, 0);
 		if (status == MEMCACHED_SUCCESS) {
@@ -2446,6 +2448,12 @@ PS_OPEN_FUNC(memcached)
 		memc_sess = memcached_create(NULL);
 		if (memc_sess) {
 			status = memcached_server_push(memc_sess, servers);
+
+			if (memcached_callback_set(memc_sess, MEMCACHED_CALLBACK_PREFIX_KEY, MEMC_G(sess_prefix)) ==
+				MEMCACHED_BAD_KEY_PROVIDED) {
+				return FAILURE;
+			}
+
 			if (status == MEMCACHED_SUCCESS) {
 				PS_SET_MOD_DATA(memc_sess);
 				return SUCCESS;
@@ -2492,7 +2500,7 @@ PS_READ_FUNC(memcached)
 		}
 	}
 
-	sess_key_len = spprintf(&sess_key, 0, "memc.sess.key.%s", key);
+	sess_key_len = spprintf(&sess_key, 0, "%s", key);
 	payload = memcached_get(memc_sess, sess_key, sess_key_len, &payload_len, &flags, &status);
 	efree(sess_key);
 
@@ -2515,7 +2523,7 @@ PS_WRITE_FUNC(memcached)
 	memcached_return status;
 	memcached_st *memc_sess = PS_GET_MOD_DATA();
 
-	sess_key_len = spprintf(&sess_key, 0, "memc.sess.key.%s", key);
+	sess_key_len = spprintf(&sess_key, 0, "%s", key);
 	sess_lifetime = zend_ini_long(ZEND_STRL("session.gc_maxlifetime"), 0);
 	if (sess_lifetime > 0) {
 		expiration = time(NULL) + sess_lifetime;
@@ -2538,7 +2546,7 @@ PS_DESTROY_FUNC(memcached)
 	int sess_key_len = 0;
 	memcached_st *memc_sess = PS_GET_MOD_DATA();
 
-	sess_key_len = spprintf(&sess_key, 0, "memc.sess.key.%s", key);
+	sess_key_len = spprintf(&sess_key, 0, "%s", key);
 	memcached_delete(memc_sess, sess_key, sess_key_len, 0);
 	efree(sess_key);
 	if (MEMC_G(sess_locking_enabled)) {

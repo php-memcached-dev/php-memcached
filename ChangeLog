@@ -3,6 +3,8 @@ memcached extension changelog
 Version 1.0.1
 -------------
 	* Fix JSON API handling to account for PHP 5.2/5.3 version differences.
+	* Add memcached.sess_locking, memcached.sess_lock_wait, and
+	  memcached.sess_prefix INI entries.
 
 Version 1.0.0
 -------------
