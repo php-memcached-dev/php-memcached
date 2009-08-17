@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Collator class.
+ * Memcached class.
  */
 
 class Memcached {
