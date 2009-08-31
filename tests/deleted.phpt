@@ -12,7 +12,7 @@ $m->delete('eisaleeoo');
 $v = $m->get('eisaleeoo');
 
 if ($v !== false) {
-	echo "Vanted a false value from get. Got:\n";
+	echo "Wanted a false value from get. Got:\n";
 	var_dump($v);
 }
 ?>
