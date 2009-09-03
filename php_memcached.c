@@ -2001,6 +2001,20 @@ static PHP_METHOD(Memcached, getResultMessage)
 }
 /* }}} */
 
+/* {{{ Memcached::isPersistent()
+   Returns the true if instance uses a persistent connection */
+static PHP_METHOD(Memcached, isPersistent)
+{
+	MEMC_METHOD_INIT_VARS;
+
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "") == FAILURE) {
+		return;
+	}
+
+	MEMC_METHOD_FETCH_OBJECT;
+
+	RETURN_BOOL(i_obj->is_persistent);
+}
 
 /****************************************
   Internal support code
@@ -2930,6 +2944,9 @@ ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO(arginfo_getVersion, 0)
 ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO(arginfo_isPersistent, 0)
+ZEND_END_ARG_INFO()
 /* }}} */
 
 /* {{{ memcached_class_methods */
@@ -2982,7 +2999,9 @@ static zend_function_entry memcached_class_methods[] = {
 
     MEMC_ME(getOption,          arginfo_getOption)
     MEMC_ME(setOption,          arginfo_setOption)
-	MEMC_ME(setOptions,          arginfo_setOptions)
+    MEMC_ME(setOptions,         arginfo_setOptions)
+
+    MEMC_ME(isPersistent,       arginfo_isPersistent)
     { NULL, NULL, NULL }
 };
 #undef MEMC_ME

@@ -147,6 +147,8 @@ class Memcached {
 
 	public function getResultMessage( ) {}
 
+	public function isPersistent( ) {}
+
 }
 
 class MemcachedException extends Exception {
