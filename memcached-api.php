@@ -149,6 +149,8 @@ class Memcached {
 
 	public function isPersistent( ) {}
 
+	public function isPristine( ) {}
+
 }
 
 class MemcachedException extends Exception {
