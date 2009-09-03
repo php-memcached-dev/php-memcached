@@ -7,6 +7,12 @@
 class Memcached {
 
 	/**
+	 * Error codes etc.
+	 */
+	
+	const GET_ERROR_RETURN_VALUE;
+
+	/**
 	 * Libmemcached behavior options.
 	 */
 

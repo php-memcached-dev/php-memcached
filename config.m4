@@ -16,6 +16,8 @@ PHP_ARG_ENABLE(memcached-igbinary, whether to enable memcached igbinary serializ
 
 PHP_ARG_ENABLE(memcached-json, whether to enable memcached json serializer support,
 [  --enable-memcached-json          Enable memcached json serializer support], no, no)
+PHP_ARG_ENABLE(memcached-get-nulls, whether to return nulls on get commands if not found,
+[  --enable-memcached-get-nulls     Enable returning nulls from get commands if not found], no, no)
 
 if test -z "$PHP_ZLIB_DIR"; then
 PHP_ARG_WITH(zlib-dir, for ZLIB,
@@ -184,6 +186,14 @@ if test "$PHP_MEMCACHED" != "no"; then
     else
       AC_MSG_RESULT([$igbinary_inc_path])
     fi
+  fi
+
+  AC_MSG_CHECKING([for get to return null if not found])
+  if test "$PHP_MEMCACHED_GET_NULLS" != "no"; then
+    AC_MSG_RESULT([enabled])
+    AC_DEFINE(HAVE_MEMCACHED_GET_NULL, 1, [Whether to return nulls on get commands if not found])
+  else
+    AC_MSG_RESULT([disabled])
   fi
 
   AC_MSG_CHECKING([for memcached session support])
