@@ -45,3 +45,4 @@ Debug_TS
 memcached*.tgz
 run-tests.php
 cscope.out
+php_memcached.loT
