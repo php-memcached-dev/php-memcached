@@ -2462,6 +2462,7 @@ PS_OPEN_FUNC(memcached)
 				return SUCCESS;
 			}
 		} else {
+			memcached_server_list_free(servers);
 			php_error_docref(NULL TSRMLS_CC, E_WARNING, "could not allocate libmemcached structure");
 		}
 	} else {
