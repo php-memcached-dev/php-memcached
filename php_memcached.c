@@ -46,10 +46,10 @@
 #include "php_memcached.h"
 
 #if HAVE_JSON_API
-# if HAVE_PHP_MEMCACHED_JSON_5_2
+# if HAVE_JSON_API_5_2
 #  include "ext/json/php_json.h"
 # endif
-# if HAVE_PHP_MEMCACHED_JSON_5_3
+# if HAVE_JSON_API_5_3
 #  include "ext/json/JSON_parser.h"
 # endif
 #endif

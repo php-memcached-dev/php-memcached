@@ -21,6 +21,10 @@
 
 #include <libmemcached/memcached.h>
 
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
+
 extern zend_module_entry memcached_module_entry;
 #define phpext_memcached_ptr &memcached_module_entry
 
