@@ -2452,6 +2452,9 @@ PS_OPEN_FUNC(memcached)
 
 			if (memcached_callback_set(memc_sess, MEMCACHED_CALLBACK_PREFIX_KEY, MEMC_G(sess_prefix)) ==
 				MEMCACHED_BAD_KEY_PROVIDED) {
+
+				PS_SET_MOD_DATA(NULL);
+				memcached_free(memc_sess);
 				return FAILURE;
 			}
 
