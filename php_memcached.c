@@ -51,8 +51,9 @@
 #if HAVE_JSON_API
 #include "ext/json/php_json.h"
 #endif
-#if HAVE_JSON_API_5_3
-#include "ext/json/JSON_parser.h"
+
+#ifndef JSON_PARSER_DEFAULT_DEPTH
+#define JSON_PARSER_DEFAULT_DEPTH 512
 #endif
 
 /****************************************
@@ -127,13 +128,7 @@
 /****************************************
   Structures and definitions
 ****************************************/
-enum memcached_serializer {
-	SERIALIZER_PHP = 1,
-	SERIALIZER_IGBINARY = 2,
-	SERIALIZER_JSON = 3,
-};
 
-static int le_memc;
 typedef struct {
 	zend_object zo;
 
@@ -340,6 +335,8 @@ static void php_memc_get_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 	size_t payload_len = 0;
 	uint32_t flags = 0;
 	uint64_t cas = 0;
+	const char* keys[1] = { NULL };
+	size_t key_lens[1] = { 0 };
 	zval *cas_token = NULL;
 	zend_fcall_info fci = empty_fcall_info;
 	zend_fcall_info_cache fcc = empty_fcall_info_cache;
@@ -367,6 +364,9 @@ static void php_memc_get_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 		RETURN_FALSE;
 	}
 
+	keys[0] = key;
+	key_lens[0] = key_len;
+
 	if (cas_token) {
 
 		uint64_t orig_cas_flag;
@@ -379,7 +379,7 @@ static void php_memc_get_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 			memcached_behavior_set(i_obj->memc, MEMCACHED_BEHAVIOR_SUPPORT_CAS, 1);
 		}
 
-		status = memcached_mget_by_key(i_obj->memc, server_key, server_key_len, &key, &key_len, 1);
+		status = memcached_mget_by_key(i_obj->memc, server_key, server_key_len, keys, key_lens, 1);
 
 		if (php_memc_handle_error(status TSRMLS_CC) < 0) {
 			RETURN_FALSE;
@@ -448,7 +448,7 @@ static void php_memc_get_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 		memcached_return dummy_status;
 		bool return_value_set = false;
 
-		status = memcached_mget_by_key(i_obj->memc, server_key, server_key_len, &key, &key_len, 1);
+		status = memcached_mget_by_key(i_obj->memc, server_key, server_key_len, keys, key_lens, 1);
 		payload = memcached_fetch(i_obj->memc, NULL, NULL, &payload_len, &flags, &status);
 		/* This is for historical reasons */
 		if (status == MEMCACHED_END)
@@ -514,7 +514,7 @@ static void php_memc_getMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 	zval **entry = NULL;
 	char  *payload = NULL;
 	size_t payload_len = 0;
-	char **mkeys = NULL;
+	const char **mkeys = NULL;
 	size_t *mkeys_len = NULL;
 	char *res_key = NULL;
 	size_t res_key_len = 0;
@@ -671,7 +671,7 @@ static void php_memc_getDelayed_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_
 	zend_bool with_cas = 0;
 	size_t num_keys = 0;
 	zval **entry = NULL;
-	char **mkeys = NULL;
+	const char **mkeys = NULL;
 	size_t *mkeys_len = NULL;
 	uint64_t orig_cas_flag;
 	zend_fcall_info fci = empty_fcall_info;
