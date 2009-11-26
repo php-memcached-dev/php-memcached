@@ -44,6 +44,7 @@
 #include <zlib.h>
 
 #include "php_memcached.h"
+#include "fastlz/fastlz.h"
 
 #if HAVE_JSON_API
 # if HAVE_JSON_API_5_2
@@ -2043,17 +2044,20 @@ static char *php_memc_zval_to_payload(zval *value, size_t *payload_len, uint32_t
 	}
 
 	if (*flags & MEMC_VAL_COMPRESSED) {
-		unsigned long payload_comp_len = buf.len + (buf.len / 500) + 25 + 1;
-		char *payload_comp = emalloc(payload_comp_len);
-
-		if (compress((Bytef *)payload_comp, (uLongf *)&payload_comp_len, (const Bytef *)buf.c, buf.len) != Z_OK) {
-			php_error_docref(NULL TSRMLS_CC, E_WARNING, "could not compress value");
-			free(payload_comp);
+		/* Additional 5% for the data */
+		unsigned long payload_comp_len = (unsigned long)((buf.len + 1.05) + 1);
+		char *payload_comp = emalloc(payload_comp_len + sizeof(size_t));
+		payload = payload_comp;
+		memcpy(payload_comp, &buf.len, sizeof(size_t));
+		payload_comp += sizeof(size_t);
+		
+		if ((payload_comp_len = fastlz_compress(buf.c, buf.len, payload_comp)) == 0) {
+			php_error_docref(NULL TSRMLS_CC, E_WARNING, "fastlz_compress: could not compress value");
+			efree(payload_comp);
 			smart_str_free(&buf);
 			return NULL;
 		}
-		payload      = payload_comp;
-		*payload_len = payload_comp_len;
+		*payload_len = payload_comp_len + sizeof(size_t);
 		payload[*payload_len] = 0;
 	} else {
 		payload      = emalloc(buf.len + 1);
@@ -2077,40 +2081,28 @@ static int php_memc_zval_from_payload(zval *value, char *payload, size_t payload
 			"Could not handle non-existing value of length %zu", payload_len);
 		return -1;
 	} else if (payload == NULL) {
-		payload = dummy_payload;
+		ZVAL_NULL(value);
+		return 0;
 	}
 
 	if (flags & MEMC_VAL_COMPRESSED) {
-		/*
-		   From gzuncompress().
-
-		   zlib::uncompress() wants to know the output data length
-		   if none was given as a parameter
-		   we try from input length * 2 up to input length * 2^15
-		   doubling it whenever it wasn't big enough
-		   that should be eneugh for all real life cases
-		 */
-		unsigned int factor = 1, maxfactor = 16;
+		char *tmp = NULL;
+		size_t len;
 		unsigned long length;
-		int status;
-		char *buf = NULL;
-		do {
-			length = (unsigned long)payload_len * (1 << factor++);
-			buf = erealloc(buf, length + 1);
-			memset(buf, 0, length + 1);
-			status = uncompress((Bytef *)buf, (uLongf *)&length, (const Bytef *)payload, payload_len);
-		} while ((status==Z_BUF_ERROR) && (factor < maxfactor));
 
-        payload = emalloc(length + 1);
-        memcpy(payload, buf, length);
-        payload_len = length;
-		payload[payload_len] = 0;
-        efree(buf);
-        if (status != Z_OK) {
-			php_error_docref(NULL TSRMLS_CC, E_WARNING, "could not uncompress value");
-            efree(payload);
-            return -1;
-        }
+		/* This is copied from Ilia's patch */
+		memcpy(&len, payload, sizeof(size_t));
+		tmp = emalloc(len + 1);
+		payload_len -= sizeof(size_t);
+		payload += sizeof(size_t);
+
+		if ((length = fastlz_decompress(payload, payload_len, tmp, len)) == 0) {
+			php_error_docref(NULL TSRMLS_CC, E_WARNING, "fastlz_decompress: could not decompress value");
+			efree(tmp);
+			return -1;
+		}
+		payload = tmp;
+		payload_len = length;
 	}
 
 	payload[payload_len] = 0;
