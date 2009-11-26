@@ -41,10 +41,40 @@
 #include <ext/standard/php_var.h>
 #include <libmemcached/memcached.h>
 
-#include <zlib.h>
-
 #include "php_memcached.h"
-#include "fastlz/fastlz.h"
+
+#if MEMCACHED_HAVE_FASTLZ
+# include "fastlz/fastlz.h"
+#else
+# include <zlib.h>
+#endif
+
+/* Used to store the size of the block */
+#if defined(HAVE_INTTYPES_H)
+#include <inttypes.h>
+#elif defined(HAVE_STDINT_H)
+#include <stdint.h>
+#endif
+
+#ifdef PHP_WIN32
+# include "win32/php_stdint.h"
+#else
+# ifndef HAVE_INT32_T
+#  if SIZEOF_INT == 4
+typedef int int32_t;
+#  elif SIZEOF_LONG == 4
+typedef long int int32_t;
+#  endif
+# endif
+
+# ifndef HAVE_UINT32_T
+#  if SIZEOF_INT == 4
+typedef unsigned int uint32_t;
+#  elif SIZEOF_LONG == 4
+typedef unsigned long int uint32_t;
+#  endif
+# endif
+#endif
 
 #if HAVE_JSON_API
 # if HAVE_JSON_API_5_2
@@ -2046,18 +2076,23 @@ static char *php_memc_zval_to_payload(zval *value, size_t *payload_len, uint32_t
 	if (*flags & MEMC_VAL_COMPRESSED) {
 		/* Additional 5% for the data */
 		unsigned long payload_comp_len = (unsigned long)((buf.len + 1.05) + 1);
-		char *payload_comp = emalloc(payload_comp_len + sizeof(size_t));
+		char *payload_comp = emalloc(payload_comp_len + sizeof(uint32_t));
 		payload = payload_comp;
-		memcpy(payload_comp, &buf.len, sizeof(size_t));
-		payload_comp += sizeof(size_t);
+		memcpy(payload_comp, &buf.len, sizeof(uint32_t));
+		payload_comp += sizeof(uint32_t);
 		
+#if MEMCACHED_HAVE_FASTLZ		
 		if ((payload_comp_len = fastlz_compress(buf.c, buf.len, payload_comp)) == 0) {
-			php_error_docref(NULL TSRMLS_CC, E_WARNING, "fastlz_compress: could not compress value");
-			efree(payload_comp);
+#else
+		if (compress(payload_comp, &payload_comp_len, buf.c, buf.len) != Z_OK) {
+#endif /* MEMCACHED_HAVE_FASTLZ */
+			php_error_docref(NULL TSRMLS_CC, E_WARNING, "could not compress value");
+			efree(payload);
 			smart_str_free(&buf);
 			return NULL;
 		}
-		*payload_len = payload_comp_len + sizeof(size_t);
+
+		*payload_len = payload_comp_len + sizeof(uint32_t);
 		payload[*payload_len] = 0;
 	} else {
 		payload      = emalloc(buf.len + 1);
@@ -2091,13 +2126,18 @@ static int php_memc_zval_from_payload(zval *value, char *payload, size_t payload
 		unsigned long length;
 
 		/* This is copied from Ilia's patch */
-		memcpy(&len, payload, sizeof(size_t));
+		memcpy(&len, payload, sizeof(uint32_t));
 		tmp = emalloc(len + 1);
-		payload_len -= sizeof(size_t);
-		payload += sizeof(size_t);
+		payload_len -= sizeof(uint32_t);
+		payload += sizeof(uint32_t);
+		length = len;
 
+#if MEMCACHED_HAVE_FASTLZ 
 		if ((length = fastlz_decompress(payload, payload_len, tmp, len)) == 0) {
-			php_error_docref(NULL TSRMLS_CC, E_WARNING, "fastlz_decompress: could not decompress value");
+#else
+		if (uncompress(tmp, &length, payload, payload_len) != Z_OK) {
+#endif /* MEMCACHED_HAVE_FASTLZ */
+			php_error_docref(NULL TSRMLS_CC, E_WARNING, "could not decompress value");
 			efree(tmp);
 			return -1;
 		}
