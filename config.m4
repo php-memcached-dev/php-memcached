@@ -69,6 +69,7 @@ if test "$PHP_MEMCACHED" != "no"; then
     fi
   else
     dnl FastLZ requested
+    PHP_ADD_BUILD_DIR($ext_builddir/fastlz, 1)
     AC_DEFINE(MEMCACHED_HAVE_FASTLZ, 1, [Whether to use FastLZ compression])
   fi
 
