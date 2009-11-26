@@ -3090,6 +3090,12 @@ PHP_MINFO_FUNCTION(memcached)
 	php_info_print_table_row(2, "json support", "no");
 #endif
 
+#if HAVE_MEMCACHED_FASTLZ
+	php_info_print_table_row(2, "compression type", "FastLZ");
+#else
+	php_info_print_table_row(2, "compression type", "zlib");
+#endif
+
 	php_info_print_table_end();
 
 	DISPLAY_INI_ENTRIES();
