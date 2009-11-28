@@ -2177,7 +2177,7 @@ static int php_memc_zval_from_payload(zval *value, char *payload, size_t payload
 			"Could not handle non-existing value of length %zu", payload_len);
 		return -1;
 	} else if (payload == NULL) {
-		ZVAL_STRINGL(value, "", 0, 1);
+		ZVAL_EMPTY_STRING(value);
 		return 0;
 	}
 
