@@ -600,6 +600,7 @@ static void php_memc_getMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 
 	if (i == 0) {
 		MEMC_G(rescode) = MEMCACHED_BAD_KEY_PROVIDED;
+		zval_dtor(return_value);
 		efree(mkeys);
 		efree(mkeys_len);
 		RETURN_FALSE;
@@ -625,10 +626,11 @@ static void php_memc_getMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 			memcached_behavior_set(i_obj->memc, MEMCACHED_BEHAVIOR_SUPPORT_CAS, orig_cas_flag);
 		}
 	}
-
+	
 	efree(mkeys);
 	efree(mkeys_len);
 	if (php_memc_handle_error(status TSRMLS_CC) < 0) {
+		zval_dtor(return_value);
 		RETURN_FALSE;
 	}
 
@@ -657,9 +659,9 @@ static void php_memc_getMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 			zval_ptr_dtor(&value);
 			zval_dtor(return_value);
 			MEMC_G(rescode) = MEMC_RES_PAYLOAD_FAILURE;
+			memcached_result_free(&result);
 			RETURN_FALSE;
 		}
-
 		add_assoc_zval_ex(return_value, res_key, res_key_len+1, value);
 		if (cas_tokens) {
 			cas = memcached_result_cas(&result);
@@ -849,6 +851,7 @@ PHP_METHOD(Memcached, fetch)
 	MAKE_STD_ZVAL(value);
 
 	if (php_memc_zval_from_payload(value, payload, payload_len, flags TSRMLS_CC) < 0) {
+		memcached_result_free(&result);
 		zval_ptr_dtor(&value);
 		MEMC_G(rescode) = MEMC_RES_PAYLOAD_FAILURE;
 		RETURN_FALSE;
@@ -900,12 +903,13 @@ PHP_METHOD(Memcached, fetchAll)
 		MAKE_STD_ZVAL(value);
 
 		if (php_memc_zval_from_payload(value, payload, payload_len, flags TSRMLS_CC) < 0) {
+			memcached_result_free(&result);
 			zval_ptr_dtor(&value);
 			zval_dtor(return_value);
 			MEMC_G(rescode) = MEMC_RES_PAYLOAD_FAILURE;
 			RETURN_FALSE;
 		}
-
+		
 		MAKE_STD_ZVAL(entry);
 		array_init(entry);
 		add_assoc_stringl_ex(entry, ZEND_STRS("key"), res_key, res_key_len, 1);
@@ -1418,7 +1422,12 @@ PHP_METHOD(Memcached, addServer)
 	MEMC_METHOD_FETCH_OBJECT;
 	MEMC_G(rescode) = MEMCACHED_SUCCESS;
 
-	status = memcached_server_add_with_weight(i_obj->memc, host, port, weight);
+	if (host[0] == '/') { /* unix domain socket */
+		status = memcached_server_add_unix_socket_with_weight(i_obj->memc, host, weight);
+	} else {
+		status = memcached_server_add_with_weight(i_obj->memc, host, port, weight);
+	}
+
 	if (php_memc_handle_error(status TSRMLS_CC) < 0) {
 		RETURN_FALSE;
 	}
@@ -1771,6 +1780,136 @@ static PHP_METHOD(Memcached, getOption)
 }
 /* }}} */
 
+static int memcached_set_option(php_memc_t *i_obj, long option, zval *value TSRMLS_DC)
+{
+	memcached_behavior flag;
+
+    switch (option) {
+        case MEMC_OPT_COMPRESSION:
+            convert_to_long(value);
+            i_obj->compression = Z_LVAL_P(value) ? 1 : 0;
+            break;
+
+        case MEMC_OPT_PREFIX_KEY:
+        {
+            char *key;
+            convert_to_string(value);
+            if (Z_STRLEN_P(value) == 0) {
+                key = NULL;
+            } else {
+                key = Z_STRVAL_P(value);
+            }
+            if (memcached_callback_set(i_obj->memc, MEMCACHED_CALLBACK_PREFIX_KEY, key) == MEMCACHED_BAD_KEY_PROVIDED) {
+                php_error_docref(NULL TSRMLS_CC, E_WARNING, "bad key provided");
+                return 0;
+            }
+            break;
+        }
+
+        case MEMCACHED_BEHAVIOR_KETAMA_WEIGHTED:
+        	flag = (memcached_behavior) option;
+
+            convert_to_long(value);
+            if (memcached_behavior_set(i_obj->memc, flag, (uint64_t)Z_LVAL_P(value)) == MEMCACHED_FAILURE) {
+                php_error_docref(NULL TSRMLS_CC, E_WARNING, "error setting memcached option");
+                return 0;
+            }
+
+            /*
+             * This is necessary because libmemcached does not reset hash/distribution
+             * options on false case, like it does for MEMCACHED_BEHAVIOR_KETAMA
+             * (non-weighted) case. We have to clean up ourselves.
+             */
+             if (!Z_LVAL_P(value)) {
+                 i_obj->memc->hash = 0;
+                 i_obj->memc->distribution = 0;
+             }
+             break;
+
+        case MEMC_OPT_SERIALIZER:
+             {
+                 convert_to_long(value);
+                 /* igbinary serializer */
+#if HAVE_MEMCACHED_IGBINARY
+                if (Z_LVAL_P(value) == SERIALIZER_IGBINARY) {
+                    i_obj->serializer = SERIALIZER_IGBINARY;
+                } else
+#endif
+#if HAVE_JSON_API
+                if (Z_LVAL_P(value) == SERIALIZER_JSON) {
+                    i_obj->serializer = SERIALIZER_JSON;
+                } else
+#endif
+                    /* php serializer */
+                    if (Z_LVAL_P(value) == SERIALIZER_PHP) {
+                        i_obj->serializer = SERIALIZER_PHP;
+                    } else {
+                        i_obj->serializer = SERIALIZER_PHP;
+                            php_error_docref(NULL TSRMLS_CC, E_WARNING, "invalid serializer provided");
+                            return 0;
+                    }
+                    break;
+            }
+
+        default:
+                /*
+                 * Assume that it's a libmemcached behavior option.
+                 */
+                 flag = (memcached_behavior) option;
+                 convert_to_long(value);
+                 if (memcached_behavior_set(i_obj->memc, flag, (uint64_t)Z_LVAL_P(value)) == MEMCACHED_FAILURE) {
+                     php_error_docref(NULL TSRMLS_CC, E_WARNING, "error setting memcached option");
+                     return 0;
+                 }
+                 break;
+	}
+
+	return 1;
+}
+
+/* {{{ Memcached::setOptions(array options)
+   Sets the value for the given option constant */
+static PHP_METHOD(Memcached, setOptions)
+{
+    zval *options;
+    HashPosition pos;
+    zend_bool ok = 1;
+
+    MEMC_METHOD_INIT_VARS;
+
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "a", &options) == FAILURE) {
+        return;
+    }
+
+    MEMC_METHOD_FETCH_OBJECT;
+
+    zend_hash_internal_pointer_reset_ex(Z_ARRVAL_P(options), &pos);
+    while (1) {
+        uint key_len;
+        int key_type;
+        char *key;
+        ulong key_index;
+
+        zend_hash_move_forward_ex(Z_ARRVAL_P(options), &pos);
+        key_type = zend_hash_get_current_key_ex(Z_ARRVAL_P(options), &key, &key_len, &key_index, 0, &pos);
+        if (key_type == HASH_KEY_NON_EXISTANT) {
+            break;
+        } else if (key_type == HASH_KEY_IS_LONG) {
+            zval **value;
+			if (zend_hash_get_current_data_ex(Z_ARRVAL_P(options), (void *) &value, &pos) == SUCCESS) {
+				if (!memcached_set_option(i_obj, key_index, *value TSRMLS_CC)) {
+					ok = 0;
+				}
+			} else {
+				php_error_docref(NULL TSRMLS_CC, E_WARNING, "invalid configuration value");
+			}
+		} else {
+			php_error_docref(NULL TSRMLS_CC, E_WARNING, "invalid configuration option");
+		}
+	}
+    RETURN_BOOL(ok);
+}
+
 /* {{{ Memcached::setOption(int option, mixed value)
    Sets the value for the given option constant */
 static PHP_METHOD(Memcached, setOption)
@@ -1786,89 +1925,7 @@ static PHP_METHOD(Memcached, setOption)
 
 	MEMC_METHOD_FETCH_OBJECT;
 
-	switch (option) {
-		case MEMC_OPT_COMPRESSION:
-			convert_to_boolean(value);
-			i_obj->compression = Z_BVAL_P(value);
-			break;
-
-		case MEMC_OPT_PREFIX_KEY:
-		{
-			char *key;
-			convert_to_string(value);
-			if (Z_STRLEN_P(value) == 0) {
-				key = NULL;
-			} else {
-				key = Z_STRVAL_P(value);
-			}
-			if (memcached_callback_set(i_obj->memc, MEMCACHED_CALLBACK_PREFIX_KEY, key) ==
-					MEMCACHED_BAD_KEY_PROVIDED) {
-				php_error_docref(NULL TSRMLS_CC, E_WARNING, "bad key provided");
-				RETURN_FALSE;
-			}
-			break;
-		}
-
-		case MEMCACHED_BEHAVIOR_KETAMA_WEIGHTED:
-			flag = (memcached_behavior) option;
-			convert_to_long(value);
-			if (memcached_behavior_set(i_obj->memc, flag, (uint64_t)Z_LVAL_P(value)) == MEMCACHED_FAILURE) {
-				php_error_docref(NULL TSRMLS_CC, E_WARNING, "error setting memcached option");
-				RETURN_FALSE;
-			}
-
-			/*
-			 * This is necessary because libmemcached does not reset hash/distribution
-			 * options on false case, like it does for MEMCACHED_BEHAVIOR_KETAMA
-			 * (non-weighted) case. We have to clean up ourselves.
-			 */
-			if (!Z_LVAL_P(value)) {
-				i_obj->memc->hash = 0;
-				i_obj->memc->distribution = 0;
-			}
-			break;
-
-		case MEMC_OPT_SERIALIZER:
-		{
-			convert_to_long(value);
-			/* igbinary serializer */
-#if HAVE_MEMCACHED_IGBINARY
-			if (Z_LVAL_P(value) == SERIALIZER_IGBINARY) {
-				i_obj->serializer = SERIALIZER_IGBINARY;
-			} else
-#endif
-#if HAVE_JSON_API
-			if (Z_LVAL_P(value) == SERIALIZER_JSON) {
-				i_obj->serializer = SERIALIZER_JSON;
-			} else
-#endif
-
-			/* php serializer */
-			if (Z_LVAL_P(value) == SERIALIZER_PHP) {
-				i_obj->serializer = SERIALIZER_PHP;
-			} else {
-				i_obj->serializer = SERIALIZER_PHP;
-				php_error_docref(NULL TSRMLS_CC, E_WARNING, "invalid serializer provided");
-				RETURN_FALSE;
-			}
-
-			break;
-		}
-
-		default:
-			/*
-			 * Assume that it's a libmemcached behavior option.
-			 */
-			flag = (memcached_behavior) option;
-			convert_to_long(value);
-			if (memcached_behavior_set(i_obj->memc, flag, (uint64_t)Z_LVAL_P(value)) == MEMCACHED_FAILURE) {
-				php_error_docref(NULL TSRMLS_CC, E_WARNING, "error setting memcached option");
-				RETURN_FALSE;
-			}
-			break;
-	}
-
-	RETURN_TRUE;
+	RETURN_BOOL(memcached_set_option(i_obj, option, value TSRMLS_CC));
 }
 /* }}} */
 
@@ -2105,18 +2162,19 @@ static char *php_memc_zval_to_payload(zval *value, size_t *payload_len, uint32_t
 	return payload;
 }
 
+/* The caller MUST free the payload */
 static int php_memc_zval_from_payload(zval *value, char *payload, size_t payload_len, uint32_t flags TSRMLS_DC)
 {
 	/*
 	   A NULL payload is completely valid if length is 0, it is simply empty.
 	 */
-	char dummy_payload[1] = { 0 };
+
 	if (payload == NULL && payload_len > 0) {
 		php_error_docref(NULL TSRMLS_CC, E_WARNING,
 			"Could not handle non-existing value of length %zu", payload_len);
 		return -1;
 	} else if (payload == NULL) {
-		ZVAL_NULL(value);
+		ZVAL_STRINGL(value, "", 0, 1);
 		return 0;
 	}
 
@@ -2177,9 +2235,6 @@ static int php_memc_zval_from_payload(zval *value, char *payload, size_t payload
 			if (!php_var_unserialize(&value, (const unsigned char **)&payload_tmp, (const unsigned char *)payload_tmp + payload_len, &var_hash TSRMLS_CC)) {
 				ZVAL_FALSE(value);
 				PHP_VAR_UNSERIALIZE_DESTROY(var_hash);
-				if (flags & MEMC_VAL_COMPRESSED) {
-					efree(payload);
-				}
 				php_error_docref(NULL TSRMLS_CC, E_WARNING, "could not unserialize value");
 				return -1;
 			}
@@ -2191,11 +2246,6 @@ static int php_memc_zval_from_payload(zval *value, char *payload, size_t payload
 #if HAVE_MEMCACHED_IGBINARY
 			if (igbinary_unserialize((uint8_t *)payload, payload_len, &value)) {
 				ZVAL_FALSE(value);
-
-				if (flags & MEMC_VAL_COMPRESSED) {
-					efree(payload);
-				}
-
 				php_error_docref(NULL TSRMLS_CC, E_WARNING, "could not unserialize value with igbinary");
 				return -1;
 			}
@@ -2220,16 +2270,8 @@ static int php_memc_zval_from_payload(zval *value, char *payload, size_t payload
 
 		default:
 			php_error_docref(NULL TSRMLS_CC, E_WARNING, "unknown payload type");
-			if (flags & MEMC_VAL_COMPRESSED) {
-				efree(payload);
-			}
 			return -1;
 	}
-
-    if (flags & MEMC_VAL_COMPRESSED) {
-        efree(payload);
-    }
-
 	return 0;
 }
 
@@ -2385,6 +2427,7 @@ static int php_memc_do_result_callback(zval *memc_obj, zend_fcall_info *fci,
 	MAKE_STD_ZVAL(value);
 
 	if (php_memc_zval_from_payload(value, payload, payload_len, flags TSRMLS_CC) < 0) {
+		memcached_result_free(&result);
 		zval_ptr_dtor(&value);
 		MEMC_G(rescode) = MEMC_RES_PAYLOAD_FAILURE;
 		return -1;
@@ -2797,6 +2840,10 @@ ZEND_BEGIN_ARG_INFO(arginfo_setOption, 0)
 	ZEND_ARG_INFO(0, value)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO(arginfo_setOptions, 0)
+	ZEND_ARG_INFO(0, options)
+ZEND_END_ARG_INFO()
+
 ZEND_BEGIN_ARG_INFO(arginfo_getStats, 0)
 ZEND_END_ARG_INFO()
 
@@ -2854,6 +2901,7 @@ static zend_function_entry memcached_class_methods[] = {
 
     MEMC_ME(getOption,          arginfo_getOption)
     MEMC_ME(setOption,          arginfo_setOption)
+	MEMC_ME(setOptions,          arginfo_setOptions)
     { NULL, NULL, NULL }
 };
 #undef MEMC_ME
@@ -2965,6 +3013,10 @@ static void php_memc_register_constants(INIT_FUNC_ARGS)
 	REGISTER_MEMC_CLASS_CONST_LONG(OPT_CACHE_LOOKUPS, MEMCACHED_BEHAVIOR_CACHE_LOOKUPS);
 	REGISTER_MEMC_CLASS_CONST_LONG(OPT_SERVER_FAILURE_LIMIT, MEMCACHED_BEHAVIOR_SERVER_FAILURE_LIMIT);
 	REGISTER_MEMC_CLASS_CONST_LONG(OPT_AUTO_EJECT_HOSTS, MEMCACHED_BEHAVIOR_AUTO_EJECT_HOSTS);
+#if defined(LIMEMCACHED_VERSION_NUMBER) && LIMEMCACHED_VERSION_NUMBER > 0x0035
+	REGISTER_MEMC_CLASS_CONST_LONG(OPT_NUMBER_OF_REPLICAS, MEMCACHED_BEHAVIOR_NUMBER_OF_REPLICAS);
+	REGISTER_MEMC_CLASS_CONST_LONG(OPT_RANDOMIZE_REPLICA_READ, MEMCACHED_BEHAVIOR_RANDOMIZE_REPLICA_READ);
+#endif
 
 	/*
 	 * libmemcached result codes
