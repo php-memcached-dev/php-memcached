@@ -17,9 +17,6 @@ PHP_ARG_ENABLE(memcached-igbinary, whether to enable memcached igbinary serializ
 PHP_ARG_ENABLE(memcached-json, whether to enable memcached json serializer support,
 [  --enable-memcached-json          Enable memcached json serializer support], no, no)
 
-PHP_ARG_ENABLE(memcached-fastlz,  whether to use FastLZ compression instead of zlib,
-[  --enable-memcached-fastlz        Enable FastLZ compression], no, no)
-
 if test -z "$PHP_ZLIB_DIR"; then
 PHP_ARG_WITH(zlib-dir, for ZLIB,
 [  --with-zlib-dir[=DIR]   Set the path to ZLIB install prefix.], no)
@@ -35,43 +32,41 @@ fi
 
 if test "$PHP_MEMCACHED" != "no"; then
 
-  if test "$PHP_MEMCACHED_FASTLZ" = "no"; then
-    dnl # zlib
-    if test "$PHP_ZLIB_DIR" != "no" && test "$PHP_ZLIB_DIR" != "yes"; then
-      if test -f "$PHP_ZLIB_DIR/include/zlib/zlib.h"; then
-        PHP_ZLIB_DIR="$PHP_ZLIB_DIR"
-        PHP_ZLIB_INCDIR="$PHP_ZLIB_DIR/include/zlib"
-      elif test -f "$PHP_ZLIB_DIR/include/zlib.h"; then
-        PHP_ZLIB_DIR="$PHP_ZLIB_DIR"
-        PHP_ZLIB_INCDIR="$PHP_ZLIB_DIR/include"
-      else
-        AC_MSG_ERROR([Can't find ZLIB headers under "$PHP_ZLIB_DIR"])
-      fi
-    else
-      for i in /usr/local /usr; do
-        if test -f "$i/include/zlib/zlib.h"; then
-          PHP_ZLIB_DIR="$i"
-          PHP_ZLIB_INCDIR="$i/include/zlib"
-        elif test -f "$i/include/zlib.h"; then
-          PHP_ZLIB_DIR="$i"
-          PHP_ZLIB_INCDIR="$i/include"
-        fi
-      done
-    fi
 
-    AC_MSG_CHECKING([for zlib location])
-    if test "$PHP_ZLIB_DIR" = "no"; then
-      AC_MSG_ERROR([memcached support requires ZLIB. Use --with-zlib-dir=<DIR> to specify the prefix where ZLIB headers and library are located])
+  dnl # zlib
+  if test "$PHP_ZLIB_DIR" != "no" && test "$PHP_ZLIB_DIR" != "yes"; then
+    if test -f "$PHP_ZLIB_DIR/include/zlib/zlib.h"; then
+      PHP_ZLIB_DIR="$PHP_ZLIB_DIR"
+      PHP_ZLIB_INCDIR="$PHP_ZLIB_DIR/include/zlib"
+    elif test -f "$PHP_ZLIB_DIR/include/zlib.h"; then
+      PHP_ZLIB_DIR="$PHP_ZLIB_DIR"
+      PHP_ZLIB_INCDIR="$PHP_ZLIB_DIR/include"
     else
-      AC_MSG_RESULT([$PHP_ZLIB_DIR])
-      PHP_ADD_LIBRARY_WITH_PATH(z, $PHP_ZLIB_DIR/$PHP_LIBDIR, MEMCACHE_SHARED_LIBADD)
-      PHP_ADD_INCLUDE($PHP_ZLIB_INCDIR)
+      AC_MSG_ERROR([Can't find ZLIB headers under "$PHP_ZLIB_DIR"])
     fi
   else
-    dnl FastLZ requested
-    PHP_ADD_BUILD_DIR($ext_builddir/fastlz, 1)
-    AC_DEFINE(MEMCACHED_HAVE_FASTLZ, 1, [Whether to use FastLZ compression])
+    for i in /usr/local /usr; do
+      if test -f "$i/include/zlib/zlib.h"; then
+        PHP_ZLIB_DIR="$i"
+        PHP_ZLIB_INCDIR="$i/include/zlib"
+      elif test -f "$i/include/zlib.h"; then
+        PHP_ZLIB_DIR="$i"
+        PHP_ZLIB_INCDIR="$i/include"
+      fi
+    done
   fi
+
+  AC_MSG_CHECKING([for zlib location])
+  if test "$PHP_ZLIB_DIR" = "no"; then
+    AC_MSG_ERROR([memcached support requires ZLIB. Use --with-zlib-dir=<DIR> to specify the prefix where ZLIB headers and library are located])
+  else
+    AC_MSG_RESULT([$PHP_ZLIB_DIR])
+    PHP_ADD_LIBRARY_WITH_PATH(z, $PHP_ZLIB_DIR/$PHP_LIBDIR, MEMCACHE_SHARED_LIBADD)
+    PHP_ADD_INCLUDE($PHP_ZLIB_INCDIR)
+  fi
+
+  dnl add FastLZ
+  PHP_ADD_BUILD_DIR($ext_builddir/fastlz, 1)
 
   if test "$PHP_MEMCACHED_SESSION" != "no"; then
     AC_MSG_CHECKING([for session includes])
@@ -245,14 +240,8 @@ if test "$PHP_MEMCACHED" != "no"; then
     PHP_ADD_LIBRARY_WITH_PATH(memcached, $PHP_LIBMEMCACHED_DIR/lib, MEMCACHED_SHARED_LIBADD)
 
     PHP_SUBST(MEMCACHED_SHARED_LIBADD)
-    
-    PHP_MEMCACHED_FILES="php_memcached.c"
-    
-    if test "$PHP_MEMCACHED_FASTLZ" = "no"; then
-      PHP_MEMCACHED_FILES="${PHP_MEMCACHED_FILES} fastlz/fastlz.c"
-    fi
-    
-    PHP_NEW_EXTENSION(memcached, $PHP_MEMCACHED_FILES, $ext_shared,,$SESSION_INCLUDES $IGBINARY_INCLUDES)
+
+    PHP_NEW_EXTENSION(memcached, php_memcached.c fastlz/fastlz.c, $ext_shared,,$SESSION_INCLUDES $IGBINARY_INCLUDES)
  
     ifdef([PHP_ADD_EXTENSION_DEP],
     [

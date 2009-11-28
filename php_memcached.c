@@ -18,7 +18,6 @@
 
 /* TODO
  * - set LIBKETAMA_COMPATIBLE as the default?
- * - consider setOptions()
  * - fix unserialize(serialize($memc))
  */
 
@@ -43,11 +42,8 @@
 
 #include "php_memcached.h"
 
-#if MEMCACHED_HAVE_FASTLZ
-# include "fastlz/fastlz.h"
-#else
-# include <zlib.h>
-#endif
+#include "fastlz/fastlz.h"
+#include <zlib.h>
 
 /* Used to store the size of the block */
 #if defined(HAVE_INTTYPES_H)
@@ -163,6 +159,11 @@ enum memcached_serializer {
 	SERIALIZER_JSON = 3,
 };
 
+enum memcached_compression_type {
+	COMPRESSION_TYPE_ZLIB = 1,
+	COMPRESSION_TYPE_FASTLZ = 2,
+};
+
 static int le_memc;
 typedef struct {
 	zend_object zo;
@@ -206,6 +207,20 @@ ZEND_DECLARE_MODULE_GLOBALS(php_memcached)
 ZEND_GET_MODULE(memcached)
 #endif
 
+static PHP_INI_MH(OnUpdateCompressionType)
+{
+	if (!new_value) {
+		MEMC_G(compression_type_real) = COMPRESSION_TYPE_ZLIB;
+	} else if (new_value_length == 6 && !strncmp(new_value, "fastlz", 6)) {
+		MEMC_G(compression_type_real) = COMPRESSION_TYPE_FASTLZ;
+	} else if (new_value_length == 4 && !strncmp(new_value, "zlib", 4)) {
+		MEMC_G(compression_type_real) = COMPRESSION_TYPE_ZLIB;
+	} else {
+		return FAILURE;
+	}
+	return OnUpdateString(entry, new_value, new_value_length, mh_arg1, mh_arg2, mh_arg3, stage TSRMLS_CC);
+}
+
 /* {{{ INI entries */
 PHP_INI_BEGIN()
 #if HAVE_MEMCACHED_SESSION
@@ -213,6 +228,7 @@ PHP_INI_BEGIN()
 	STD_PHP_INI_ENTRY("memcached.sess_lock_wait",	"150000",	PHP_INI_ALL, OnUpdateLongGEZero,sess_lock_wait,			zend_php_memcached_globals,	php_memcached_globals)
 	STD_PHP_INI_ENTRY("memcached.sess_prefix",		"memc.sess.key.",	PHP_INI_ALL, OnUpdateString, sess_prefix,		zend_php_memcached_globals,	php_memcached_globals)
 #endif
+	STD_PHP_INI_ENTRY("memcached.compression_type",	"zlib",	PHP_INI_ALL, OnUpdateCompressionType, compression_type,		zend_php_memcached_globals,	php_memcached_globals)
 PHP_INI_END()
 /* }}} */
 
@@ -472,15 +488,15 @@ static void php_memc_get_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 		return;
 
 	} else {
-
-		size_t dummy_length;
-		uint32_t dummy_flags;
 		int rc;
-		memcached_return dummy_status;
 		bool return_value_set = false;
 
-		status = memcached_mget_by_key(i_obj->memc, server_key, server_key_len, &key, &key_len, 1);
-		payload = memcached_fetch(i_obj->memc, NULL, NULL, &payload_len, &flags, &status);
+		if (!server_key) {
+			payload = memcached_get(i_obj->memc, key, key_len, &payload_len, &flags, &status);
+		} else {
+			status = memcached_mget_by_key(i_obj->memc, server_key, server_key_len, &key, &key_len, 1);
+			payload = memcached_fetch(i_obj->memc, NULL, NULL, &payload_len, &flags, &status);
+		}
 		/* This is for historical reasons */
 		if (status == MEMCACHED_END)
 			status = MEMCACHED_NOTFOUND;
@@ -491,12 +507,16 @@ static void php_memc_get_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 		 * The callback will set the return value.
 		 */
 		if (payload == NULL && status == MEMCACHED_NOTFOUND && fci.size != 0) {
+			size_t dummy_length;
+			uint32_t dummy_flags;
+			memcached_return dummy_status;
+
 			status = php_memc_do_cache_callback(getThis(), &fci, &fcc, key, key_len,
 												return_value TSRMLS_CC);
 			return_value_set = true;
-		}
 
-		(void)memcached_fetch(i_obj->memc, NULL, NULL, &dummy_length, &dummy_flags, &dummy_status);
+			(void)memcached_fetch(i_obj->memc, NULL, NULL, &dummy_length, &dummy_flags, &dummy_status);
+		}
 
 		if (php_memc_handle_error(status TSRMLS_CC) < 0) {
 			if (payload) {
@@ -1136,8 +1156,6 @@ static void php_memc_store_impl(INTERNAL_FUNCTION_PARAMETERS, int op, zend_bool 
 				return;
 			}
 		}
-		server_key     = key;
-		server_key_len = key_len;
 	}
 
 	MEMC_METHOD_FETCH_OBJECT;
@@ -1172,28 +1190,48 @@ static void php_memc_store_impl(INTERNAL_FUNCTION_PARAMETERS, int op, zend_bool 
 
 	switch (op) {
 		case MEMC_OP_SET:
-			status = memcached_set_by_key(i_obj->memc, server_key, server_key_len, key,
+			if (!server_key) {
+				status = memcached_set(i_obj->memc, key, key_len, payload, payload_len, expiration, flags);
+			} else {
+				status = memcached_set_by_key(i_obj->memc, server_key, server_key_len, key,
 										  key_len, payload, payload_len, expiration, flags);
+			}
 			break;
 
 		case MEMC_OP_ADD:
-			status = memcached_add_by_key(i_obj->memc, server_key, server_key_len, key,
+			if (!server_key) {
+				status = memcached_add(i_obj->memc, key, key_len, payload, payload_len, expiration, flags);
+			} else {
+				status = memcached_add_by_key(i_obj->memc, server_key, server_key_len, key,
 										  key_len, payload, payload_len, expiration, flags);
+			}
 			break;
 
 		case MEMC_OP_REPLACE:
-			status = memcached_replace_by_key(i_obj->memc, server_key, server_key_len, key,
+			if (!server_key) {
+				status = memcached_replace(i_obj->memc, key, key_len, payload, payload_len, expiration, flags);
+			} else {
+				status = memcached_replace_by_key(i_obj->memc, server_key, server_key_len, key,
 										      key_len, payload, payload_len, expiration, flags);
+			}
 			break;
 
 		case MEMC_OP_APPEND:
-			status = memcached_append_by_key(i_obj->memc, server_key, server_key_len, key,
+			if (!server_key) {
+				status = memcached_append(i_obj->memc, key, key_len, payload, payload_len, expiration, flags);
+			} else {
+				status = memcached_append_by_key(i_obj->memc, server_key, server_key_len, key,
 											 key_len, payload, payload_len, expiration, flags);
+			}
 			break;
 
 		case MEMC_OP_PREPEND:
-			status = memcached_prepend_by_key(i_obj->memc, server_key, server_key_len, key,
+			if (!server_key) {
+				status = memcached_prepend(i_obj->memc, key, key_len, payload, payload_len, expiration, flags);
+			} else {
+				status = memcached_prepend_by_key(i_obj->memc, server_key, server_key_len, key,
 											  key_len, payload, payload_len, expiration, flags);
+			}
 			break;
 
 		default:
@@ -1254,8 +1292,6 @@ static void php_memc_cas_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 								  &value, &expiration) == FAILURE) {
 			return;
 		}
-		server_key     = key;
-		server_key_len = key_len;
 	}
 
 	MEMC_METHOD_FETCH_OBJECT;
@@ -2132,6 +2168,9 @@ static char *php_memc_zval_to_payload(zval *value, size_t *payload_len, uint32_t
 	}
 
 	if (*flags & MEMC_VAL_COMPRESSED) {
+		/* status */
+		zend_bool compress_status = 0;
+		
 		/* Additional 5% for the data */
 		unsigned long payload_comp_len = (unsigned long)((buf.len + 1.05) + 1);
 		char *payload_comp = emalloc(payload_comp_len + sizeof(uint32_t));
@@ -2139,11 +2178,13 @@ static char *php_memc_zval_to_payload(zval *value, size_t *payload_len, uint32_t
 		memcpy(payload_comp, &buf.len, sizeof(uint32_t));
 		payload_comp += sizeof(uint32_t);
 		
-#if MEMCACHED_HAVE_FASTLZ		
-		if ((payload_comp_len = fastlz_compress(buf.c, buf.len, payload_comp)) == 0) {
-#else
-		if (compress(payload_comp, &payload_comp_len, buf.c, buf.len) != Z_OK) {
-#endif /* MEMCACHED_HAVE_FASTLZ */
+		if (MEMC_G(compression_type_real) == COMPRESSION_TYPE_FASTLZ) {
+			compress_status = ((payload_comp_len = fastlz_compress(buf.c, buf.len, payload_comp)) > 0);
+		} else if (MEMC_G(compression_type_real) == COMPRESSION_TYPE_ZLIB) {
+			compress_status = (compress(payload_comp, &payload_comp_len, buf.c, buf.len) == Z_OK);
+		}
+		
+		if (!compress_status) {
 			php_error_docref(NULL TSRMLS_CC, E_WARNING, "could not compress value");
 			efree(payload);
 			smart_str_free(&buf);
@@ -2152,6 +2193,7 @@ static char *php_memc_zval_to_payload(zval *value, size_t *payload_len, uint32_t
 
 		*payload_len = payload_comp_len + sizeof(uint32_t);
 		payload[*payload_len] = 0;
+
 	} else {
 		payload      = emalloc(buf.len + 1);
 		*payload_len = buf.len;
@@ -2182,8 +2224,10 @@ static int php_memc_zval_from_payload(zval *value, char *payload, size_t payload
 	}
 
 	if (flags & MEMC_VAL_COMPRESSED) {
-		size_t len;
+		uint32_t len;
 		unsigned long length;
+		
+		zend_bool decompress_status = 0;
 
 		/* This is copied from Ilia's patch */
 		memcpy(&len, payload, sizeof(uint32_t));
@@ -2191,12 +2235,14 @@ static int php_memc_zval_from_payload(zval *value, char *payload, size_t payload
 		payload_len -= sizeof(uint32_t);
 		payload += sizeof(uint32_t);
 		length = len;
+		
+		if (MEMC_G(compression_type_real) == COMPRESSION_TYPE_FASTLZ) {
+			decompress_status = ((length = fastlz_decompress(payload, payload_len, buffer, len)) > 0);
+		} else if (MEMC_G(compression_type_real) == COMPRESSION_TYPE_ZLIB) {
+			decompress_status = (uncompress(buffer, &length, payload, payload_len) == Z_OK);
+		}
 
-#if MEMCACHED_HAVE_FASTLZ 
-		if ((length = fastlz_decompress(payload, payload_len, buffer, len)) == 0) {
-#else
-		if (uncompress(buffer, &length, payload, payload_len) != Z_OK) {
-#endif /* MEMCACHED_HAVE_FASTLZ */
+		if (!decompress_status) {
 			php_error_docref(NULL TSRMLS_CC, E_WARNING, "could not decompress value");
 			efree(buffer);
 			return -1;
@@ -2309,6 +2355,8 @@ static void php_memc_init_globals(zend_php_memcached_globals *php_memcached_glob
 #else
 	MEMC_G(serializer) = SERIALIZER_PHP;
 #endif
+	MEMC_G(compression_type) = NULL;
+	MEMC_G(compression_type_real) = COMPRESSION_TYPE_ZLIB;
 }
 
 static void php_memc_destroy_globals(zend_php_memcached_globals *php_memcached_globals_p TSRMLS_DC)
@@ -2969,12 +3017,6 @@ static void php_memc_register_constants(INIT_FUNC_ARGS)
 	REGISTER_MEMC_CLASS_CONST_LONG(OPT_PREFIX_KEY,  MEMC_OPT_PREFIX_KEY);
 	REGISTER_MEMC_CLASS_CONST_LONG(OPT_SERIALIZER,  MEMC_OPT_SERIALIZER);
 
-#if HAVE_MEMCACHED_FASTLZ
-	REGISTER_MEMC_CLASS_CONST_LONG(HAVE_FASTLZ, 1);
-#else
-	REGISTER_MEMC_CLASS_CONST_LONG(HAVE_FASTLZ, 0);
-#endif
-
 	/*
 	 * Indicate whether igbinary serializer is available
 	 */
@@ -3116,14 +3158,13 @@ PHP_MINIT_FUNCTION(memcached)
 /* {{{ PHP_MSHUTDOWN_FUNCTION */
 PHP_MSHUTDOWN_FUNCTION(memcached)
 {
-	UNREGISTER_INI_ENTRIES();
-
 #ifdef ZTS
     ts_free_id(php_memcached_globals_id);
 #else
     php_memc_destroy_globals(&php_memcached_globals TSRMLS_CC);
 #endif
 
+	UNREGISTER_INI_ENTRIES();
 	return SUCCESS;
 }
 /* }}} */
@@ -3153,13 +3194,6 @@ PHP_MINFO_FUNCTION(memcached)
 #else
 	php_info_print_table_row(2, "json support", "no");
 #endif
-
-#if HAVE_MEMCACHED_FASTLZ
-	php_info_print_table_row(2, "compression type", "FastLZ");
-#else
-	php_info_print_table_row(2, "compression type", "zlib");
-#endif
-
 	php_info_print_table_end();
 
 	DISPLAY_INI_ENTRIES();
