@@ -2081,7 +2081,6 @@ static int php_memc_handle_error(memcached_return status TSRMLS_DC)
 
 static char *php_memc_zval_to_payload(zval *value, size_t *payload_len, uint32_t *flags, enum memcached_serializer serializer TSRMLS_DC)
 {
-	zend_bool compression_success = 1;
 	char *payload;
 	smart_str buf = {0};
 
@@ -2218,15 +2217,18 @@ static int php_memc_zval_from_payload(zval *value, char *payload, size_t payload
 	 */
 	zend_bool payload_emalloc = 0;
 	char *buffer = NULL;
-	char dummy_payload[1] = { 0 };
-	
 
 	if (payload == NULL && payload_len > 0) {
 		php_error_docref(NULL TSRMLS_CC, E_WARNING,
 			"Could not handle non-existing value of length %zu", payload_len);
 		return -1;
 	} else if (payload == NULL) {
-		payload = dummy_payload;
+		if (MEMC_VAL_GET_TYPE(flags) == MEMC_VAL_IS_BOOL) {
+			ZVAL_FALSE(value);
+		} else {
+			ZVAL_EMPTY_STRING(value);
+		}
+		return 0;
 	}
 
 	if (flags & MEMC_VAL_COMPRESSED) {
