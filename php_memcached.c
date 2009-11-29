@@ -109,6 +109,8 @@ typedef unsigned long int uint32_t;
 #define MEMC_VAL_IS_JSON       6
 
 #define MEMC_VAL_COMPRESSED    (1<<4)
+#define MEMC_VAL_COMPRESSION_ZLIB    (1<<5)
+#define MEMC_VAL_COMPRESSION_FASTLZ  (1<<6)
 
 /****************************************
   "get" operation flags
@@ -2183,8 +2185,10 @@ static char *php_memc_zval_to_payload(zval *value, size_t *payload_len, uint32_t
 		
 		if (MEMC_G(compression_type_real) == COMPRESSION_TYPE_FASTLZ) {
 			compress_status = ((payload_comp_len = fastlz_compress(buf.c, buf.len, payload_comp)) > 0);
+			*flags |= MEMC_VAL_COMPRESSION_FASTLZ;
 		} else if (MEMC_G(compression_type_real) == COMPRESSION_TYPE_ZLIB) {
 			compress_status = (compress(payload_comp, &payload_comp_len, buf.c, buf.len) == Z_OK);
+			*flags |= MEMC_VAL_COMPRESSION_ZLIB;
 		}
 		
 		if (!compress_status) {
@@ -2247,7 +2251,12 @@ static int php_memc_zval_from_payload(zval *value, char *payload, size_t payload
 		payload += sizeof(uint32_t);
 		length = len;
 		
-		if (MEMC_G(compression_type_real) == COMPRESSION_TYPE_FASTLZ) {
+		/* First try to detect from flags and fall back to configured value */
+		if (flags & MEMC_VAL_COMPRESSION_FASTLZ) {
+			decompress_status = ((length = fastlz_decompress(payload, payload_len, buffer, len)) > 0);
+		} else if (flags & MEMC_VAL_COMPRESSION_ZLIB) {
+			decompress_status = (uncompress(buffer, &length, payload, payload_len) == Z_OK);
+		} else if (MEMC_G(compression_type_real) == COMPRESSION_TYPE_FASTLZ) {
 			decompress_status = ((length = fastlz_decompress(payload, payload_len, buffer, len)) > 0);
 		} else if (MEMC_G(compression_type_real) == COMPRESSION_TYPE_ZLIB) {
 			decompress_status = (uncompress(buffer, &length, payload, payload_len) == Z_OK);
