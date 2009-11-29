@@ -2218,14 +2218,15 @@ static int php_memc_zval_from_payload(zval *value, char *payload, size_t payload
 	 */
 	zend_bool payload_emalloc = 0;
 	char *buffer = NULL;
+	char dummy_payload[1] = { 0 };
+	
 
 	if (payload == NULL && payload_len > 0) {
 		php_error_docref(NULL TSRMLS_CC, E_WARNING,
 			"Could not handle non-existing value of length %zu", payload_len);
 		return -1;
 	} else if (payload == NULL) {
-		ZVAL_EMPTY_STRING(value);
-		return 0;
+		payload = dummy_payload;
 	}
 
 	if (flags & MEMC_VAL_COMPRESSED) {

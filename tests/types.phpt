@@ -12,8 +12,8 @@ class testclass {
 
 $data = array(
 	array('boolean_true', true),
-	//array('boolean_false', false), Not sure how to check for boolean false 
-
+	array('boolean_false', false),
+	
 	array('string', "just a string"),
 	array('string_empty', ""),
 
