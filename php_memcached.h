@@ -48,6 +48,7 @@ ZEND_BEGIN_MODULE_GLOBALS(php_memcached)
 	
 	char *compression_type;
 	int   compression_type_real;
+	int   compression_threshold;
 	
 	double compression_factor;
 ZEND_END_MODULE_GLOBALS(php_memcached)

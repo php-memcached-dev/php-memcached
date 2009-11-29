@@ -117,9 +117,6 @@ typedef unsigned long int uint32_t;
 ****************************************/
 #define MEMC_GET_PRESERVE_ORDER (1<<0)
 
-
-#define MEMC_COMPRESS_THRESHOLD 100
-
 /****************************************
   Helper macros
 ****************************************/
@@ -227,11 +224,12 @@ static PHP_INI_MH(OnUpdateCompressionType)
 PHP_INI_BEGIN()
 #if HAVE_MEMCACHED_SESSION
 	STD_PHP_INI_ENTRY("memcached.sess_locking",		"1",		PHP_INI_ALL, OnUpdateBool,		sess_locking_enabled,	zend_php_memcached_globals,	php_memcached_globals)
-	STD_PHP_INI_ENTRY("memcached.sess_lock_wait",	"150000",	PHP_INI_ALL, OnUpdateLongGEZero,sess_lock_wait,			zend_php_memcached_globals,	php_memcached_globals)
+	STD_PHP_INI_ENTRY("memcached.sess_lock_wait",		"150000",	PHP_INI_ALL, OnUpdateLongGEZero,sess_lock_wait,			zend_php_memcached_globals,	php_memcached_globals)
 	STD_PHP_INI_ENTRY("memcached.sess_prefix",		"memc.sess.key.",	PHP_INI_ALL, OnUpdateString, sess_prefix,		zend_php_memcached_globals,	php_memcached_globals)
 #endif
-	STD_PHP_INI_ENTRY("memcached.compression_type",	"zlib",	PHP_INI_ALL, OnUpdateCompressionType, compression_type,		zend_php_memcached_globals,	php_memcached_globals)
-	STD_PHP_INI_ENTRY("memcached.compression_factor",	"1.3",	PHP_INI_ALL, OnUpdateReal, compression_factor,		zend_php_memcached_globals,	php_memcached_globals)
+	STD_PHP_INI_ENTRY("memcached.compression_type",		"fastlz",	PHP_INI_ALL, OnUpdateCompressionType, compression_type,		zend_php_memcached_globals,	php_memcached_globals)
+	STD_PHP_INI_ENTRY("memcached.compression_factor",	"1.3",		PHP_INI_ALL, OnUpdateReal, compression_factor,		zend_php_memcached_globals,	php_memcached_globals)
+	STD_PHP_INI_ENTRY("memcached.compression_threshold",	"2000",		PHP_INI_ALL, OnUpdateLong, compression_threshold,		zend_php_memcached_globals,	php_memcached_globals)
 	
 PHP_INI_END()
 /* }}} */
@@ -1912,43 +1910,37 @@ static int memcached_set_option(php_memc_t *i_obj, long option, zval *value TSRM
    Sets the value for the given option constant */
 static PHP_METHOD(Memcached, setOptions)
 {
-    zval *options;
-    HashPosition pos;
-    zend_bool ok = 1;
+	zval *options;
+	HashPosition pos;
+	zend_bool ok = 1;
+	uint key_len;
+	int key_type;
+	char *key;
+	ulong key_index;
+	zval **value;
 
-    MEMC_METHOD_INIT_VARS;
+	MEMC_METHOD_INIT_VARS;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "a", &options) == FAILURE) {
-        return;
-    }
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "a", &options) == FAILURE) {
+		return;
+	}
 
-    MEMC_METHOD_FETCH_OBJECT;
+	MEMC_METHOD_FETCH_OBJECT;
 
-    zend_hash_internal_pointer_reset_ex(Z_ARRVAL_P(options), &pos);
-    while (1) {
-        uint key_len;
-        int key_type;
-        char *key;
-        ulong key_index;
+	for (zend_hash_internal_pointer_reset(Z_ARRVAL_P(options));
+		zend_hash_get_current_data(Z_ARRVAL_P(options), (void *) &value) == SUCCESS;
+		zend_hash_move_forward(Z_ARRVAL_P(options))) {
 
-        zend_hash_move_forward_ex(Z_ARRVAL_P(options), &pos);
-        key_type = zend_hash_get_current_key_ex(Z_ARRVAL_P(options), &key, &key_len, &key_index, 0, &pos);
-        if (key_type == HASH_KEY_NON_EXISTANT) {
-            break;
-        } else if (key_type == HASH_KEY_IS_LONG) {
-            zval **value;
-			if (zend_hash_get_current_data_ex(Z_ARRVAL_P(options), (void *) &value, &pos) == SUCCESS) {
-				if (!memcached_set_option(i_obj, key_index, *value TSRMLS_CC)) {
-					ok = 0;
-				}
-			} else {
-				php_error_docref(NULL TSRMLS_CC, E_WARNING, "invalid configuration value");
+		if (zend_hash_get_current_key_ex(Z_ARRVAL_P(options), &key, &key_len, &key_index, 0, NULL) == HASH_KEY_IS_LONG) {
+			if (!memcached_set_option(i_obj, (long) key_index, *value TSRMLS_CC)) {
+				ok = 0;
 			}
 		} else {
 			php_error_docref(NULL TSRMLS_CC, E_WARNING, "invalid configuration option");
 		}
 	}
-    RETURN_BOOL(ok);
+
+	RETURN_BOOL(ok);
 }
 
 /* {{{ Memcached::setOption(int option, mixed value)
@@ -2168,7 +2160,7 @@ static char *php_memc_zval_to_payload(zval *value, size_t *payload_len, uint32_t
 	}
 
 	/* turn off compression for values below the threshold */
-	if ((*flags & MEMC_VAL_COMPRESSED) && buf.len < MEMC_COMPRESS_THRESHOLD) {
+	if ((*flags & MEMC_VAL_COMPRESSED) && buf.len < MEMC_G(compression_threshold)) {
 		*flags &= ~MEMC_VAL_COMPRESSED;
 	}
 
@@ -2210,10 +2202,8 @@ static char *php_memc_zval_to_payload(zval *value, size_t *payload_len, uint32_t
 			payload[buf.len] = 0;
 		}
 	} else {
-		payload      = emalloc(buf.len + 1);
 		*payload_len = buf.len;
-		memcpy(payload, buf.c, buf.len);
-		payload[buf.len] = 0;
+		payload = estrndup(buf.c, buf.len);
 	}
 	
 	smart_str_free(&buf);

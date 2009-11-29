@@ -242,6 +242,7 @@ if test "$PHP_MEMCACHED" != "no"; then
     PHP_SUBST(MEMCACHED_SHARED_LIBADD)
 
     PHP_NEW_EXTENSION(memcached, php_memcached.c fastlz/fastlz.c, $ext_shared,,$SESSION_INCLUDES $IGBINARY_INCLUDES)
+    PHP_ADD_BUILD_DIR($ext_builddir/fastlz, 1)
  
     ifdef([PHP_ADD_EXTENSION_DEP],
     [
