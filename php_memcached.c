@@ -229,6 +229,8 @@ PHP_INI_BEGIN()
 	STD_PHP_INI_ENTRY("memcached.sess_prefix",		"memc.sess.key.",	PHP_INI_ALL, OnUpdateString, sess_prefix,		zend_php_memcached_globals,	php_memcached_globals)
 #endif
 	STD_PHP_INI_ENTRY("memcached.compression_type",	"zlib",	PHP_INI_ALL, OnUpdateCompressionType, compression_type,		zend_php_memcached_globals,	php_memcached_globals)
+	STD_PHP_INI_ENTRY("memcached.compression_factor",	"1.3",	PHP_INI_ALL, OnUpdateReal, compression_factor,		zend_php_memcached_globals,	php_memcached_globals)
+	
 PHP_INI_END()
 /* }}} */
 
@@ -2085,6 +2087,7 @@ static int php_memc_handle_error(memcached_return status TSRMLS_DC)
 
 static char *php_memc_zval_to_payload(zval *value, size_t *payload_len, uint32_t *flags, enum memcached_serializer serializer TSRMLS_DC)
 {
+	zend_bool compression_success = 1;
 	char *payload;
 	smart_str buf = {0};
 
@@ -2170,7 +2173,7 @@ static char *php_memc_zval_to_payload(zval *value, size_t *payload_len, uint32_t
 	if (*flags & MEMC_VAL_COMPRESSED) {
 		/* status */
 		zend_bool compress_status = 0;
-		
+
 		/* Additional 5% for the data */
 		unsigned long payload_comp_len = (unsigned long)((buf.len + 1.05) + 1);
 		char *payload_comp = emalloc(payload_comp_len + sizeof(uint32_t));
@@ -2191,16 +2194,24 @@ static char *php_memc_zval_to_payload(zval *value, size_t *payload_len, uint32_t
 			return NULL;
 		}
 
-		*payload_len = payload_comp_len + sizeof(uint32_t);
-		payload[*payload_len] = 0;
-
+		/* Check that we are above ratio */
+		if (buf.len > (payload_comp_len * MEMC_G(compression_factor))) {
+			*payload_len = payload_comp_len + sizeof(uint32_t);
+			payload[*payload_len] = 0;
+		} else {
+			/* Store plain value */
+			*flags &= ~MEMC_VAL_COMPRESSED;
+			*payload_len = buf.len;
+			memcpy(payload, buf.c, buf.len);
+			payload[buf.len] = 0;
+		}
 	} else {
 		payload      = emalloc(buf.len + 1);
 		*payload_len = buf.len;
 		memcpy(payload, buf.c, buf.len);
 		payload[buf.len] = 0;
 	}
-
+	
 	smart_str_free(&buf);
 	return payload;
 }
@@ -2357,6 +2368,7 @@ static void php_memc_init_globals(zend_php_memcached_globals *php_memcached_glob
 #endif
 	MEMC_G(compression_type) = NULL;
 	MEMC_G(compression_type_real) = COMPRESSION_TYPE_ZLIB;
+	MEMC_G(compression_factor) = 1.30;
 }
 
 static void php_memc_destroy_globals(zend_php_memcached_globals *php_memcached_globals_p TSRMLS_DC)
