@@ -1888,7 +1888,7 @@ static int memcached_set_option(php_memc_t *i_obj, long option, zval *value TSRM
                  */
                  flag = (memcached_behavior) option;
                  convert_to_long(value);
-                 if (memcached_behavior_set(m_obj->memc, flag, (uint64_t)Z_LVAL_P(value)) == MEMCACHED_FAILURE) {
+                 if (memcached_behavior_set(m_obj->memc, flag, (uint64_t)Z_LVAL_P(value)) != MEMCACHED_SUCCESS) {
                      php_error_docref(NULL TSRMLS_CC, E_WARNING, "error setting memcached option");
                      return 0;
                  }
@@ -2604,7 +2604,7 @@ static int php_memc_sess_lock(memcached_st *memc, const char *key TSRMLS_DC)
 	attempts = lock_maxwait * 1000000 / lock_wait;
 
 	lock_key_len = spprintf(&lock_key, 0, "lock.%s", key);
-	while (attempts--) {
+	do {
 		status = memcached_add(memc, lock_key, lock_key_len, "1", sizeof("1")-1, expiration, 0);
 		if (status == MEMCACHED_SUCCESS) {
 			MEMC_G(sess_locked) = 1;
@@ -2612,8 +2612,11 @@ static int php_memc_sess_lock(memcached_st *memc, const char *key TSRMLS_DC)
 			MEMC_G(sess_lock_key_len) = lock_key_len;
 			return 0;
 		}
-		usleep(lock_wait);
-	}
+
+		if (lock_wait > 0) {
+			usleep(lock_wait);
+		}
+	} while(--attempts > 0);
 
 	efree(lock_key);
 	return -1;
@@ -2642,10 +2645,11 @@ PS_OPEN_FUNC(memcached)
 			status = memcached_server_push(memc_sess, servers);
 			memcached_server_list_free(servers);
 
-			if (memcached_callback_set(memc_sess, MEMCACHED_CALLBACK_PREFIX_KEY, MEMC_G(sess_prefix)) ==
-				MEMCACHED_BAD_KEY_PROVIDED) {
+			if (memcached_callback_set(memc_sess, MEMCACHED_CALLBACK_PREFIX_KEY, MEMC_G(sess_prefix)) !=
+				MEMCACHED_SUCCESS) {
 				PS_SET_MOD_DATA(NULL);
 				memcached_free(memc_sess);
+				php_error_docref(NULL TSRMLS_CC, E_WARNING, "invalid memcached key prefix in memcached.sess_prefix");
 				return FAILURE;
 			}
 
