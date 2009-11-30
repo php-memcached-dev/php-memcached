@@ -25,6 +25,7 @@
 #include "config.h"
 #endif
 
+#include <stdlib.h>
 #include <error.h>
 #include <string.h>
 #include <php.h>
@@ -868,7 +869,10 @@ PHP_METHOD(Memcached, fetch)
 	array_init(return_value);
 	add_assoc_stringl_ex(return_value, ZEND_STRS("key"), res_key, res_key_len, 1);
 	add_assoc_zval_ex(return_value, ZEND_STRS("value"), value);
-	add_assoc_double_ex(return_value, ZEND_STRS("cas"), (double)cas);
+	if (cas != 0) {
+		/* XXX: also check against ULLONG_MAX or memc_behavior */
+		add_assoc_double_ex(return_value, ZEND_STRS("cas"), (double)cas);
+	}
 
 	memcached_result_free(&result);
 }
@@ -922,7 +926,10 @@ PHP_METHOD(Memcached, fetchAll)
 		array_init(entry);
 		add_assoc_stringl_ex(entry, ZEND_STRS("key"), res_key, res_key_len, 1);
 		add_assoc_zval_ex(entry, ZEND_STRS("value"), value);
-		add_assoc_double_ex(entry, ZEND_STRS("cas"), (double)cas);
+		if (cas != 0) {
+			/* XXX: also check against ULLONG_MAX or memc_behavior */
+			add_assoc_double_ex(entry, ZEND_STRS("cas"), (double)cas);
+		}
 		add_next_index_zval(return_value, entry);
 	}
 
