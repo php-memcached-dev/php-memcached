@@ -6,7 +6,7 @@ Memcached: Bug #16084 (Crash when addServers is called with an associative array
 <?php 
 $servers = array ( 0 => array ( 'KEYHERE' => 'localhost', 11211, 3 ), );
 $m = new memcached();
-$m->addServers($servers);
+var_dump($m->addServers($servers));
 var_dump($m->getServerList());
 ?>
 --EXPECT--

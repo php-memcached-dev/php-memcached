@@ -168,12 +168,6 @@ typedef unsigned long int uint32_t;
 /****************************************
   Structures and definitions
 ****************************************/
-enum memcached_serializer {
-	SERIALIZER_PHP = 1,
-	SERIALIZER_IGBINARY = 2,
-	SERIALIZER_JSON = 3,
-};
-
 enum memcached_compression_type {
 	COMPRESSION_TYPE_ZLIB = 1,
 	COMPRESSION_TYPE_FASTLZ = 2,
@@ -1572,10 +1566,10 @@ PHP_METHOD(Memcached, getServerList)
 
 	array_init(return_value);
 	servers = memcached_server_list(m_obj->memc);
-	servers_count = memcached_server_count(m_obj->memc);
 	if (servers == NULL) {
 		return;
 	}
+	servers_count = memcached_server_count(m_obj->memc);
 
 	for (i = 0; i < servers_count; i++) {
 		MAKE_STD_ZVAL(array);

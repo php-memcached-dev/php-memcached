@@ -34,6 +34,15 @@ extern zend_module_entry memcached_module_entry;
 #define PHP_MEMCACHED_API
 #endif
 
+/****************************************
+  Structures and definitions
+****************************************/
+enum memcached_serializer {
+	SERIALIZER_PHP = 1,
+	SERIALIZER_IGBINARY = 2,
+	SERIALIZER_JSON = 3,
+};
+
 ZEND_BEGIN_MODULE_GLOBALS(php_memcached)
 #if HAVE_MEMCACHED_SESSION
 	zend_bool sess_locking_enabled;
