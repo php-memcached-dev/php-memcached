@@ -488,12 +488,6 @@ static void php_memc_get_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 			status = memcached_mget_by_key(m_obj->memc, server_key, server_key_len, &key, &key_len, 1);
 			payload = memcached_fetch(m_obj->memc, NULL, NULL, &payload_len, &flags, &status);
 		}
-		if (!server_key) {
-			payload = memcached_get(m_obj->memc, key, key_len, &payload_len, &flags, &status);
-		} else {
-			status = memcached_mget_by_key(m_obj->memc, server_key, server_key_len, &key, &key_len, 1);
-			payload = memcached_fetch(m_obj->memc, NULL, NULL, &payload_len, &flags, &status);
-		}
 		/* This is for historical reasons */
 		if (status == MEMCACHED_END)
 			status = MEMCACHED_NOTFOUND;
@@ -1940,6 +1934,7 @@ static PHP_METHOD(Memcached, setOptions)
 
 	RETURN_BOOL(ok);
 }
+/* }}} */
 
 /* {{{ Memcached::setOption(int option, mixed value)
    Sets the value for the given option constant */
