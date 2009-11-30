@@ -43,7 +43,7 @@ ZEND_BEGIN_MODULE_GLOBALS(php_memcached)
 	char* sess_lock_key;
 	int   sess_lock_key_len;
 #endif
-	int   serializer;
+	enum memcached_serializer serializer;
 	
 	char *compression_type;
 	int   compression_type_real;
