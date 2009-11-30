@@ -158,12 +158,7 @@ typedef unsigned long int uint32_t;
 #endif
 #endif
 
-#ifdef HAVE_MEMCACHED_GET_NULL
-/* return null value if value not found */
 #define RETURN_FROM_GET RETURN_NULL()
-#else
-#define RETURN_FROM_GET RETURN_FALSE
-#endif /* HAVE_MEMCACHED_GET_NULL */
 
 /****************************************
   Structures and definitions
@@ -3194,11 +3189,7 @@ static void php_memc_register_constants(INIT_FUNC_ARGS)
 	/*
 	 * Return value from simple get errors
 	 */
-#ifdef HAVE_MEMCACHED_GET_NULL
 	REGISTER_MEMC_CLASS_CONST_NULL(GET_ERROR_RETURN_VALUE);
-#else
-	REGISTER_MEMC_CLASS_CONST_BOOL(GET_ERROR_RETURN_VALUE, 0);
-#endif
 }
 /* }}} */
 
