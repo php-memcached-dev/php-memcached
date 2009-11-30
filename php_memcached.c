@@ -2234,25 +2234,39 @@ static int php_memc_zval_from_payload(zval *value, char *payload, size_t payload
 	if (flags & MEMC_VAL_COMPRESSED) {
 		uint32_t len;
 		unsigned long length;
-		
 		zend_bool decompress_status = 0;
 
-		/* This is copied from Ilia's patch */
-		memcpy(&len, payload, sizeof(uint32_t));
-		buffer = emalloc(len + 1);
-		payload_len -= sizeof(uint32_t);
-		payload += sizeof(uint32_t);
-		length = len;
-		
-		/* First try to detect from flags and fall back to configured value */
-		if (flags & MEMC_VAL_COMPRESSION_FASTLZ) {
-			decompress_status = ((length = fastlz_decompress(payload, payload_len, buffer, len)) > 0);
-		} else if (flags & MEMC_VAL_COMPRESSION_ZLIB) {
-			decompress_status = (uncompress(buffer, &length, payload, payload_len) == Z_OK);
-		} else if (MEMC_G(compression_type_real) == COMPRESSION_TYPE_FASTLZ) {
-			decompress_status = ((length = fastlz_decompress(payload, payload_len, buffer, len)) > 0);
-		} else if (MEMC_G(compression_type_real) == COMPRESSION_TYPE_ZLIB) {
-			decompress_status = (uncompress(buffer, &length, payload, payload_len) == Z_OK);
+		/* Stored with newer memcached extension? */
+		if (flags & MEMC_VAL_COMPRESSION_FASTLZ || flags & MEMC_VAL_COMPRESSION_ZLIB) {
+			/* This is copied from Ilia's patch */
+			memcpy(&len, payload, sizeof(uint32_t));
+			buffer = emalloc(len + 1);
+			payload_len -= sizeof(uint32_t);
+			payload += sizeof(uint32_t);
+			length = len;
+
+			if (flags & MEMC_VAL_COMPRESSION_FASTLZ) {
+				decompress_status = ((length = fastlz_decompress(payload, payload_len, buffer, len)) > 0);
+			} else if (flags & MEMC_VAL_COMPRESSION_ZLIB) {
+				decompress_status = (uncompress(buffer, &length, payload, payload_len) == Z_OK);
+			}
+		}
+
+		/* Fall back to 'old style decompression' */
+		if (!decompress_status) {
+			unsigned int factor = 1, maxfactor = 16;
+			int status;
+
+			do {
+				length = (unsigned long)payload_len * (1 << factor++);
+				buffer = erealloc(buffer, length + 1);
+				memset(buffer, 0, length + 1);
+				status = uncompress((Bytef *)buffer, (uLongf *)&length, (const Bytef *)payload, payload_len);
+			} while ((status==Z_BUF_ERROR) && (factor < maxfactor));
+			
+			if (status == Z_OK) {
+				decompress_status = 1;
+			}
 		}
 
 		if (!decompress_status) {
