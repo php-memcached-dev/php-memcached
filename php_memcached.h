@@ -48,7 +48,7 @@ ZEND_BEGIN_MODULE_GLOBALS(php_memcached)
 	zend_bool sess_locking_enabled;
 	long  sess_lock_wait;
 	char* sess_prefix;
-	short sess_locked:1;
+	zend_bool sess_locked;
 	char* sess_lock_key;
 	int   sess_lock_key_len;
 #endif
