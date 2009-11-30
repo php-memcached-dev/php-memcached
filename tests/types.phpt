@@ -57,5 +57,12 @@ foreach ($data as $types) {
 	}
 }
 
+$m->flush();
+
+if ($m->get("sdfjhw38rwdenfoqu29eiajfroehr8jaiodfhjaoierhjadf") !== NULL) {
+	echo "Expected: null";
+	echo "Actual: " . get_type($actual);
+}
+
 ?>
 --EXPECT--
