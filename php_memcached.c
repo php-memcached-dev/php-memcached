@@ -83,6 +83,10 @@ typedef unsigned long int uint32_t;
 # endif
 #endif
 
+#if HAVE_MEMCACHED_IGBINARY
+# include "ext/igbinary/igbinary.h"
+#endif
+
 /****************************************
   Custom options
 ****************************************/
