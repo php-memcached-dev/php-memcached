@@ -10,6 +10,7 @@ var_dump($m->addServers($servers));
 var_dump($m->getServerList());
 ?>
 --EXPECT--
+bool(true)
 array(1) {
   [0]=>
   array(3) {
