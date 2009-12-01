@@ -25,7 +25,6 @@
 #include "config.h"
 #endif
 
-#include <error.h>
 #include <string.h>
 #include <php.h>
 #include <php_main.h>
@@ -418,7 +417,7 @@ static void php_memc_get_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 			memcached_behavior_set(m_obj->memc, MEMCACHED_BEHAVIOR_SUPPORT_CAS, 1);
 		}
 
-		status = memcached_mget_by_key(i_obj->memc, server_key, server_key_len, keys, key_lens, 1);
+		status = memcached_mget_by_key(m_obj->memc, server_key, server_key_len, keys, key_lens, 1);
 
 		if (php_memc_handle_error(i_obj, status TSRMLS_CC) < 0) {
 			RETURN_FROM_GET;
@@ -484,8 +483,8 @@ static void php_memc_get_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 		int rc;
 		bool return_value_set = false;
 
-		status = memcached_mget_by_key(i_obj->memc, server_key, server_key_len, keys, key_lens, 1);
-		payload = memcached_fetch(i_obj->memc, NULL, NULL, &payload_len, &flags, &status);
+		status = memcached_mget_by_key(m_obj->memc, server_key, server_key_len, keys, key_lens, 1);
+		payload = memcached_fetch(m_obj->memc, NULL, NULL, &payload_len, &flags, &status);
 
 		/* This is for historical reasons */
 		if (status == MEMCACHED_END)
