@@ -14,12 +14,16 @@
   +----------------------------------------------------------------------+
 */
 
-/* $ Id: $ */ 
+/* $ Id: $ */
 
 #ifndef PHP_MEMCACHED_H
 #define PHP_MEMCACHED_H
 
 #include <libmemcached/memcached.h>
+
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
 
 extern zend_module_entry memcached_module_entry;
 #define phpext_memcached_ptr &memcached_module_entry
@@ -30,6 +34,9 @@ extern zend_module_entry memcached_module_entry;
 #define PHP_MEMCACHED_API
 #endif
 
+/****************************************
+  Structures and definitions
+****************************************/
 enum memcached_serializer {
 	SERIALIZER_PHP = 1,
 	SERIALIZER_IGBINARY = 2,
@@ -37,16 +44,21 @@ enum memcached_serializer {
 };
 
 ZEND_BEGIN_MODULE_GLOBALS(php_memcached)
-	memcached_return rescode;
 #if HAVE_MEMCACHED_SESSION
 	zend_bool sess_locking_enabled;
 	long  sess_lock_wait;
 	char* sess_prefix;
-	short sess_locked:1;
+	zend_bool sess_locked;
 	char* sess_lock_key;
 	int   sess_lock_key_len;
 #endif
 	enum memcached_serializer serializer;
+
+	char *compression_type;
+	int   compression_type_real;
+	int   compression_threshold;
+
+	double compression_factor;
 ZEND_END_MODULE_GLOBALS(php_memcached)
 
 PHP_MEMCACHED_API zend_class_entry *php_memc_get_ce(void);
@@ -74,16 +86,6 @@ extern ps_module ps_mod_memcached;
 
 PS_FUNCS(memcached);
 #endif
-
-/* json serializer */
-#if (PHP_MAJOR_VERSION ==5 && PHP_MINOR_VERSION == 2 && PHP_RELEASE_VERSION > 9)
-#define HAVE_JSON_API_5_2 1
-#endif
-#if (PHP_MAJOR_VERSION > 5) || (PHP_MAJOR_VERSION == 5 && PHP_MINOR_VERSION > 2)
-#define HAVE_JSON_API_5_3 1
-#endif
-#define HAVE_JSON_API (HAVE_JSON_API_5_2 || HAVE_JSON_API_5_3)
-
 #endif /* PHP_MEMCACHED_H */
 
 

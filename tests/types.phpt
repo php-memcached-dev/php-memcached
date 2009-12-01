@@ -13,7 +13,7 @@ class testclass {
 $data = array(
 	array('boolean_true', true),
 	array('boolean_false', false),
-
+	
 	array('string', "just a string"),
 	array('string_empty', ""),
 
@@ -55,6 +55,13 @@ foreach ($data as $types) {
 		echo "Actual: ";
 		var_dump($actual);
 	}
+}
+
+$m->flush();
+
+if ($m->get("sdfjhw38rwdenfoqu29eiajfroehr8jaiodfhjaoierhjadf") !== NULL) {
+	echo "Expected: null";
+	echo "Actual: " . get_type($actual);
 }
 
 ?>

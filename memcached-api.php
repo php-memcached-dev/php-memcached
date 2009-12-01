@@ -7,6 +7,12 @@
 class Memcached {
 
 	/**
+	 * Error codes etc.
+	 */
+	
+	const GET_ERROR_RETURN_VALUE;
+
+	/**
 	 * Libmemcached behavior options.
 	 */
 
@@ -146,6 +152,10 @@ class Memcached {
 	public function getResultCode( ) {}
 
 	public function getResultMessage( ) {}
+
+	public function isPersistent( ) {}
+
+	public function isPristine( ) {}
 
 }
 

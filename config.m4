@@ -14,6 +14,9 @@ PHP_ARG_ENABLE(memcached-session, whether to enable memcached session handler su
 PHP_ARG_ENABLE(memcached-igbinary, whether to enable memcached igbinary serializer support,
 [  --enable-memcached-igbinary      Enable memcached igbinary serializer support], no, no)
 
+PHP_ARG_ENABLE(memcached-json, whether to enable memcached json serializer support,
+[  --enable-memcached-json          Enable memcached json serializer support], no, no)
+
 if test -z "$PHP_ZLIB_DIR"; then
 PHP_ARG_WITH(zlib-dir, for ZLIB,
 [  --with-zlib-dir[=DIR]   Set the path to ZLIB install prefix.], no)
@@ -28,6 +31,7 @@ if test -z "$PHP_DEBUG"; then
 fi
 
 if test "$PHP_MEMCACHED" != "no"; then
+
 
   dnl # zlib
   if test "$PHP_ZLIB_DIR" != "no" && test "$PHP_ZLIB_DIR" != "yes"; then
@@ -61,6 +65,9 @@ if test "$PHP_MEMCACHED" != "no"; then
     PHP_ADD_INCLUDE($PHP_ZLIB_INCDIR)
   fi
 
+  dnl add FastLZ
+  PHP_ADD_BUILD_DIR($ext_builddir/fastlz, 1)
+
   if test "$PHP_MEMCACHED_SESSION" != "no"; then
     AC_MSG_CHECKING([for session includes])
     session_inc_path=""
@@ -83,6 +90,74 @@ if test "$PHP_MEMCACHED" != "no"; then
       AC_MSG_ERROR([Cannot find php_session.h])
     else
       AC_MSG_RESULT([$session_inc_path])
+    fi
+  fi
+  
+  if test "$PHP_MEMCACHED_JSON" != "no"; then
+    AC_MSG_CHECKING([for json includes])
+    json_inc_path=""
+    
+    tmp_version=$PHP_VERSION
+    if test -z "$tmp_version"; then
+      if test -z "$PHP_CONFIG"; then
+        AC_MSG_ERROR([php-config not found])
+      fi
+      PHP_MEMCACHED_VERSION_ORIG=`$PHP_CONFIG --version`;
+    else
+      PHP_MEMCACHED_VERSION_ORIG=$tmp_version
+    fi
+
+    if test -z $PHP_MEMCACHED_VERSION_ORIG; then
+      AC_MSG_ERROR([failed to detect PHP version, please report])
+    fi
+
+    PHP_MEMCACHED_VERSION_MASK=`echo ${PHP_MEMCACHED_VERSION_ORIG} | awk 'BEGIN { FS = "."; } { printf "%d", ($1 * 1000 + $2) * 1000 + $3;}'`
+    
+    if test $PHP_MEMCACHED_VERSION_MASK -ge 5002009; then
+      dnl Check JSON for PHP 5.2.9+
+      if test -f "$abs_srcdir/include/php/ext/json/php_json.h"; then
+        json_inc_path="$abs_srcdir/include/php"
+      elif test -f "$abs_srcdir/ext/json/php_json.h"; then
+        json_inc_path="$abs_srcdir"
+      elif test -f "$phpincludedir/ext/json/php_json.h"; then
+        json_inc_path="$phpincludedir"
+      else
+        for i in php php4 php5 php6; do
+          if test -f "$prefix/include/$i/ext/json/php_json.h"; then
+            json_inc_path="$prefix/include/$i"
+          fi
+        done
+      fi
+      if test "$json_inc_path" = ""; then
+        AC_MSG_ERROR([Cannot find php_json.h])
+      else
+        AC_DEFINE(HAVE_JSON_API,1,[Whether JSON API is available])
+        AC_DEFINE(HAVE_JSON_API_5_2,1,[Whether JSON API for PHP 5.2 is available])
+        AC_MSG_RESULT([$json_inc_path])
+      fi
+    elif test $PHP_MEMCACHED_VERSION_MASK -ge 5003000; then
+      if test -f "$abs_srcdir/include/php/ext/json/JSON_parser.h"; then
+        json_inc_path="$abs_srcdir/include/php"
+      elif test -f "$abs_srcdir/ext/json/JSON_parser.h"; then
+        json_inc_path="$abs_srcdir"
+      elif test -f "$phpincludedir/ext/json/JSON_parser.h"; then
+        json_inc_path="$phpincludedir"
+      else
+        for i in php php4 php5 php6; do
+          if test -f "$prefix/include/$i/ext/json/JSON_parser.h"; then
+            json_inc_path="$prefix/include/$i"
+          fi
+        done
+      fi
+      if test "$json_inc_path" = ""; then
+        AC_MSG_ERROR([Cannot find JSON_parser.h])
+      else
+        AC_DEFINE(HAVE_JSON_API,1,[Whether JSON API is available])
+        AC_DEFINE(HAVE_JSON_API_5_3,1,[Whether JSON API for PHP 5.3 is available])
+        AC_MSG_RESULT([$json_inc_path])
+      fi
+    else 
+      AC_MSG_RESULT([the PHP version does not support JSON serialization API])
     fi
   fi
 
@@ -165,8 +240,10 @@ if test "$PHP_MEMCACHED" != "no"; then
     PHP_ADD_LIBRARY_WITH_PATH(memcached, $PHP_LIBMEMCACHED_DIR/lib, MEMCACHED_SHARED_LIBADD)
 
     PHP_SUBST(MEMCACHED_SHARED_LIBADD)
-    PHP_NEW_EXTENSION(memcached, php_memcached.c , $ext_shared,,$SESSION_INCLUDES $IGBINARY_INCLUDES)
 
+    PHP_NEW_EXTENSION(memcached, php_memcached.c fastlz/fastlz.c, $ext_shared,,$SESSION_INCLUDES $IGBINARY_INCLUDES)
+    PHP_ADD_BUILD_DIR($ext_builddir/fastlz, 1)
+ 
     ifdef([PHP_ADD_EXTENSION_DEP],
     [
       PHP_ADD_EXTENSION_DEP(memcached, spl, true)

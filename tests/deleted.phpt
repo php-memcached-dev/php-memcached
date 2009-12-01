@@ -11,8 +11,10 @@ $m->set('eisaleeoo', "foo");
 $m->delete('eisaleeoo');
 $v = $m->get('eisaleeoo');
 
-if ($v !== false) {
-	echo "Vanted a false value from get. Got:\n";
+if ($v !== Memcached::GET_ERROR_RETURN_VALUE) {
+	echo "Wanted: ";
+	var_dump(Memcached::GET_ERROR_RETURN_VALUE);
+	echo "Got: ";
 	var_dump($v);
 }
 ?>

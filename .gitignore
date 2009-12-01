@@ -1,3 +1,4 @@
+*~
 *.swp
 *.lo
 *.la
@@ -46,3 +47,9 @@ memcached*.tgz
 run-tests.php
 cscope.out
 php_memcached.loT
+tests/*.log
+tests/*.mem
+tests/*.out
+tests/*.diff
+tests/*.php
+tests/*.exp
