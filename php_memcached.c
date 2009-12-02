@@ -2407,8 +2407,9 @@ static int php_memc_zval_from_payload(zval *value, char *payload, size_t payload
 	switch (MEMC_VAL_GET_TYPE(flags)) {
 
 		case MEMC_VAL_IS_STRING:
-			if ((flags & MEMC_VAL_COMPRESSED) && payload_emalloc) {
+			if (payload_emalloc) {
 				ZVAL_STRINGL(value, payload, payload_len, 0);
+				payload_emalloc = 0;
 			} else {
 				ZVAL_STRINGL(value, payload, payload_len, 1);
 			}
@@ -2475,10 +2476,15 @@ static int php_memc_zval_from_payload(zval *value, char *payload, size_t payload
 			php_error_docref(NULL TSRMLS_CC, E_WARNING, "unknown payload type");
 			goto my_error;
 	}
+
+	if (payload_emalloc) {
+		efree(payload);
+	}
+
 	return 0;
 
 my_error:
-	if ((flags & MEMC_VAL_COMPRESSED) && payload_emalloc) {
+	if (payload_emalloc) {
 		efree(payload);
 	}
 	return -1;
