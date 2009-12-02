@@ -25,11 +25,17 @@ class Foo implements Serializable {
 	}
 }
 
+error_reporting(0);
+$m->set('foo', 10, 10);
 try {
 	var_dump($m->set('foo', new Foo(), 10));
 } catch (Exception $e) {
+	echo $php_errormsg, "\n";
 	echo $e->getMessage(), "\n";
 }
+var_dump($m->get('foo'));
 
 --EXPECT--
+
 1234
+int(10)

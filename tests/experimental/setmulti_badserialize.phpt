@@ -26,13 +26,16 @@ class Foo implements Serializable {
 }
 
 error_reporting(0);
+$m->setByKey('kef', 'foo', 10, 10);
 try {
 	var_dump($m->setMultiByKey('kef', array('foo' => new Foo()), 10));
 } catch (Exception $e) {
 	echo $php_errormsg, "\n";
 	echo $e->getMessage(), "\n";
 }
+var_dump($m->getByKey('kef', 'foo'));
 
 --EXPECT--
 
 1234
+int(10)
