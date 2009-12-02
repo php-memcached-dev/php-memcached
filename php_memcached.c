@@ -2245,7 +2245,10 @@ static char *php_memc_zval_to_payload(zval *value, size_t *payload_len, uint32_t
 			switch (serializer) {
 #ifdef HAVE_MEMCACHED_IGBINARY
 				case SERIALIZER_IGBINARY:
-					igbinary_serialize((uint8_t **) &buf.c, &buf.len, value);
+					if (igbinary_serialize((uint8_t **) &buf.c, &buf.len, value) != 0) {
+						smart_str_free(&buf);
+						return NULL;
+					}
 					MEMC_VAL_SET_TYPE(*flags, MEMC_VAL_IS_IGBINARY);
 					break;
 #endif
