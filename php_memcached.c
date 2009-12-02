@@ -1716,16 +1716,21 @@ PHP_METHOD(Memcached, getStats)
 	MEMC_METHOD_FETCH_OBJECT;
 
 	stats = memcached_stat(m_obj->memc, NULL, &status);
-	if (php_memc_handle_error(i_obj, status TSRMLS_CC) < 0) {
+	php_memc_handle_error(i_obj, status TSRMLS_CC);
+	if (stats == NULL) {
+		RETURN_FALSE;
+	} else if (status != MEMCACHED_SUCCESS && status != MEMCACHED_SOME_ERRORS) {
+		memcached_stat_free(m_obj->memc, stats);
 		RETURN_FALSE;
 	}
 
 	array_init(return_value);
 	servers = memcached_server_list(m_obj->memc);
-	servers_count = memcached_server_count(m_obj->memc);
 	if (servers == NULL) {
+		memcached_stat_free(m_obj->memc, stats);
 		return;
 	}
+	servers_count = memcached_server_count(m_obj->memc);
 
 	for (i = 0; i < servers_count; i++) {
 		hostport_len = spprintf(&hostport, 0, "%s:%u", servers[i].hostname, servers[i].port);
