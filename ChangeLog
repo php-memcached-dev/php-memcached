@@ -7,6 +7,7 @@ Version 2.0.0
 	* Add fastlz library that provides better/faster payload compression
 	* Add configure switch to enable/disable JSON serialization support
 	* Add getAllKeys() method
+	* Add deleteMulti() and deleteMultiByKey() methods
 	* Add isPristine() and isPersistent() methods
 	* Add setOptions() method to set multiple options at once
 	* Add SERIALIZER_JSON_ARRAY type that decodes JSON payloads as arrays
