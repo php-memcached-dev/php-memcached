@@ -1421,27 +1421,23 @@ static void php_memc_deleteMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by
 	for (zend_hash_internal_pointer_reset(Z_ARRVAL_P(entries));
 		 zend_hash_get_current_data(Z_ARRVAL_P(entries), (void**)&entry) == SUCCESS;
 		 zend_hash_move_forward(Z_ARRVAL_P(entries))) {
-			
-		zval tmp_zval, *tmp_pzval;	
-			
-		tmp_zval = **entry;
-		zval_copy_ctor(&tmp_zval);
-		tmp_pzval = &tmp_zval;
-		convert_to_string(tmp_pzval);
+
+		if (Z_TYPE_PP(entry) != IS_STRING || Z_STRLEN_PP(entry) <= 0) {
+			continue;
+		}
 
 		if (!by_key) {
-			server_key     = Z_STRVAL_P(tmp_pzval);
-			server_key_len = Z_STRLEN_P(tmp_pzval);
+			server_key     = Z_STRVAL_PP(entry);
+			server_key_len = Z_STRLEN_PP(entry);
 		}
 
-		status = memcached_delete_by_key(m_obj->memc, server_key, server_key_len, Z_STRVAL_P(tmp_pzval), Z_STRLEN_P(tmp_pzval), expiration);
-		
+		status = memcached_delete_by_key(m_obj->memc, server_key, server_key_len, Z_STRVAL_PP(entry), Z_STRLEN_PP(entry), expiration);
+
 		if (php_memc_handle_error(i_obj, status TSRMLS_CC) < 0) {
-			add_assoc_long(return_value, Z_STRVAL_P(tmp_pzval), status);
+			add_assoc_long(return_value, Z_STRVAL_PP(entry), status);
 		} else {
-			add_assoc_bool(return_value, Z_STRVAL_P(tmp_pzval), 1);
+			add_assoc_bool(return_value, Z_STRVAL_PP(entry), 1);
 		}
-		zval_dtor(tmp_pzval);
 	}
 
 	return;
