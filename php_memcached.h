@@ -41,6 +41,7 @@ enum memcached_serializer {
 	SERIALIZER_PHP = 1,
 	SERIALIZER_IGBINARY = 2,
 	SERIALIZER_JSON = 3,
+	SERIALIZER_JSON_ARRAY = 4,
 };
 
 ZEND_BEGIN_MODULE_GLOBALS(php_memcached)

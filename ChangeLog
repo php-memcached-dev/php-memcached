@@ -1,5 +1,23 @@
 memcached extension changelog
 
+Version 2.0.0
+-------------
+	* Change the return value for non-existing keys to be NULL rather than
+	  'false', affects simple get only
+	* Add fastlz library that provides better/faster payload compression
+	* Add configure switch to enable/disable JSON serialization support
+	* Add isPristine() and isPersistent() methods
+	* Add setOptions() method to set multiple options at once
+	* Add SERIALIZER_JSON_ARRAY type that decodes JSON payloads as arrays
+	  instead of objects
+	* Add support for Unix domain socket connections
+	* Add memcached.compression_threshold INI setting
+	* Add memcached.compression_factor INI setting
+	* Add memcached.compression_type INI setting
+	* Implement a few speed optimizations
+	* Many bug fixes and memory leaks plugged
+	* Add several more tests
+
 Version 1.0.1
 -------------
 	* Fix JSON API handling to account for PHP 5.2/5.3 version differences.
