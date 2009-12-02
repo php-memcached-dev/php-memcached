@@ -254,6 +254,7 @@ static void php_memc_store_impl(INTERNAL_FUNCTION_PARAMETERS, int op, zend_bool 
 static void php_memc_setMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key);
 static void php_memc_cas_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key);
 static void php_memc_delete_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key);
+static void php_memc_deleteMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key);
 static void php_memc_incdec_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool incr);
 static void php_memc_getDelayed_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key);
 static memcached_return php_memc_do_cache_callback(zval *memc_obj, zend_fcall_info *fci, zend_fcall_info_cache *fcc, char *key, size_t key_len, zval *value TSRMLS_DC);
@@ -1322,11 +1323,27 @@ PHP_METHOD(Memcached, delete)
 }
 /* }}} */
 
+/* {{{ Memcached::deleteMulti(array keys [, int time ])
+   Deletes the given keys */
+PHP_METHOD(Memcached, deleteMulti)
+{
+	php_memc_deleteMulti_impl(INTERNAL_FUNCTION_PARAM_PASSTHRU, 0);
+}
+/* }}} */
+
 /* {{{ Memcached::deleteByKey(string server_key, string key [, int time ])
    Deletes the given key from the server identified by the server key */
 PHP_METHOD(Memcached, deleteByKey)
 {
 	php_memc_delete_impl(INTERNAL_FUNCTION_PARAM_PASSTHRU, 1);
+}
+/* }}} */
+
+/* {{{ Memcached::deleteMultiByKey(array keys [, int time ])
+   Deletes the given key from the server identified by the server key */
+PHP_METHOD(Memcached, deleteMultiByKey)
+{
+	php_memc_deleteMulti_impl(INTERNAL_FUNCTION_PARAM_PASSTHRU, 1);
 }
 /* }}} */
 
@@ -1371,6 +1388,63 @@ static void php_memc_delete_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 	}
 
 	RETURN_TRUE;
+}
+/* }}} */
+
+/* {{{ -- php_memc_deleteMulti_impl */
+static void php_memc_deleteMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
+{
+	zval *entries;
+	char *server_key = NULL;
+	int   server_key_len = 0;
+	time_t expiration = 0;
+	zval **entry;
+
+	memcached_return status;
+	MEMC_METHOD_INIT_VARS;
+
+	if (by_key) {
+		if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sa|l", &server_key,
+								  &server_key_len, &entries, &expiration) == FAILURE) {
+			return;
+		}
+	} else {
+		if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "a|l", &entries, &expiration) == FAILURE) {
+			return;
+		}
+	}
+
+	MEMC_METHOD_FETCH_OBJECT;
+	i_obj->rescode = MEMCACHED_SUCCESS;
+
+	array_init(return_value);
+	for (zend_hash_internal_pointer_reset(Z_ARRVAL_P(entries));
+		 zend_hash_get_current_data(Z_ARRVAL_P(entries), (void**)&entry) == SUCCESS;
+		 zend_hash_move_forward(Z_ARRVAL_P(entries))) {
+			
+		zval tmp_zval, *tmp_pzval;	
+			
+		tmp_zval = **entry;
+		zval_copy_ctor(&tmp_zval);
+		tmp_pzval = &tmp_zval;
+		convert_to_string(tmp_pzval);
+
+		if (!by_key) {
+			server_key     = Z_STRVAL_P(tmp_pzval);
+			server_key_len = Z_STRLEN_P(tmp_pzval);
+		}
+
+		status = memcached_delete_by_key(m_obj->memc, server_key, server_key_len, Z_STRVAL_P(tmp_pzval), Z_STRLEN_P(tmp_pzval), expiration);
+		
+		if (php_memc_handle_error(i_obj, status TSRMLS_CC) < 0) {
+			add_assoc_long(return_value, Z_STRVAL_P(tmp_pzval), status);
+		} else {
+			add_assoc_bool(return_value, Z_STRVAL_P(tmp_pzval), 1);
+		}
+		zval_dtor(tmp_pzval);
+	}
+
+	return;
 }
 /* }}} */
 
@@ -2959,9 +3033,20 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_delete, 0, 0, 1)
 	ZEND_ARG_INFO(0, time)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_deleteMulti, 0, 0, 1)
+	ZEND_ARG_INFO(0, keys)
+	ZEND_ARG_INFO(0, time)
+ZEND_END_ARG_INFO()
+
 ZEND_BEGIN_ARG_INFO_EX(arginfo_deleteByKey, 0, 0, 2)
 	ZEND_ARG_INFO(0, server_key)
 	ZEND_ARG_INFO(0, key)
+	ZEND_ARG_INFO(0, time)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_deleteMultiByKey, 0, 0, 2)
+	ZEND_ARG_INFO(0, server_key)
+	ZEND_ARG_INFO(0, keys)
 	ZEND_ARG_INFO(0, time)
 ZEND_END_ARG_INFO()
 
@@ -3058,7 +3143,9 @@ static zend_function_entry memcached_class_methods[] = {
     MEMC_ME(replace,            arginfo_replace)
     MEMC_ME(replaceByKey,       arginfo_replaceByKey)
     MEMC_ME(delete,             arginfo_delete)
+	MEMC_ME(deleteMulti,        arginfo_deleteMulti)
     MEMC_ME(deleteByKey,        arginfo_deleteByKey)
+    MEMC_ME(deleteMultiByKey,   arginfo_deleteMultiByKey)
 
     MEMC_ME(increment,          arginfo_increment)
     MEMC_ME(decrement,          arginfo_decrement)

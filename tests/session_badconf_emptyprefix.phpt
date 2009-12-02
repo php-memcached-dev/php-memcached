@@ -23,4 +23,4 @@ session_start();
 session_write_close();
 
 --EXPECTF--
-session_start(): invalid memcached key %s
+session_start(): bad memcached key prefix in memcached.sess_prefix
