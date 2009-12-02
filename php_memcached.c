@@ -1117,6 +1117,7 @@ static void php_memc_store_impl(INTERNAL_FUNCTION_PARAMETERS, int op, zend_bool 
 	int   server_key_len = 0;
 	char *s_value = NULL;
 	int   s_value_len = 0;
+	zval  s_zvalue;
 	zval *value;
 	time_t expiration = 0;
 	char  *payload;
@@ -1131,8 +1132,9 @@ static void php_memc_store_impl(INTERNAL_FUNCTION_PARAMETERS, int op, zend_bool 
 									  &server_key_len, &key, &key_len, &s_value, &s_value_len, &expiration) == FAILURE) {
 				return;
 			}
-			MAKE_STD_ZVAL(value);
-			ZVAL_STRINGL(value, s_value, s_value_len, 1);
+			INIT_ZVAL(s_zvalue);
+			value = &s_zvalue;
+			ZVAL_STRINGL(value, s_value, s_value_len, 0);
 		} else {
 			if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ssz|l", &server_key,
 									  &server_key_len, &key, &key_len, &value, &expiration) == FAILURE) {
@@ -1145,8 +1147,9 @@ static void php_memc_store_impl(INTERNAL_FUNCTION_PARAMETERS, int op, zend_bool 
 									  &s_value, &s_value_len) == FAILURE) {
 				return;
 			}
-			MAKE_STD_ZVAL(value);
-			ZVAL_STRINGL(value, s_value, s_value_len, 1);
+			INIT_ZVAL(s_zvalue);
+			value = &s_zvalue;
+			ZVAL_STRINGL(value, s_value, s_value_len, 0);
 		} else {
 			if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sz|l", &key, &key_len,
 									  &value, &expiration) == FAILURE) {
@@ -1177,9 +1180,6 @@ static void php_memc_store_impl(INTERNAL_FUNCTION_PARAMETERS, int op, zend_bool 
 	}
 
 	payload = php_memc_zval_to_payload(value, &payload_len, &flags, m_obj->serializer TSRMLS_CC);
-	if (op == MEMC_OP_APPEND || op == MEMC_OP_PREPEND) {
-		zval_ptr_dtor(&value);
-	}
 	if (payload == NULL) {
 		i_obj->rescode = MEMC_RES_PAYLOAD_FAILURE;
 		RETURN_FALSE;
