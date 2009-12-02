@@ -53,3 +53,15 @@ tests/*.out
 tests/*.diff
 tests/*.php
 tests/*.exp
+tests/*/*.log
+tests/*/*.mem
+tests/*/*.out
+tests/*/*.diff
+tests/*/*.php
+tests/*/*.exp
+tests/*/*/*.log
+tests/*/*/*.mem
+tests/*/*/*.out
+tests/*/*/*.diff
+tests/*/*/*.php
+tests/*/*/*.exp
