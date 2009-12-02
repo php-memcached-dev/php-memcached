@@ -2259,7 +2259,6 @@ static int php_memc_zval_from_payload(zval *value, char *payload, size_t payload
 	   A NULL payload is completely valid if length is 0, it is simply empty.
 	 */
 	zend_bool payload_emalloc = 0;
-	zend_bool as_array;
 	char *buffer = NULL;
 
 	if (payload == NULL && payload_len > 0) {
@@ -2381,11 +2380,10 @@ static int php_memc_zval_from_payload(zval *value, char *payload, size_t payload
 
 		case MEMC_VAL_IS_JSON:
 #ifdef HAVE_JSON_API
-			as_array = (serializer == SERIALIZER_JSON_ARRAY);
 # if HAVE_JSON_API_5_2
-			php_json_decode(value, payload, payload_len, as_array TSRMLS_CC);
+			php_json_decode(value, payload, payload_len, (serializer == SERIALIZER_JSON_ARRAY) TSRMLS_CC);
 # elif HAVE_JSON_API_5_3
-			php_json_decode(value, payload, payload_len, as_array, JSON_PARSER_DEFAULT_DEPTH TSRMLS_CC);
+			php_json_decode(value, payload, payload_len, (serializer == SERIALIZER_JSON_ARRAY), JSON_PARSER_DEFAULT_DEPTH TSRMLS_CC);
 # endif
 #else
 			php_error_docref(NULL TSRMLS_CC, E_WARNING, "could not unserialize value, no json support");
