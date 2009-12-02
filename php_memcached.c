@@ -1399,9 +1399,6 @@ static void php_memc_deleteMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by
 	int   server_key_len = 0;
 	time_t expiration = 0;
 	zval **entry;
-	char *str_key;
-	uint  str_key_len;
-	ulong num_key;
 
 	memcached_return status;
 	MEMC_METHOD_INIT_VARS;
@@ -1420,6 +1417,7 @@ static void php_memc_deleteMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by
 	MEMC_METHOD_FETCH_OBJECT;
 	i_obj->rescode = MEMCACHED_SUCCESS;
 
+	array_init(return_value);
 	for (zend_hash_internal_pointer_reset(Z_ARRVAL_P(entries));
 		 zend_hash_get_current_data(Z_ARRVAL_P(entries), (void**)&entry) == SUCCESS;
 		 zend_hash_move_forward(Z_ARRVAL_P(entries))) {
@@ -1437,14 +1435,16 @@ static void php_memc_deleteMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by
 		}
 
 		status = memcached_delete_by_key(m_obj->memc, server_key, server_key_len, Z_STRVAL_P(tmp_pzval), Z_STRLEN_P(tmp_pzval), expiration);
-		zval_dtor(tmp_pzval);
-
+		
 		if (php_memc_handle_error(i_obj, status TSRMLS_CC) < 0) {
-			RETURN_FALSE;
+			add_assoc_long(return_value, Z_STRVAL_P(tmp_pzval), status);
+		} else {
+			add_assoc_bool(return_value, Z_STRVAL_P(tmp_pzval), 1);
 		}
+		zval_dtor(tmp_pzval);
 	}
 
-	RETURN_TRUE;
+	return;
 }
 /* }}} */
 
