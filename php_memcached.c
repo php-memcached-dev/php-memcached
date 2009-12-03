@@ -1735,35 +1735,40 @@ PHP_METHOD(Memcached, getStats)
 	for (i = 0; i < servers_count; i++) {
 		hostport_len = spprintf(&hostport, 0, "%s:%u", servers[i].hostname, servers[i].port);
 
-		MAKE_STD_ZVAL(entry);
-		array_init(entry);
+		/* This is to skip over failed servers from the statistics array.
+		 * Libmemcached returns an empty statistics struct in case of failure,
+		 * so we use the pid as a sentinel. */
+		if (stats[i].pid > 0) {
+			MAKE_STD_ZVAL(entry);
+			array_init(entry);
 
-		add_assoc_long(entry, "pid", stats[i].pid);
-		add_assoc_long(entry, "uptime", stats[i].uptime);
-		add_assoc_long(entry, "threads", stats[i].threads);
-		add_assoc_long(entry, "time", stats[i].time);
-		add_assoc_long(entry, "pointer_size", stats[i].pointer_size);
-		add_assoc_long(entry, "rusage_user_seconds", stats[i].rusage_user_seconds);
-		add_assoc_long(entry, "rusage_user_microseconds", stats[i].rusage_user_microseconds);
-		add_assoc_long(entry, "rusage_system_seconds", stats[i].rusage_system_seconds);
-		add_assoc_long(entry, "rusage_system_microseconds", stats[i].rusage_system_microseconds);
-		add_assoc_long(entry, "curr_items", stats[i].curr_items);
-		add_assoc_long(entry, "total_items", stats[i].total_items);
-		add_assoc_long(entry, "limit_maxbytes", stats[i].limit_maxbytes);
-		add_assoc_long(entry, "curr_connections", stats[i].curr_connections);
-		add_assoc_long(entry, "total_connections", stats[i].total_connections);
-		add_assoc_long(entry, "connection_structures", stats[i].connection_structures);
-		add_assoc_long(entry, "bytes", stats[i].bytes);
-		add_assoc_long(entry, "cmd_get", stats[i].cmd_get);
-		add_assoc_long(entry, "cmd_set", stats[i].cmd_set);
-		add_assoc_long(entry, "get_hits", stats[i].get_hits);
-		add_assoc_long(entry, "get_misses", stats[i].get_misses);
-		add_assoc_long(entry, "evictions", stats[i].evictions);
-		add_assoc_long(entry, "bytes_read", stats[i].bytes_read);
-		add_assoc_long(entry, "bytes_written", stats[i].bytes_written);
-		add_assoc_stringl(entry, "version", stats[i].version, strlen(stats[i].version), 1);
+			add_assoc_long(entry, "pid", stats[i].pid);
+			add_assoc_long(entry, "uptime", stats[i].uptime);
+			add_assoc_long(entry, "threads", stats[i].threads);
+			add_assoc_long(entry, "time", stats[i].time);
+			add_assoc_long(entry, "pointer_size", stats[i].pointer_size);
+			add_assoc_long(entry, "rusage_user_seconds", stats[i].rusage_user_seconds);
+			add_assoc_long(entry, "rusage_user_microseconds", stats[i].rusage_user_microseconds);
+			add_assoc_long(entry, "rusage_system_seconds", stats[i].rusage_system_seconds);
+			add_assoc_long(entry, "rusage_system_microseconds", stats[i].rusage_system_microseconds);
+			add_assoc_long(entry, "curr_items", stats[i].curr_items);
+			add_assoc_long(entry, "total_items", stats[i].total_items);
+			add_assoc_long(entry, "limit_maxbytes", stats[i].limit_maxbytes);
+			add_assoc_long(entry, "curr_connections", stats[i].curr_connections);
+			add_assoc_long(entry, "total_connections", stats[i].total_connections);
+			add_assoc_long(entry, "connection_structures", stats[i].connection_structures);
+			add_assoc_long(entry, "bytes", stats[i].bytes);
+			add_assoc_long(entry, "cmd_get", stats[i].cmd_get);
+			add_assoc_long(entry, "cmd_set", stats[i].cmd_set);
+			add_assoc_long(entry, "get_hits", stats[i].get_hits);
+			add_assoc_long(entry, "get_misses", stats[i].get_misses);
+			add_assoc_long(entry, "evictions", stats[i].evictions);
+			add_assoc_long(entry, "bytes_read", stats[i].bytes_read);
+			add_assoc_long(entry, "bytes_written", stats[i].bytes_written);
+			add_assoc_stringl(entry, "version", stats[i].version, strlen(stats[i].version), 1);
 
-		add_assoc_zval_ex(return_value, hostport, hostport_len+1, entry);
+			add_assoc_zval_ex(return_value, hostport, hostport_len+1, entry);
+		}
 		efree(hostport);
 	}
 
