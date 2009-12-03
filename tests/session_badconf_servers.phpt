@@ -24,4 +24,4 @@ session_start();
 session_write_close();
 
 --EXPECTF--
-session_start(): failed to parse session.save_path: ""
+session_start(): failed to parse session.save_path
