@@ -609,11 +609,10 @@ static void php_memc_getMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 	}
 
 	if (i == 0) {
-		i_obj->rescode = MEMCACHED_BAD_KEY_PROVIDED;
-		zval_dtor(return_value);
+		i_obj->rescode = MEMCACHED_NOTFOUND;
 		efree(mkeys);
 		efree(mkeys_len);
-		RETURN_FALSE;
+		return;
 	}
 
 	/*
