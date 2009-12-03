@@ -1427,27 +1427,23 @@ static void php_memc_deleteMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by
 	for (zend_hash_internal_pointer_reset(Z_ARRVAL_P(entries));
 		 zend_hash_get_current_data(Z_ARRVAL_P(entries), (void**)&entry) == SUCCESS;
 		 zend_hash_move_forward(Z_ARRVAL_P(entries))) {
-			
-		zval tmp_zval, *tmp_pzval;	
-			
-		tmp_zval = **entry;
-		zval_copy_ctor(&tmp_zval);
-		tmp_pzval = &tmp_zval;
-		convert_to_string(tmp_pzval);
+
+		if (Z_TYPE_PP(entry) != IS_STRING || Z_STRLEN_PP(entry) <= 0) {
+			continue;
+		}
 
 		if (!by_key) {
-			server_key     = Z_STRVAL_P(tmp_pzval);
-			server_key_len = Z_STRLEN_P(tmp_pzval);
+			server_key     = Z_STRVAL_PP(entry);
+			server_key_len = Z_STRLEN_PP(entry);
 		}
 
-		status = memcached_delete_by_key(m_obj->memc, server_key, server_key_len, Z_STRVAL_P(tmp_pzval), Z_STRLEN_P(tmp_pzval), expiration);
-		
+		status = memcached_delete_by_key(m_obj->memc, server_key, server_key_len, Z_STRVAL_PP(entry), Z_STRLEN_PP(entry), expiration);
+
 		if (php_memc_handle_error(i_obj, status TSRMLS_CC) < 0) {
-			add_assoc_long(return_value, Z_STRVAL_P(tmp_pzval), status);
+			add_assoc_long(return_value, Z_STRVAL_PP(entry), status);
 		} else {
-			add_assoc_bool(return_value, Z_STRVAL_P(tmp_pzval), 1);
+			add_assoc_bool(return_value, Z_STRVAL_PP(entry), 1);
 		}
-		zval_dtor(tmp_pzval);
 	}
 
 	return;
@@ -1819,6 +1815,35 @@ PHP_METHOD(Memcached, getVersion)
 }
 /* }}} */
 
+/* {{{ Memcached::getAllKeys()
+	Returns the keys stored on all the servers */
+static memcached_return php_memc_dump_func_callback(memcached_st *ptr __attribute__((unused)), \
+	const char *key, size_t key_length, void *context)
+{
+	zval *ctx = (zval*) context;
+	add_next_index_string(ctx, (char*) key, 1);
+
+	return MEMCACHED_SUCCESS;
+}
+
+PHP_METHOD(Memcached, getAllKeys)
+{
+	memcached_return rc;
+	memcached_dump_func callback[1];
+	MEMC_METHOD_INIT_VARS;
+
+	callback[0] = &php_memc_dump_func_callback;
+	MEMC_METHOD_FETCH_OBJECT;
+
+	array_init(return_value);
+	rc = memcached_dump(m_obj->memc, callback, return_value, 1);
+	if (php_memc_handle_error(i_obj, rc TSRMLS_CC) < 0) {
+		zval_dtor(return_value);
+		RETURN_FALSE;
+	}
+}
+/* }}} */
+
 /* {{{ Memcached::flush([ int delay ])
    Flushes the data on all the servers */
 static PHP_METHOD(Memcached, flush)
@@ -1992,10 +2017,8 @@ static int php_memc_set_option(php_memc_t *i_obj, long option, zval *value TSRML
 static PHP_METHOD(Memcached, setOptions)
 {
 	zval *options;
-	HashPosition pos;
 	zend_bool ok = 1;
 	uint key_len;
-	int key_type;
 	char *key;
 	ulong key_index;
 	zval **value;
@@ -2009,8 +2032,8 @@ static PHP_METHOD(Memcached, setOptions)
 	MEMC_METHOD_FETCH_OBJECT;
 
 	for (zend_hash_internal_pointer_reset(Z_ARRVAL_P(options));
-		zend_hash_get_current_data(Z_ARRVAL_P(options), (void *) &value) == SUCCESS;
-		zend_hash_move_forward(Z_ARRVAL_P(options))) {
+		 zend_hash_get_current_data(Z_ARRVAL_P(options), (void *) &value) == SUCCESS;
+		 zend_hash_move_forward(Z_ARRVAL_P(options))) {
 
 		if (zend_hash_get_current_key_ex(Z_ARRVAL_P(options), &key, &key_len, &key_index, 0, NULL) == HASH_KEY_IS_LONG) {
 			if (!php_memc_set_option(i_obj, (long) key_index, *value TSRMLS_CC)) {
@@ -3113,6 +3136,9 @@ ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO(arginfo_isPristine, 0)
 ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO(arginfo_getAllKeys, 0)
+ZEND_END_ARG_INFO()
 /* }}} */
 
 /* {{{ memcached_class_methods */
@@ -3162,6 +3188,7 @@ static zend_function_entry memcached_class_methods[] = {
 
 	MEMC_ME(getStats,           arginfo_getStats)
 	MEMC_ME(getVersion,         arginfo_getVersion)
+	MEMC_ME(getAllKeys,         arginfo_getAllKeys)
 
     MEMC_ME(flush,              arginfo_flush)
 
