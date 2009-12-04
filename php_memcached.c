@@ -626,6 +626,8 @@ static void php_memc_getMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 	}
 
 	status = memcached_mget_by_key(m_obj->memc, server_key, server_key_len, mkeys, mkeys_len, i);
+	// Handle error, but ignore, there might still be some result
+	php_memc_handle_error(i_obj, status TSRMLS_CC);
 
 	/*
 	 * Restore the CAS support flag, but only if we had to turn it on.
@@ -638,10 +640,6 @@ static void php_memc_getMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 
 	efree(mkeys);
 	efree(mkeys_len);
-	if (php_memc_handle_error(i_obj, status TSRMLS_CC) < 0) {
-		zval_dtor(return_value);
-		RETURN_FALSE;
-	}
 
 	/*
 	 * Iterate through the result set and create the result array. The CAS tokens are
@@ -652,9 +650,13 @@ static void php_memc_getMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 		array_init(cas_tokens);
 	}
 
-	status = MEMCACHED_SUCCESS;
 	memcached_result_create(m_obj->memc, &result);
 	while ((memcached_fetch_result(m_obj->memc, &result, &status)) != NULL) {
+		if (status != MEMCACHED_SUCCESS) {
+			status = MEMCACHED_SOME_ERRORS;
+			php_memc_handle_error(i_obj, status TSRMLS_CC);
+			continue;
+		}
 
 		payload     = memcached_result_value(&result);
 		payload_len = memcached_result_length(&result);
@@ -665,12 +667,21 @@ static void php_memc_getMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 		MAKE_STD_ZVAL(value);
 
 		if (php_memc_zval_from_payload(value, payload, payload_len, flags, m_obj->serializer TSRMLS_CC) < 0) {
+			// XXX: remember memcached_quit?
 			zval_ptr_dtor(&value);
-			zval_dtor(return_value);
-			i_obj->rescode = MEMC_RES_PAYLOAD_FAILURE;
-			memcached_result_free(&result);
-			RETURN_FALSE;
+			if (EG(exception)) {
+				status = MEMC_RES_PAYLOAD_FAILURE;
+				php_memc_handle_error(i_obj, status TSRMLS_CC);
+
+				break;
+			}
+			status = MEMCACHED_SOME_ERRORS;
+			i_obj->rescode = MEMCACHED_SOME_ERRORS;
+
+			continue;
 		}
+
+		i++;
 		add_assoc_zval_ex(return_value, res_key, res_key_len+1, value);
 		if (cas_tokens) {
 			cas = memcached_result_cas(&result);
@@ -680,7 +691,12 @@ static void php_memc_getMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 
 	memcached_result_free(&result);
 
-	if (status != MEMCACHED_END && php_memc_handle_error(i_obj, status TSRMLS_CC) < 0) {
+	if (EG(exception)) {
+		// XXX: cas_tokens should only be set on success, currently we're destructive
+		if (cas_tokens) {
+			zval_dtor(cas_tokens);
+			ZVAL_NULL(cas_tokens);
+		}
 		zval_dtor(return_value);
 		RETURN_FALSE;
 	}
@@ -2219,6 +2235,13 @@ static int php_memc_handle_error(php_memc_t *i_obj, memcached_return status TSRM
 		case MEMCACHED_BUFFERED:
 			i_obj->rescode = status;
 			i_obj->memc_errno = 0;
+			result = 0;
+			break;
+
+		case MEMCACHED_SOME_ERRORS:
+			i_obj->rescode = status;
+			/* Hnngghgh! */
+			i_obj->memc_errno = i_obj->obj->memc->cached_errno;
 			result = 0;
 			break;
 

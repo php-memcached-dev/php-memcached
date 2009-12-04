@@ -14,7 +14,9 @@ var_dump($m->getMulti(array('foo', 'bar')));
 echo $m->getResultMessage(), "\n";
 
 --EXPECT--
-bool(false)
+array(0) {
+}
 NO SERVERS DEFINED
-bool(false)
+array(0) {
+}
 SYSTEM ERROR
