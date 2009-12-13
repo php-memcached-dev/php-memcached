@@ -664,6 +664,10 @@ static void php_memc_getMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 		res_key     = memcached_result_key_value(&result);
 		res_key_len = memcached_result_key_length(&result);
 
+		// This may be a bug in libmemcached, the key is not null terminated
+		// whe using the binary protocol.
+		res_key[res_key_len] = 0;
+
 		MAKE_STD_ZVAL(value);
 
 		if (php_memc_zval_from_payload(value, payload, payload_len, flags, m_obj->serializer TSRMLS_CC) < 0) {
