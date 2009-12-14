@@ -23,7 +23,7 @@ var_dump($m->deleteByKey('', 'keffe'));
 echo $m->getResultMessage(), "\n";
 var_dump($m->deleteByKey('keffe', 'äöåasäö åaösdäf asdf'));
 echo $m->getResultMessage(), "\n";
---EXPECT--
+--EXPECTF--
 string(3) "foo"
 bool(true)
 SUCCESS
@@ -37,4 +37,4 @@ A BAD KEY WAS PROVIDED/CHARACTERS OUT OF RANGE
 bool(false)
 NOT FOUND
 bool(false)
-PROTOCOL ERROR
+%rPROTOCOL ERROR|NOT FOUND%r

@@ -21,7 +21,7 @@ var_dump($m->getByKey('kef', 'foo'));
 --EXPECTF--
 bool(false)
 
-NOT STORED
+%rNOT STORED|NOT FOUND%r
 NULL
 bool(true)
 string(3) "bar"

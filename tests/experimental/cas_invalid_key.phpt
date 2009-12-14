@@ -14,8 +14,8 @@ echo $m->getResultMessage(), "\n";
 var_dump($m->cas(0, ' дц jas kjjhask d ', true, 10));
 echo $m->getResultMessage(), "\n";
 
---EXPECT--
+--EXPECTF--
 bool(false)
 A BAD KEY WAS PROVIDED/CHARACTERS OUT OF RANGE
 bool(false)
-CLIENT ERROR
+%rCLIENT ERROR|NOT FOUND%r
