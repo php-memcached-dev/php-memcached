@@ -2622,9 +2622,11 @@ static memcached_return php_memc_do_cache_callback(zval *zmemc_obj, zend_fcall_i
 {
 	char *payload = NULL;
 	size_t payload_len = 0;
-	zval **params[3];
+	zval **params[4];
 	zval *retval;
 	zval *z_key;
+	zval *z_expiration;
+
 	uint32_t flags = 0;
 	memcached_return rc;
 	php_memc_t* i_obj;
@@ -2632,16 +2634,19 @@ static memcached_return php_memc_do_cache_callback(zval *zmemc_obj, zend_fcall_i
 	int result;
 
 	MAKE_STD_ZVAL(z_key);
+	MAKE_STD_ZVAL(z_expiration);
 	ZVAL_STRINGL(z_key, key, key_len, 1);
 	ZVAL_NULL(value);
+	ZVAL_LONG(z_expiration, 0);
 
 	params[0] = &zmemc_obj;
 	params[1] = &z_key;
 	params[2] = &value;
+	params[3] = &z_expiration;
 
 	fci->retval_ptr_ptr = &retval;
 	fci->params = params;
-	fci->param_count = 3;
+	fci->param_count = sizeof(params) / sizeof(params[0]);
 
 	result = zend_call_function(fci, fcc TSRMLS_CC);
 	if (result == SUCCESS && retval) {
@@ -2649,11 +2654,19 @@ static memcached_return php_memc_do_cache_callback(zval *zmemc_obj, zend_fcall_i
 		struct memc_obj *m_obj = i_obj->obj;
 
 		if (zend_is_true(retval)) {
+			time_t expiration;
+
+			if (Z_TYPE_P(z_expiration) != IS_LONG) {
+				convert_to_long(z_expiration);
+			}
+
+			expiration = Z_LVAL_P(z_expiration);
+
 			payload = php_memc_zval_to_payload(value, &payload_len, &flags, m_obj->serializer TSRMLS_CC);
 			if (payload == NULL) {
 				status = (memcached_return)MEMC_RES_PAYLOAD_FAILURE;
 			} else {
-				rc = memcached_set(m_obj->memc, key, key_len, payload, payload_len, 0, flags);
+				rc = memcached_set(m_obj->memc, key, key_len, payload, payload_len, expiration, flags);
 				if (rc == MEMCACHED_SUCCESS || rc == MEMCACHED_BUFFERED) {
 					status = rc;
 				}
@@ -2679,6 +2692,7 @@ static memcached_return php_memc_do_cache_callback(zval *zmemc_obj, zend_fcall_i
 	}
 
 	zval_ptr_dtor(&z_key);
+	zval_ptr_dtor(&z_expiration);
 
 	return status;
 }

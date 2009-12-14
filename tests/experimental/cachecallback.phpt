@@ -8,12 +8,14 @@ global $runs;
 
 $runs = 0;
 
-function the_callback(Memcached $memc, $key, &$value) {
+function the_callback(Memcached $memc, $key, &$value, &$expiration) {
 	global $runs;
 
 	echo "Miss\n";
 	var_dump($key);
 	var_dump($value);
+
+	$expiration = "10";
 
 	$runs++;
 	if ($runs == 1) {
@@ -40,6 +42,7 @@ try {
 	echo $php_errormsg, "\n";
 	echo $e->getMessage(), "\n";
 }
+error_reporting(E_ALL);
 $v = $m->get('foo', 'the_callback');
 var_dump($v);
 $v = $m->get('foo', 'the_callback');
