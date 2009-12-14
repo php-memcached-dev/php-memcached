@@ -892,7 +892,6 @@ PHP_METHOD(Memcached, fetch)
 	add_assoc_stringl_ex(return_value, ZEND_STRS("key"), res_key, res_key_len, 1);
 	add_assoc_zval_ex(return_value, ZEND_STRS("value"), value);
 	if (cas != 0) {
-		/* XXX: also check against ULLONG_MAX or memc_behavior */
 		add_assoc_double_ex(return_value, ZEND_STRS("cas"), (double)cas);
 	}
 
@@ -949,7 +948,6 @@ PHP_METHOD(Memcached, fetchAll)
 		add_assoc_stringl_ex(entry, ZEND_STRS("key"), res_key, res_key_len, 1);
 		add_assoc_zval_ex(entry, ZEND_STRS("value"), value);
 		if (cas != 0) {
-			/* XXX: also check against ULLONG_MAX or memc_behavior */
 			add_assoc_double_ex(entry, ZEND_STRS("cas"), (double)cas);
 		}
 		add_next_index_zval(return_value, entry);
@@ -2729,7 +2727,9 @@ static int php_memc_do_result_callback(zval *zmemc_obj, zend_fcall_info *fci,
 	array_init(z_result);
 	add_assoc_stringl_ex(z_result, ZEND_STRS("key"), res_key, res_key_len, 1);
 	add_assoc_zval_ex(z_result, ZEND_STRS("value"), value);
-	add_assoc_double_ex(z_result, ZEND_STRS("cas"), (double)cas);
+	if (cas != 0) {
+		add_assoc_double_ex(z_result, ZEND_STRS("cas"), (double)cas);
+	}
 
 	if (zend_call_function(fci, fcc TSRMLS_CC) == FAILURE) {
 		php_error_docref(NULL TSRMLS_CC, E_WARNING, "could not invoke result callback");
