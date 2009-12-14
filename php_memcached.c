@@ -175,12 +175,12 @@ typedef struct {
 
 	struct memc_obj {
 		memcached_st *memc;
-		bool compression;
+		zend_bool compression;
 		enum memcached_serializer serializer;
 	} *obj;
 
-	bool is_persistent;
-	bool is_pristine;
+	zend_bool is_persistent;
+	zend_bool is_pristine;
 	int rescode;
 	int memc_errno;
 } php_memc_t;
@@ -274,7 +274,7 @@ static PHP_METHOD(Memcached, __construct)
 	struct memc_obj *m_obj = NULL;
 	char *persistent_id = NULL;
 	int persistent_id_len;
-	bool is_persistent = false;
+	zend_bool is_persistent = 0;
 
 	char *plist_key = NULL;
 	int plist_key_len = 0;
@@ -286,12 +286,12 @@ static PHP_METHOD(Memcached, __construct)
 	}
 
 	i_obj = (php_memc_t *) zend_object_store_get_object(object TSRMLS_CC);
-	i_obj->is_pristine = false;
+	i_obj->is_pristine = 0;
 
 	if (persistent_id) {
 		zend_rsrc_list_entry *le = NULL;
 
-		is_persistent = true;
+		is_persistent = 1;
 		plist_key_len = spprintf(&plist_key, 0, "memcached:id=%s", persistent_id);
 		plist_key_len += 1;
 
@@ -321,8 +321,8 @@ static PHP_METHOD(Memcached, __construct)
 		}
 
 		m_obj->serializer = MEMC_G(serializer);
-		m_obj->compression = true;
-		i_obj->is_pristine = true;
+		m_obj->compression = 1;
+		i_obj->is_pristine = 1;
 
 		if (is_persistent) {
 			zend_rsrc_list_entry le;
@@ -481,7 +481,7 @@ static void php_memc_get_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 
 	} else {
 		int rc;
-		bool return_value_set = false;
+		zend_bool return_value_set = 0;
 
 		status = memcached_mget_by_key(m_obj->memc, server_key, server_key_len, keys, key_lens, 1);
 		payload = memcached_fetch(m_obj->memc, NULL, NULL, &payload_len, &flags, &status);
@@ -502,7 +502,7 @@ static void php_memc_get_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 
 			status = php_memc_do_cache_callback(getThis(), &fci, &fcc, key, key_len,
 												return_value TSRMLS_CC);
-			return_value_set = true;
+			return_value_set = 1;
 
 			(void)memcached_fetch(m_obj->memc, NULL, NULL, &dummy_length, &dummy_flags, &dummy_status);
 		}
@@ -2172,7 +2172,7 @@ static PHP_METHOD(Memcached, isPristine)
 ****************************************/
 
 /* {{{ constructor/destructor */
-static void php_memc_destroy(struct memc_obj *m_obj, bool persistent TSRMLS_DC)
+static void php_memc_destroy(struct memc_obj *m_obj, zend_bool persistent TSRMLS_DC)
 {
 	if (m_obj->memc) {
 		memcached_free(m_obj->memc);
@@ -2186,7 +2186,7 @@ static void php_memc_free_storage(php_memc_t *i_obj TSRMLS_DC)
 	zend_object_std_dtor(&i_obj->zo TSRMLS_CC);
 
 	if (i_obj->obj && !i_obj->is_persistent) {
-		php_memc_destroy(i_obj->obj, false TSRMLS_CC);
+		php_memc_destroy(i_obj->obj, 0 TSRMLS_CC);
 	}
 
 	i_obj->obj = NULL;
@@ -2213,7 +2213,7 @@ ZEND_RSRC_DTOR_FUNC(php_memc_dtor)
 {
     if (rsrc->ptr) {
 		struct memc_obj *m_obj = (struct memc_obj *)rsrc->ptr;
-		php_memc_destroy(m_obj, true TSRMLS_CC);
+		php_memc_destroy(m_obj, 1 TSRMLS_CC);
         rsrc->ptr = NULL;
     }
 }
@@ -3333,7 +3333,9 @@ static void php_memc_register_constants(INIT_FUNC_ARGS)
 	REGISTER_MEMC_CLASS_CONST_LONG(OPT_AUTO_EJECT_HOSTS, MEMCACHED_BEHAVIOR_AUTO_EJECT_HOSTS);
 	REGISTER_MEMC_CLASS_CONST_LONG(OPT_HASH_WITH_PREFIX_KEY, MEMCACHED_BEHAVIOR_HASH_WITH_PREFIX_KEY);
 	REGISTER_MEMC_CLASS_CONST_LONG(OPT_NOREPLY, MEMCACHED_BEHAVIOR_NOREPLY);
+#ifdef MEMCACHED_BEHAVIOR_NUMBER_OF_REPLICAS
 	REGISTER_MEMC_CLASS_CONST_LONG(OPT_NUMBER_OF_REPLICAS, MEMCACHED_BEHAVIOR_NUMBER_OF_REPLICAS);
+#endif
 	REGISTER_MEMC_CLASS_CONST_LONG(OPT_SORT_HOSTS, MEMCACHED_BEHAVIOR_SORT_HOSTS);
 	REGISTER_MEMC_CLASS_CONST_LONG(OPT_VERIFY_KEY, MEMCACHED_BEHAVIOR_VERIFY_KEY);
 	REGISTER_MEMC_CLASS_CONST_LONG(OPT_USE_UDP, MEMCACHED_BEHAVIOR_USE_UDP);
