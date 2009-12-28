@@ -2781,7 +2781,7 @@ static int php_memc_sess_lock(memcached_st *memc, const char *key TSRMLS_DC)
 	memcached_return status;
 	/* set max timeout for session_start = max_execution_time.  (c) Andrei Darashenka, Richter & Poweleit GmbH */
 
-	lock_maxwait = zend_ini_long(ZEND_STRL("max_execution_time"), 0);
+	lock_maxwait = zend_ini_long(ZEND_STRS("max_execution_time"), 0);
 	if (lock_maxwait <= 0) {
 		lock_maxwait = MEMC_SESS_LOCK_EXPIRATION;
 	}
@@ -2906,17 +2906,13 @@ PS_WRITE_FUNC(memcached)
 {
 	char *sess_key = NULL;
 	int sess_key_len = 0;
-	time_t expiration;
-	int sess_lifetime;
+	time_t expiration = 0;
 	memcached_return status;
 	memcached_st *memc_sess = PS_GET_MOD_DATA();
 
 	sess_key_len = spprintf(&sess_key, 0, "%s", key);
-	sess_lifetime = zend_ini_long(ZEND_STRL("session.gc_maxlifetime"), 0);
-	if (sess_lifetime > 0) {
-		expiration = time(NULL) + sess_lifetime;
-	} else {
-		expiration = 0;
+	if (PS(gc_maxlifetime) > 0) {
+		expiration = PS(gc_maxlifetime);
 	}
 	status = memcached_set(memc_sess, sess_key, sess_key_len, val, vallen, expiration, 0);
 	efree(sess_key);
