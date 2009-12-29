@@ -43,6 +43,13 @@ enum memcached_serializer {
 	SERIALIZER_JSON = 3,
 	SERIALIZER_JSON_ARRAY = 4,
 };
+#ifdef HAVE_MEMCACHED_IGBINARY
+#define SERIALIZER_DEFAULT SERIALIZER_IGBINARY
+#define SERIALIZER_DEFAULT_NAME "igbinary"
+#else
+#define SERIALIZER_DEFAULT SERIALIZER_PHP
+#define SERIALIZER_DEFAULT_NAME "php"
+#endif //HAVE_MEMCACHED_IGBINARY
 
 ZEND_BEGIN_MODULE_GLOBALS(php_memcached)
 #if HAVE_MEMCACHED_SESSION
@@ -53,6 +60,7 @@ ZEND_BEGIN_MODULE_GLOBALS(php_memcached)
 	char* sess_lock_key;
 	int   sess_lock_key_len;
 #endif
+	char *serializer_name;
 	enum memcached_serializer serializer;
 
 	char *compression_type;

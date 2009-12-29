@@ -227,6 +227,33 @@ static PHP_INI_MH(OnUpdateCompressionType)
 	return OnUpdateString(entry, new_value, new_value_length, mh_arg1, mh_arg2, mh_arg3, stage TSRMLS_CC);
 }
 
+static PHP_INI_MH(OnUpdateSerializer)
+{
+	if (!new_value) {
+		MEMC_G(serializer) = SERIALIZER_DEFAULT;
+	} else if (new_value_length == sizeof("php") - 1 &&
+		strncmp(new_value, "php", sizeof("php") - 1) == 0) {
+		MEMC_G(serializer) = SERIALIZER_PHP;
+#ifdef HAVE_MEMCACHE_IGBINARY
+	} else if (new_value_length == sizeof("igbinary") - 1 &&
+		strncmp(new_value, "igbinary", sizeof("igbinary") - 1) == 0) {
+		MEMC_G(serializer) = SERIALIZER_IGBINARY;
+#endif // IGBINARY
+#ifdef HAVE_JSON_API
+	} else if (new_value_length == sizeof("json") - 1 &&
+		strncmp(new_value, "json", sizeof("json") - 1) == 0) {
+		MEMC_G(serializer) = SERIALIZER_JSON;
+	} else if (new_value_length == sizeof("json_array") - 1 &&
+		strncmp(new_value, "json_array", sizeof("json_array") - 1) == 0) {
+		MEMC_G(serializer) = SERIALIZER_JSON_ARRAY;
+#endif // JSON
+	} else {
+		return FAILURE;
+	}
+
+	return OnUpdateString(entry, new_value, new_value_length, mh_arg1, mh_arg2, mh_arg3, stage TSRMLS_CC);
+}
+
 /* {{{ INI entries */
 PHP_INI_BEGIN()
 #if HAVE_MEMCACHED_SESSION
@@ -238,6 +265,7 @@ PHP_INI_BEGIN()
 	STD_PHP_INI_ENTRY("memcached.compression_factor",	"1.3",		PHP_INI_ALL, OnUpdateReal, compression_factor,		zend_php_memcached_globals,	php_memcached_globals)
 	STD_PHP_INI_ENTRY("memcached.compression_threshold",	"2000",		PHP_INI_ALL, OnUpdateLong, compression_threshold,		zend_php_memcached_globals,	php_memcached_globals)
 
+	STD_PHP_INI_ENTRY("memcached.serializer",		SERIALIZER_DEFAULT_NAME, PHP_INI_ALL, OnUpdateSerializer, serializer_name,	zend_php_memcached_globals,	php_memcached_globals)
 PHP_INI_END()
 /* }}} */
 
@@ -2565,11 +2593,8 @@ static void php_memc_init_globals(zend_php_memcached_globals *php_memcached_glob
 	MEMC_G(sess_lock_key) = NULL;
 	MEMC_G(sess_lock_key_len) = 0;
 #endif
-#ifdef HAVE_MEMCACHE_IGBINARY
-	MEMC_G(serializer) = SERIALIZER_IGBINARY;
-#else
-	MEMC_G(serializer) = SERIALIZER_PHP;
-#endif
+	MEMC_G(serializer_name) = NULL;
+	MEMC_G(serializer) = SERIALIZER_DEFAULT;
 	MEMC_G(compression_type) = NULL;
 	MEMC_G(compression_type_real) = COMPRESSION_TYPE_ZLIB;
 	MEMC_G(compression_factor) = 1.30;
