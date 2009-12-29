@@ -48,5 +48,5 @@ try {
 
 --EXPECTF--
 bool(true)
-Memcached::%s(): could not unserialize value
+Memcached::%s(): could not unserialize value%S
 123456

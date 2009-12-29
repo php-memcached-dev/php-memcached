@@ -75,12 +75,12 @@ try {
 
 --EXPECTF--
 bool(true)
-Memcached::get(): could not unserialize value
+Memcached::get(): could not unserialize value%S
 123456
-Memcached::get(): could not unserialize value
+Memcached::get(): could not unserialize value%S
 123456
-Memcached::get(): could not unserialize value
+Memcached::get(): could not unserialize value%S
 123456
-Memcached::get(): could not unserialize value
+Memcached::get(): could not unserialize value%S
 1234
 

@@ -50,5 +50,5 @@ try {
 }
 
 --EXPECTF--
-Memcached::getDelayed(): could not unserialize value
+Memcached::getDelayed(): could not unserialize value%S
 123456
