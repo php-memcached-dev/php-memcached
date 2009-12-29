@@ -5,13 +5,6 @@
  */
 
 class Memcached {
-
-	/**
-	 * Error codes etc.
-	 */
-	
-	const GET_ERROR_RETURN_VALUE;
-
 	/**
 	 * Libmemcached behavior options.
 	 */
@@ -20,29 +13,29 @@ class Memcached {
 	
 	const OPT_HASH_DEFAULT;
 
-	const OPT_HASH_MD5;
+	const HASH_MD5;
 
-	const OPT_HASH_CRC;
+	const HASH_CRC;
 	
-	const OPT_HASH_FNV1_64;
+	const HASH_FNV1_64;
 
-	const OPT_HASH_FNV1A_64;
+	const HASH_FNV1A_64;
 
-	const OPT_HASH_FNV1_32;
+	const HASH_FNV1_32;
 
-	const OPT_HASH_FNV1A_32;
+	const HASH_FNV1A_32;
 
-	const OPT_HASH_HSIEH;
+	const HASH_HSIEH;
 
-	const OPT_HASH_MURMUR;
+	const HASH_MURMUR;
 
 	const OPT_DISTRIBUTION;
 
-	const OPT_DISTRIBUTION_MODULA;
+	const DISTRIBUTION_MODULA;
 
-	const OPT_DISTRIBUTION_CONSISTENT;
+	const DISTRIBUTION_CONSISTENT;
 
-	const OPT_LIBKETAMA_COMPATIBLE;
+	const LIBKETAMA_COMPATIBLE;
 
 	const OPT_BUFFER_REQUESTS;
 
@@ -70,13 +63,120 @@ class Memcached {
 
 	const OPT_CACHE_LOOKUPS;
 
+	const OPT_AUTO_EJECT_HOSTS;
+
+	const OPT_NUMBER_OF_REPLICAS;
+
+	const OPT_NOREPLY;
+
+	const OPT_VERIFY_KEY;
+
+
+	/**
+	 * Class parameters
+	 */
+	const HAVE_JSON;
+
+	const HAVE_IGBINARY;
 
 	/**
 	 * Class options.
 	 */
 	const OPT_COMPRESSION;
 
+	const OPT_COMPRESSION_TYPE;
+
 	const OPT_PREFIX_KEY;
+
+	/**
+	 * Serializer constants
+	 */
+	const SERIALIZER_PHP;
+
+	const SERIALIZER_IGBINARY;
+
+	const SERIALIZER_JSON;
+
+	const SERIALIZER_JSON_ARRAY;
+
+	/**
+	 * Compression types
+	 */
+	const COMPRESSION_TYPE_FASTLZ;
+
+	const COMPRESSION_TYPE_ZLIB;
+
+	/**
+	 * Flags
+	 */
+	const GET_PRESERVE_ORDER;
+
+	/**
+	 * Return values
+	 */
+	const GET_ERROR_RETURN_VALUE;
+
+	const RES_PAYLOAD_FAILURE;
+
+	const RES_SUCCESS;
+
+	const RES_FAILURE;
+
+	const RES_HOST_LOOKUP_FAILURE;
+
+	const RES_UNKNOWN_READ_FAILURE;
+
+	const RES_PROTOCOL_ERROR;
+
+	const RES_CLIENT_ERROR;
+
+	const RES_SERVER_ERROR;
+
+	const RES_WRITE_FAILURE;
+
+	const RES_DATA_EXISTS;
+
+	const RES_NOTSTORED;
+
+	const RES_NOTFOUND;
+
+	const RES_PARTIAL_READ;
+
+	const RES_SOME_ERRORS;
+
+	const RES_NO_SERVERS;
+
+	const RES_END;
+
+	const RES_ERRNO;
+
+	const RES_BUFFERED;
+
+	const RES_TIMEOUT;
+
+	const RES_BAD_KEY_PROVIDED;
+
+	const RES_STORED;
+
+	const RES_DELETED;
+
+	const RES_STAT;
+
+	const RES_ITEM;
+
+	const RES_NOT_SUPPORTED;
+
+	const RES_FETCH_NOTFINISHED;
+
+	const RES_SERVER_MARKED_DEAD;
+
+	const RES_UNKNOWN_STAT_KEY;
+
+	const RES_INVALID_HOST_PROTOCOL;
+
+	const RES_MEMORY_ALLOCATION_FAILURE;
+
+	const RES_CONNECTION_SOCKET_CREATE_FAILURE;
 
 
 	public function __construct( $persistent_id = '' ) {}
@@ -113,21 +213,25 @@ class Memcached {
 
 	public function addByKey( $server_key, $key, $value, $expiration = 0 ) {}
 
-	public function append( $key, $value, $expiration = 0 ) {}
+	public function append( $key, $value ) {}
 
-	public function appendByKey( $server_ke, $key, $value, $expiration = 0 ) {}
+	public function appendByKey( $server_key, $key, $value ) {}
 
-	public function prepend( $key, $value, $expiration = 0 ) {}
+	public function prepend( $key, $value ) {}
 
-	public function prependByKey( $server_key, $key, $value, $expiration = 0 ) {}
+	public function prependByKey( $server_key, $key, $value ) {}
 
 	public function replace( $key, $value, $expiration = 0 ) {}
 
-	public function replaceByKey( $serve_key, $key, $value, $expiration = 0 ) {}
+	public function replaceByKey( $server_key, $key, $value, $expiration = 0 ) {}
 
 	public function delete( $key, $time = 0 ) {}
 
-	public function deleteByKey( $key, $time = 0 ) {}
+	public function deleteByKey( $server_key, $key, $time = 0 ) {}
+
+	public function deleteMulti( array $keys, $expiration = 0 ) {}
+
+	public function deleteMultiByKey( $server_key, array $keys, $expiration = 0 ) {}
 
 	public function increment( $key, $offset = 1) {}
 
@@ -136,6 +240,8 @@ class Memcached {
 	public function getOption( $option ) {}
 	
 	public function setOption( $option, $value ) {}
+
+	public function setOptions( array $options ) {}
 
 	public function addServer( $host, $port,  $weight = 0 ) {}
 
@@ -149,6 +255,8 @@ class Memcached {
 
 	public function getStats( ) {}
 	
+	public function getVersion( ) {}
+
 	public function getResultCode( ) {}
 
 	public function getResultMessage( ) {}
