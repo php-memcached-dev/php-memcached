@@ -235,18 +235,22 @@ static PHP_INI_MH(OnUpdateSerializer)
 {
 	if (!new_value) {
 		MEMC_G(serializer) = SERIALIZER_DEFAULT;
-	} else if (!strcmp(new_value, "php")) {
+	} else if (new_value_length == sizeof("php") - 1 &&
+		strncmp(new_value, "php", sizeof("php") - 1) == 0) {
 		MEMC_G(serializer) = SERIALIZER_PHP;
 #ifdef HAVE_MEMCACHE_IGBINARY
-	} else if (!strcmp(new_value, "igbinary")) {
+	} else if (new_value_length == sizeof("igbinary") - 1 &&
+		strncmp(new_value, "igbinary", sizeof("igbinary") - 1) == 0) {
 		MEMC_G(serializer) = SERIALIZER_IGBINARY;
-#endif /* IGBINARY */
+#endif // IGBINARY
 #ifdef HAVE_JSON_API
-	} else if (!strcmp(new_value, "json")) {
+	} else if (new_value_length == sizeof("json") - 1 &&
+		strncmp(new_value, "json", sizeof("json") - 1) == 0) {
 		MEMC_G(serializer) = SERIALIZER_JSON;
-	} else if (!strcmp(new_value, "json_array")) {
+	} else if (new_value_length == sizeof("json_array") - 1 &&
+		strncmp(new_value, "json_array", sizeof("json_array") - 1) == 0) {
 		MEMC_G(serializer) = SERIALIZER_JSON_ARRAY;
-#endif /* JSON */
+#endif // JSON
 	} else {
 		return FAILURE;
 	}
