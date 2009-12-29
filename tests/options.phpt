@@ -17,6 +17,15 @@ var_dump($m->getOption(Memcached::OPT_HASH) == Memcached::HASH_DEFAULT);
 $m->setOption(Memcached::OPT_HASH, Memcached::HASH_MURMUR);
 var_dump($m->getOption(Memcached::OPT_HASH) == Memcached::HASH_MURMUR);
 
+
+$m->setOption(Memcached::OPT_COMPRESSION_TYPE, Memcached::COMPRESSION_ZLIB);
+var_dump($m->getOption(Memcached::OPT_COMPRESSION_TYPE) == Memcached::COMPRESSION_ZLIB);
+
+$m->setOption(Memcached::OPT_COMPRESSION_TYPE, Memcached::COMPRESSION_FASTLZ);
+var_dump($m->getOption(Memcached::OPT_COMPRESSION_TYPE) == Memcached::COMPRESSION_FASTLZ);
+
+var_dump($m->setOption(Memcached::OPT_COMPRESSION_TYPE, 0));
+var_dump($m->getOption(Memcached::OPT_COMPRESSION_TYPE) == Memcached::COMPRESSION_FASTLZ);
 ?>
 --EXPECTF--
 bool(true)
@@ -27,4 +36,8 @@ NULL
 
 Warning: Memcached::setOption(): bad key provided in %s on line %d
 bool(true)
+bool(true)
+bool(true)
+bool(true)
+bool(false)
 bool(true)
