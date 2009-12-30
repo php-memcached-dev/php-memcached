@@ -3472,7 +3472,7 @@ PHP_MINIT_FUNCTION(memcached)
 	memcached_ce = zend_register_internal_class(&ce TSRMLS_CC);
 	memcached_ce->create_object = php_memc_new;
 
-	(ce, "MemcachedException", NULL);
+	INIT_CLASS_ENTRY(ce, "MemcachedException", NULL);
 	memcached_exception_ce = zend_register_internal_class_ex(&ce, php_memc_get_exception_base(0 TSRMLS_CC), NULL TSRMLS_CC);
 	/* TODO
 	 * possibly declare custom exception property here
