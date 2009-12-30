@@ -404,7 +404,7 @@ static void php_memc_get_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 	size_t payload_len = 0;
 	uint32_t flags = 0;
 	uint64_t cas = 0;
-	const char* keys[1] = { NULL };
+	char* keys[1] = { NULL };
 	size_t key_lens[1] = { 0 };
 	zval *cas_token = NULL;
 	zend_fcall_info fci = empty_fcall_info;
@@ -585,7 +585,7 @@ static void php_memc_getMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 	zval **entry = NULL;
 	char  *payload = NULL;
 	size_t payload_len = 0;
-	const char **mkeys = NULL;
+	char **mkeys = NULL;
 	size_t *mkeys_len = NULL;
 	char *res_key = NULL;
 	size_t res_key_len = 0;
@@ -617,8 +617,8 @@ static void php_memc_getMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 
 	preserve_order = (get_flags & MEMC_GET_PRESERVE_ORDER);
 	num_keys  = zend_hash_num_elements(Z_ARRVAL_P(keys));
-	mkeys     = safe_emalloc(num_keys, sizeof(char *), 0);
-	mkeys_len = safe_emalloc(num_keys, sizeof(size_t), 0);
+	mkeys     = safe_emalloc(num_keys, sizeof(*mkeys), 0);
+	mkeys_len = safe_emalloc(num_keys, sizeof(*mkeys_len), 0);
 	array_init(return_value);
 
 	/*
@@ -763,7 +763,7 @@ static void php_memc_getDelayed_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_
 	zend_bool with_cas = 0;
 	size_t num_keys = 0;
 	zval **entry = NULL;
-	const char **mkeys = NULL;
+	char **mkeys = NULL;
 	size_t *mkeys_len = NULL;
 	uint64_t orig_cas_flag;
 	zend_fcall_info fci = empty_fcall_info;
@@ -792,8 +792,8 @@ static void php_memc_getDelayed_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_
 	 * (strings), set bad key result code and return.
 	 */
 	num_keys  = zend_hash_num_elements(Z_ARRVAL_P(keys));
-	mkeys     = safe_emalloc(num_keys, sizeof(char *), 0);
-	mkeys_len = safe_emalloc(num_keys, sizeof(size_t), 0);
+	mkeys     = safe_emalloc(num_keys, sizeof(*mkeys), 0);
+	mkeys_len = safe_emalloc(num_keys, sizeof(*mkeys_len), 0);
 
 	for (zend_hash_internal_pointer_reset(Z_ARRVAL_P(keys));
 		 zend_hash_get_current_data(Z_ARRVAL_P(keys), (void**)&entry) == SUCCESS;
@@ -2406,7 +2406,7 @@ static char *php_memc_zval_to_payload(zval *value, size_t *payload_len, uint32_t
 			compress_status = ((payload_comp_len = fastlz_compress(buf.c, buf.len, payload_comp)) > 0);
 			*flags |= MEMC_VAL_COMPRESSION_FASTLZ;
 		} else if (compression_type == COMPRESSION_TYPE_ZLIB) {
-			compress_status = (compress(payload_comp, &payload_comp_len, buf.c, buf.len) == Z_OK);
+			compress_status = (compress((Bytef *)payload_comp, &payload_comp_len, (Bytef *)buf.c, buf.len) == Z_OK);
 			*flags |= MEMC_VAL_COMPRESSION_ZLIB;
 		}
 
@@ -2476,7 +2476,7 @@ static int php_memc_zval_from_payload(zval *value, char *payload, size_t payload
 			if (flags & MEMC_VAL_COMPRESSION_FASTLZ) {
 				decompress_status = ((length = fastlz_decompress(payload, payload_len, buffer, len)) > 0);
 			} else if (flags & MEMC_VAL_COMPRESSION_ZLIB) {
-				decompress_status = (uncompress(buffer, &length, payload, payload_len) == Z_OK);
+				decompress_status = (uncompress((Bytef *)buffer, &length, (Bytef *)payload, payload_len) == Z_OK);
 			}
 		}
 
