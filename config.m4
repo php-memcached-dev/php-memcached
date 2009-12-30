@@ -223,11 +223,11 @@ if test "$PHP_MEMCACHED" != "no"; then
   else
     PHP_LIBMEMCACHED_DIR="no"
     for i in /usr /usr/local; do
-	    if test -r "$i/include/libmemcached/memcached.h"; then
-	  	  PHP_LIBMEMCACHED_DIR=$i
-	  	  break
-	    fi
-	  done
+      if test -r "$i/include/libmemcached/memcached.h"; then
+        PHP_LIBMEMCACHED_DIR=$i
+        break
+      fi
+    done
   fi
 
   AC_MSG_CHECKING([for libmemcached location])
