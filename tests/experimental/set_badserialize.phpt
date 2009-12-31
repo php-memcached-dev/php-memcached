@@ -30,6 +30,12 @@ $m->set('foo', 10, 10);
 try {
 	var_dump($m->set('foo', new Foo(), 10));
 } catch (Exception $e) {
+	if (version_compare(phpversion(), "5.3.0", ">=")) {
+		if ($e->getPrevious()) {
+			$e = $e->getPrevious();
+		}
+	}
+
 	echo $php_errormsg, "\n";
 	echo $e->getMessage(), "\n";
 }

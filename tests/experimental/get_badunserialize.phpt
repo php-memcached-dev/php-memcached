@@ -46,6 +46,12 @@ error_reporting(0);
 try {
 	var_dump($m->get('foo'));
 } catch (Exception $e) {
+	if (version_compare(phpversion(), "5.3.0", ">=")) {
+		if ($e->getPrevious()) {
+			$e = $e->getPrevious();
+		}
+	}
+
 	echo $php_errormsg, "\n";
 	echo $e->getMessage(), "\n";
 }
@@ -54,6 +60,12 @@ try {
 	$cas = null;
 	var_dump($m->get('foo', 'mycb', $cas));
 } catch (Exception $e) {
+	if (version_compare(phpversion(), "5.3.0", ">=")) {
+		if ($e->getPrevious()) {
+			$e = $e->getPrevious();
+		}
+	}
+
 	echo $php_errormsg, "\n";
 	echo $e->getMessage(), "\n";
 }
@@ -61,6 +73,12 @@ try {
 try {
 	var_dump($m->get('foo', 'mycb'));
 } catch (Exception $e) {
+	if (version_compare(phpversion(), "5.3.0", ">=")) {
+		if ($e->getPrevious()) {
+			$e = $e->getPrevious();
+		}
+	}
+
 	echo $php_errormsg, "\n";
 	echo $e->getMessage(), "\n";
 }
@@ -69,6 +87,12 @@ $m->delete('foo');
 try {
 	var_dump($m->get('foo', 'mycb'));
 } catch (Exception $e) {
+	if (version_compare(phpversion(), "5.3.0", ">=")) {
+		if ($e->getPrevious()) {
+			$e = $e->getPrevious();
+		}
+	}
+
 	echo $php_errormsg, "\n";
 	echo $e->getMessage(), "\n";
 }
