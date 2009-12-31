@@ -3,7 +3,7 @@ Memcached: Bug #16959 (getMulti + BINARY_PROTOCOL problem)
 --SKIPIF--
 <?php if (!extension_loaded("memcached")) print "skip"; ?>
 --FILE--
-<?
+<?php
 $cache = new Memcached();
 $cache->setOption(Memcached::OPT_BINARY_PROTOCOL, true);
 $cache->addServer('localhost', 11211);
