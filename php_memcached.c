@@ -635,6 +635,7 @@ static void php_memc_getMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 			}
 			i++;
 		}
+		// TODO(tricky): convert key to string, and add null to return_value array
 	}
 
 	if (i == 0) {
@@ -1037,6 +1038,7 @@ static void php_memc_setMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 	size_t payload_len;
 	uint32_t flags = 0;
 	memcached_return status;
+	char  tmp_key[MEMCACHED_MAX_KEY];
 	MEMC_METHOD_INIT_VARS;
 
 	if (by_key) {
@@ -1056,8 +1058,17 @@ static void php_memc_setMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 	for (zend_hash_internal_pointer_reset(Z_ARRVAL_P(entries));
 		zend_hash_get_current_data(Z_ARRVAL_P(entries), (void**)&entry) == SUCCESS;
 		zend_hash_move_forward(Z_ARRVAL_P(entries))) {
+		int key_type = zend_hash_get_current_key_ex(Z_ARRVAL_P(entries), &str_key, &str_key_len, &num_key, 0, NULL);
 
-		if (zend_hash_get_current_key_ex(Z_ARRVAL_P(entries), &str_key, &str_key_len, &num_key, 0, NULL) != HASH_KEY_IS_STRING) {
+		if (key_type == HASH_KEY_IS_LONG) {
+			/* Array keys are unsigned, but php integers are signed.
+			 * Keys must be converted to signed strings that match
+			 * php integers. */
+			assert(sizeof(tmp_key) >= sizeof(ZEND_TOSTR(LONG_MIN)));
+
+			str_key_len = sprintf(tmp_key, "%ld", (long)num_key) + 1;
+			str_key = (char *)tmp_key;
+		} else if (key_type != HASH_KEY_IS_STRING) {
 			continue;
 		}
 
@@ -1476,6 +1487,7 @@ static void php_memc_deleteMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by
 		if (Z_TYPE_PP(entry) != IS_STRING || Z_STRLEN_PP(entry) <= 0) {
 			continue;
 		}
+		// TODO(tricky): convert key to string, and add null to return_value array
 
 		if (!by_key) {
 			server_key     = Z_STRVAL_PP(entry);
