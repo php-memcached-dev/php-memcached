@@ -585,6 +585,8 @@ static void php_memc_getMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 	size_t payload_len = 0;
 	char **mkeys = NULL;
 	size_t *mkeys_len = NULL;
+	char **mkeys_copy = NULL;
+	int  mkeys_ncopy = 0;
 	char *res_key = NULL;
 	size_t res_key_len = 0;
 	uint32_t flags;
@@ -617,6 +619,7 @@ static void php_memc_getMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 	num_keys  = zend_hash_num_elements(Z_ARRVAL_P(keys));
 	mkeys     = safe_emalloc(num_keys, sizeof(*mkeys), 0);
 	mkeys_len = safe_emalloc(num_keys, sizeof(*mkeys_len), 0);
+	mkeys_copy = safe_emalloc(num_keys, sizeof(*mkeys_copy), 0);
 	array_init(return_value);
 
 	/*
@@ -626,22 +629,42 @@ static void php_memc_getMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 	for (zend_hash_internal_pointer_reset(Z_ARRVAL_P(keys));
 		zend_hash_get_current_data(Z_ARRVAL_P(keys), (void**)&entry) == SUCCESS;
 		zend_hash_move_forward(Z_ARRVAL_P(keys))) {
+		int use_copy = 0;
+		zval entry_copy, *entry_copy_ptr;
 
-		if (Z_TYPE_PP(entry) == IS_STRING && Z_STRLEN_PP(entry) > 0) {
+		if (Z_TYPE_PP(entry) != IS_STRING) {
+			/* TODO(tricky): should we instead be using a zval array for copies?
+			 * if zval structure changes, this might leed to a leak */
+			INIT_ZVAL(entry_copy);
+			zend_make_printable_zval(*entry, &entry_copy, &use_copy);
+			if (use_copy) {
+				entry_copy_ptr = &entry_copy;
+				entry = &entry_copy_ptr;
+				mkeys_copy[mkeys_ncopy] = Z_STRVAL(entry_copy);
+				mkeys_ncopy++;
+			}
+		}
+
+		if (Z_STRLEN_PP(entry) > 0) {
 			mkeys[i]     = Z_STRVAL_PP(entry);
 			mkeys_len[i] = Z_STRLEN_PP(entry);
+			
 			if (preserve_order) {
-				add_assoc_null_ex(return_value, mkeys[i], mkeys_len[i]+1);
+				add_assoc_null_ex(return_value, mkeys[i], mkeys_len[i] + 1);
 			}
+
 			i++;
 		}
-		// TODO(tricky): convert key to string, and add null to return_value array
 	}
 
 	if (i == 0) {
 		i_obj->rescode = MEMCACHED_NOTFOUND;
 		efree(mkeys);
 		efree(mkeys_len);
+		for (i = 0; i < mkeys_ncopy; i++) {
+			efree(mkeys_copy[i]);
+		}
+		efree(mkeys_copy);
 		return;
 	}
 
@@ -670,6 +693,10 @@ static void php_memc_getMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 
 	efree(mkeys);
 	efree(mkeys_len);
+	for (i = 0; i < mkeys_ncopy; i++) {
+		efree(mkeys_copy[i]);
+	}
+	efree(mkeys_copy);
 
 	/*
 	 * Iterate through the result set and create the result array. The CAS tokens are
@@ -715,7 +742,6 @@ static void php_memc_getMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 			continue;
 		}
 
-		i++;
 		add_assoc_zval_ex(return_value, res_key, res_key_len+1, value);
 		if (cas_tokens) {
 			cas = memcached_result_cas(&result);
@@ -1483,11 +1509,26 @@ static void php_memc_deleteMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by
 	for (zend_hash_internal_pointer_reset(Z_ARRVAL_P(entries));
 		zend_hash_get_current_data(Z_ARRVAL_P(entries), (void**)&entry) == SUCCESS;
 		zend_hash_move_forward(Z_ARRVAL_P(entries))) {
+		int use_copy = 0;
+		zval entry_copy, *entry_copy_ptr;
 
-		if (Z_TYPE_PP(entry) != IS_STRING || Z_STRLEN_PP(entry) <= 0) {
+
+		if (Z_TYPE_PP(entry) != IS_STRING) {
+			INIT_ZVAL(entry_copy);
+			zend_make_printable_zval(*entry, &entry_copy, &use_copy);
+			if (use_copy) {
+				entry_copy_ptr = &entry_copy;
+				entry = &entry_copy_ptr;
+			}
+		}
+
+		if (Z_STRLEN_PP(entry) <= 0) {
+			if (use_copy) {
+				zval_dtor(&entry_copy);
+			}
+
 			continue;
 		}
-		// TODO(tricky): convert key to string, and add null to return_value array
 
 		if (!by_key) {
 			server_key     = Z_STRVAL_PP(entry);
@@ -1500,6 +1541,10 @@ static void php_memc_deleteMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by
 			add_assoc_long(return_value, Z_STRVAL_PP(entry), status);
 		} else {
 			add_assoc_bool(return_value, Z_STRVAL_PP(entry), 1);
+		}
+
+		if (use_copy) {
+			zval_dtor(&entry_copy);
 		}
 	}
 
