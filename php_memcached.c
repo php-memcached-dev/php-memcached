@@ -798,12 +798,12 @@ static void php_memc_getDelayed_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_
 	MEMC_METHOD_INIT_VARS;
 
 	if (by_key) {
-		if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sa|bf!", &server_key,
+		if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sa/|bf!", &server_key,
 								  &server_key_len, &keys, &with_cas, &fci, &fcc) == FAILURE) {
 			return;
 		}
 	} else {
-		if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "a|bf!", &keys, &with_cas,
+		if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "a/|bf!", &keys, &with_cas,
 								  &fci, &fcc) == FAILURE) {
 			return;
 		}
@@ -823,6 +823,10 @@ static void php_memc_getDelayed_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_
 	for (zend_hash_internal_pointer_reset(Z_ARRVAL_P(keys));
 		zend_hash_get_current_data(Z_ARRVAL_P(keys), (void**)&entry) == SUCCESS;
 		zend_hash_move_forward(Z_ARRVAL_P(keys))) {
+
+		if (Z_TYPE_PP(entry) != IS_STRING) {
+			convert_to_string_ex(entry);
+		}
 
 		if (Z_TYPE_PP(entry) == IS_STRING && Z_STRLEN_PP(entry) > 0) {
 			mkeys[i]     = Z_STRVAL_PP(entry);
