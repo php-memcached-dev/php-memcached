@@ -1522,15 +1522,14 @@ static void php_memc_deleteMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by
 
 
 		if (Z_TYPE_PP(entry) != IS_STRING) {
-			INIT_ZVAL(entry_copy);
-			zend_make_printable_zval(*entry, &entry_copy, &use_copy);
-			if (use_copy) {
-				entry_copy_ptr = &entry_copy;
-				entry = &entry_copy_ptr;
-			}
+			MAKE_COPY_ZVAL(entry, &entry_copy);
+			convert_to_string(&entry_copy);
+			entry_copy_ptr = &entry_copy;
+			entry = &entry_copy_ptr;
+			use_copy = 1;
 		}
 
-		if (Z_STRLEN_PP(entry) <= 0) {
+		if (Z_TYPE_PP(entry) != IS_STRING || Z_STRLEN_PP(entry) <= 0) {
 			if (use_copy) {
 				zval_dtor(&entry_copy);
 			}
