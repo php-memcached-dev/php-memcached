@@ -619,7 +619,6 @@ static void php_memc_getMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 	num_keys  = zend_hash_num_elements(Z_ARRVAL_P(keys));
 	mkeys     = safe_emalloc(num_keys, sizeof(*mkeys), 0);
 	mkeys_len = safe_emalloc(num_keys, sizeof(*mkeys_len), 0);
-	mkeys_copy = safe_emalloc(num_keys, sizeof(*mkeys_copy), 0);
 	array_init(return_value);
 
 	/*
@@ -629,23 +628,24 @@ static void php_memc_getMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 	for (zend_hash_internal_pointer_reset(Z_ARRVAL_P(keys));
 		zend_hash_get_current_data(Z_ARRVAL_P(keys), (void**)&entry) == SUCCESS;
 		zend_hash_move_forward(Z_ARRVAL_P(keys))) {
-		int use_copy = 0;
-		zval entry_copy, *entry_copy_ptr;
+		zval copy, *copy_ptr;
 
 		if (Z_TYPE_PP(entry) != IS_STRING) {
-			/* TODO(tricky): should we instead be using a zval array for copies?
-			 * if zval structure changes, this might leed to a leak */
-			INIT_ZVAL(entry_copy);
-			zend_make_printable_zval(*entry, &entry_copy, &use_copy);
-			if (use_copy) {
-				entry_copy_ptr = &entry_copy;
-				entry = &entry_copy_ptr;
-				mkeys_copy[mkeys_ncopy] = Z_STRVAL(entry_copy);
-				mkeys_ncopy++;
+			/* this should be relatively uncommon, defer allocation */
+			if (UNEXPECTED(mkeys_copy == NULL)) {
+				mkeys_copy = safe_emalloc(num_keys, sizeof(*mkeys_copy), 0);
 			}
+
+			MAKE_COPY_ZVAL(entry, &copy);
+			convert_to_string(&copy);
+
+			mkeys_copy[mkeys_ncopy] = Z_STRVAL(copy);
+			copy_ptr = &copy;
+			entry = &copy_ptr;
+			mkeys_ncopy++;
 		}
 
-		if (Z_STRLEN_PP(entry) > 0) {
+		if (Z_TYPE_PP(entry) == IS_STRING && Z_STRLEN_PP(entry) > 0) {
 			mkeys[i]     = Z_STRVAL_PP(entry);
 			mkeys_len[i] = Z_STRLEN_PP(entry);
 			
@@ -664,7 +664,9 @@ static void php_memc_getMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 		for (i = 0; i < mkeys_ncopy; i++) {
 			efree(mkeys_copy[i]);
 		}
-		efree(mkeys_copy);
+		if (mkeys_copy) {
+			efree(mkeys_copy);
+		}
 		return;
 	}
 
@@ -696,7 +698,9 @@ static void php_memc_getMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 	for (i = 0; i < mkeys_ncopy; i++) {
 		efree(mkeys_copy[i]);
 	}
-	efree(mkeys_copy);
+	if (mkeys_copy) {
+		efree(mkeys_copy);
+	}
 
 	/*
 	 * Iterate through the result set and create the result array. The CAS tokens are
