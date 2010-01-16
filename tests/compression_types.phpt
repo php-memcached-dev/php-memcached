@@ -9,22 +9,36 @@ $m->addServer('localhost', 11211, 1);
 
 $data = file_get_contents(dirname(__FILE__) . '/testdata.res');
 
+function get_compression($name) {
+	switch (strtolower($name)) {
+		case 'zlib':
+			return Memcached::COMPRESSION_ZLIB;
+		case 'fastlz':
+			return Memcached::COMPRESSION_FASTLZ;
+		default:
+			echo "Strange compression type: $name\n";
+			return 0;
+	}
+}
+
 function fetch_with_compression($m, $key, $value, $set_compression = '', $get_compression = '') {
 	
 	echo "set=[$set_compression] get=[$get_compression]\n";
 	
 	if (!$set_compression) {
-		$m->setOption(Memcached::OPT_COMPRESSION, 0);
+		$m->setOption(Memcached::OPT_COMPRESSION, false);
 	} else {
-		ini_set('memcached.compression_type', $set_compression);
+		$m->setOption(Memcached::OPT_COMPRESSION, true);
+		$m->setOption(Memcached::OPT_COMPRESSION_TYPE, get_compression($set_compression));
 	}
 	
 	$m->set($key, $value, 1800);
 	
 	if (!$get_compression) {
-		$m->setOption(Memcached::OPT_COMPRESSION, 0);
+		$m->setOption(Memcached::OPT_COMPRESSION, true);
 	} else {
-		ini_set('memcached.compression_type', $get_compression);
+		$m->setOption(Memcached::OPT_COMPRESSION, true);
+		$m->setOption(Memcached::OPT_COMPRESSION_TYPE, get_compression($get_compression));
 	}
 
 	$value_back = $m->get($key);
