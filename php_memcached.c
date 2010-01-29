@@ -624,8 +624,8 @@ static void php_memc_getMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 	 * (strings), set bad key result code and return.
 	 */
 	for (zend_hash_internal_pointer_reset(Z_ARRVAL_P(keys));
-		zend_hash_get_current_data(Z_ARRVAL_P(keys), (void**)&entry) == SUCCESS;
-		zend_hash_move_forward(Z_ARRVAL_P(keys))) {
+		 zend_hash_get_current_data(Z_ARRVAL_P(keys), (void**)&entry) == SUCCESS;
+		 zend_hash_move_forward(Z_ARRVAL_P(keys))) {
 
 		if (Z_TYPE_PP(entry) == IS_STRING && Z_STRLEN_PP(entry) > 0) {
 			mkeys[i]     = Z_STRVAL_PP(entry);
@@ -794,8 +794,8 @@ static void php_memc_getDelayed_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_
 	mkeys_len = safe_emalloc(num_keys, sizeof(*mkeys_len), 0);
 
 	for (zend_hash_internal_pointer_reset(Z_ARRVAL_P(keys));
-		zend_hash_get_current_data(Z_ARRVAL_P(keys), (void**)&entry) == SUCCESS;
-		zend_hash_move_forward(Z_ARRVAL_P(keys))) {
+		 zend_hash_get_current_data(Z_ARRVAL_P(keys), (void**)&entry) == SUCCESS;
+		 zend_hash_move_forward(Z_ARRVAL_P(keys))) {
 
 		if (Z_TYPE_PP(entry) == IS_STRING && Z_STRLEN_PP(entry) > 0) {
 			mkeys[i]     = Z_STRVAL_PP(entry);
@@ -1054,8 +1054,8 @@ static void php_memc_setMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 	i_obj->rescode = MEMCACHED_SUCCESS;
 
 	for (zend_hash_internal_pointer_reset(Z_ARRVAL_P(entries));
-		zend_hash_get_current_data(Z_ARRVAL_P(entries), (void**)&entry) == SUCCESS;
-		zend_hash_move_forward(Z_ARRVAL_P(entries))) {
+		 zend_hash_get_current_data(Z_ARRVAL_P(entries), (void**)&entry) == SUCCESS;
+		 zend_hash_move_forward(Z_ARRVAL_P(entries))) {
 
 		if (zend_hash_get_current_key_ex(Z_ARRVAL_P(entries), &str_key, &str_key_len, &num_key, 0, NULL) != HASH_KEY_IS_STRING) {
 			continue;
@@ -1470,8 +1470,8 @@ static void php_memc_deleteMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by
 
 	array_init(return_value);
 	for (zend_hash_internal_pointer_reset(Z_ARRVAL_P(entries));
-		zend_hash_get_current_data(Z_ARRVAL_P(entries), (void**)&entry) == SUCCESS;
-		zend_hash_move_forward(Z_ARRVAL_P(entries))) {
+		 zend_hash_get_current_data(Z_ARRVAL_P(entries), (void**)&entry) == SUCCESS;
+		 zend_hash_move_forward(Z_ARRVAL_P(entries))) {
 
 		if (Z_TYPE_PP(entry) != IS_STRING || Z_STRLEN_PP(entry) <= 0) {
 			continue;
@@ -1605,8 +1605,8 @@ PHP_METHOD(Memcached, addServers)
 	i_obj->rescode = MEMCACHED_SUCCESS;
 
 	for (zend_hash_internal_pointer_reset(Z_ARRVAL_P(servers)), i = 0;
-		zend_hash_get_current_data(Z_ARRVAL_P(servers), (void **)&entry) == SUCCESS;
-		zend_hash_move_forward(Z_ARRVAL_P(servers)), i++) {
+		 zend_hash_get_current_data(Z_ARRVAL_P(servers), (void **)&entry) == SUCCESS;
+		 zend_hash_move_forward(Z_ARRVAL_P(servers)), i++) {
 
 		if (Z_TYPE_PP(entry) != IS_ARRAY) {
 			php_error_docref(NULL TSRMLS_CC, E_WARNING, "server list entry #%d is not an array", i+1);
@@ -2092,8 +2092,8 @@ static PHP_METHOD(Memcached, setOptions)
 	MEMC_METHOD_FETCH_OBJECT;
 
 	for (zend_hash_internal_pointer_reset(Z_ARRVAL_P(options));
-		zend_hash_get_current_data(Z_ARRVAL_P(options), (void *) &value) == SUCCESS;
-		zend_hash_move_forward(Z_ARRVAL_P(options))) {
+		 zend_hash_get_current_data(Z_ARRVAL_P(options), (void *) &value) == SUCCESS;
+		 zend_hash_move_forward(Z_ARRVAL_P(options))) {
 
 		if (zend_hash_get_current_key_ex(Z_ARRVAL_P(options), &key, &key_len, &key_index, 0, NULL) == HASH_KEY_IS_LONG) {
 			if (!php_memc_set_option(i_obj, (long) key_index, *value TSRMLS_CC)) {
