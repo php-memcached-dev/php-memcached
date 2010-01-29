@@ -219,9 +219,9 @@ static PHP_INI_MH(OnUpdateCompressionType)
 {
 	if (!new_value) {
 		MEMC_G(compression_type_real) = COMPRESSION_TYPE_FASTLZ;
-	} else if (new_value_length == 6 && !strncmp(new_value, "fastlz", 6)) {
+	} else if (!strcmp(new_value, "fastlz")) {
 		MEMC_G(compression_type_real) = COMPRESSION_TYPE_FASTLZ;
-	} else if (new_value_length == 4 && !strncmp(new_value, "zlib", 4)) {
+	} else if (!strcmp(new_value, "zlib")) {
 		MEMC_G(compression_type_real) = COMPRESSION_TYPE_ZLIB;
 	} else {
 		return FAILURE;
@@ -233,20 +233,16 @@ static PHP_INI_MH(OnUpdateSerializer)
 {
 	if (!new_value) {
 		MEMC_G(serializer) = SERIALIZER_DEFAULT;
-	} else if (new_value_length == sizeof("php") - 1 &&
-		strncmp(new_value, "php", sizeof("php") - 1) == 0) {
+	} else if (!strcmp(new_value, "php") == 0) {
 		MEMC_G(serializer) = SERIALIZER_PHP;
 #ifdef HAVE_MEMCACHE_IGBINARY
-	} else if (new_value_length == sizeof("igbinary") - 1 &&
-		strncmp(new_value, "igbinary", sizeof("igbinary") - 1) == 0) {
+	} else if (!strcmp(new_value, "igbinary") == 0) {
 		MEMC_G(serializer) = SERIALIZER_IGBINARY;
 #endif /* IGBINARY */
 #ifdef HAVE_JSON_API
-	} else if (new_value_length == sizeof("json") - 1 &&
-		strncmp(new_value, "json", sizeof("json") - 1) == 0) {
+	} else if (!strcmp(new_value, "json") == 0) {
 		MEMC_G(serializer) = SERIALIZER_JSON;
-	} else if (new_value_length == sizeof("json_array") - 1 &&
-		strncmp(new_value, "json_array", sizeof("json_array") - 1) == 0) {
+	} else if (!strcmp(new_value, "json_array") == 0) {
 		MEMC_G(serializer) = SERIALIZER_JSON_ARRAY;
 #endif /* JSON */
 	} else {
