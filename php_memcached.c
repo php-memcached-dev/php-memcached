@@ -240,7 +240,7 @@ static PHP_INI_MH(OnUpdateSerializer)
 	} else if (new_value_length == sizeof("igbinary") - 1 &&
 		strncmp(new_value, "igbinary", sizeof("igbinary") - 1) == 0) {
 		MEMC_G(serializer) = SERIALIZER_IGBINARY;
-#endif // IGBINARY
+#endif /* IGBINARY */
 #ifdef HAVE_JSON_API
 	} else if (new_value_length == sizeof("json") - 1 &&
 		strncmp(new_value, "json", sizeof("json") - 1) == 0) {
@@ -248,7 +248,7 @@ static PHP_INI_MH(OnUpdateSerializer)
 	} else if (new_value_length == sizeof("json_array") - 1 &&
 		strncmp(new_value, "json_array", sizeof("json_array") - 1) == 0) {
 		MEMC_G(serializer) = SERIALIZER_JSON_ARRAY;
-#endif // JSON
+#endif /* JSON */
 	} else {
 		return FAILURE;
 	}
@@ -655,7 +655,7 @@ static void php_memc_getMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 	}
 
 	status = memcached_mget_by_key(m_obj->memc, server_key, server_key_len, mkeys, mkeys_len, i);
-	// Handle error, but ignore, there might still be some result
+	/* Handle error, but ignore, there might still be some result */
 	php_memc_handle_error(i_obj, status TSRMLS_CC);
 
 	/*
@@ -693,14 +693,16 @@ static void php_memc_getMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 		res_key     = memcached_result_key_value(&result);
 		res_key_len = memcached_result_key_length(&result);
 
-		// This may be a bug in libmemcached, the key is not null terminated
-		// whe using the binary protocol.
+		/*
+		 * This may be a bug in libmemcached, the key is not null terminated
+		 * whe using the binary protocol.
+		 */
 		res_key[res_key_len] = 0;
 
 		MAKE_STD_ZVAL(value);
 
 		if (php_memc_zval_from_payload(value, payload, payload_len, flags, m_obj->serializer TSRMLS_CC) < 0) {
-			// XXX: remember memcached_quit?
+			/* XXX: remember memcached_quit? */
 			zval_ptr_dtor(&value);
 			if (EG(exception)) {
 				status = MEMC_RES_PAYLOAD_FAILURE;
@@ -725,7 +727,7 @@ static void php_memc_getMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 	memcached_result_free(&result);
 
 	if (EG(exception)) {
-		// XXX: cas_tokens should only be set on success, currently we're destructive
+		/* XXX: cas_tokens should only be set on success, currently we're destructive */
 		if (cas_tokens) {
 			zval_dtor(cas_tokens);
 			ZVAL_NULL(cas_tokens);
@@ -1988,7 +1990,7 @@ static int php_memc_set_option(php_memc_t *i_obj, long option, zval *value TSRML
 				Z_LVAL_P(value) == COMPRESSION_TYPE_ZLIB) {
 				m_obj->compression_type = Z_LVAL_P(value);
 			} else {
-				// invalid compression type
+				/* invalid compression type */
 				return 0;
 			}
 			break;
@@ -2355,7 +2357,7 @@ static char *php_memc_zval_to_payload(zval *value, size_t *payload_len, uint32_t
 #if HAVE_JSON_API_5_2
 					php_json_encode(&buf, value TSRMLS_CC);
 #elif HAVE_JSON_API_5_3
-					php_json_encode(&buf, value, 0 TSRMLS_CC); //options
+					php_json_encode(&buf, value, 0 TSRMLS_CC); /* options */
 #endif
 					buf.c[buf.len] = 0;
 					MEMC_VAL_SET_TYPE(*flags, MEMC_VAL_IS_JSON);
