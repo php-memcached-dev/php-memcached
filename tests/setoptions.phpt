@@ -43,4 +43,4 @@ test invalid options
 bool(false)
 %s::setOptions(): invalid configuration option
 bool(false)
-%s::setOptions(): error setting memcached option
+%s::setOptions(): error setting memcached option 
