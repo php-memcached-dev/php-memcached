@@ -8,6 +8,8 @@ $m = new Memcached();
 $m->addServer('127.0.0.1', 11211, 1);
 $m->addServer('localhost', 11211, 1);
 
+$m->flush();
+
 $data = array(
 	'foo' => 'foo-data',
 	'bar' => 'bar-data',

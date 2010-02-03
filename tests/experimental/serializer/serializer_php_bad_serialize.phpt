@@ -1,5 +1,6 @@
 --TEST--
 Serializer: exception while serializing
+--XFAIL--
 --SKIPIF--
 <?php if (!extension_loaded("memcached")) print "skip"; ?>
 --FILE--
