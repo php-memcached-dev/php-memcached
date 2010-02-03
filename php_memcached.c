@@ -2113,6 +2113,7 @@ static PHP_METHOD(Memcached, setOptions)
 			}
 		} else {
 			php_error_docref(NULL TSRMLS_CC, E_WARNING, "invalid configuration option");
+			ok = 0;
 		}
 	}
 
