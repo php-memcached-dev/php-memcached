@@ -48,16 +48,16 @@ foreach ($retval as $key => $value) {
 ?>
 --EXPECT--
 array(5) {
+  ["foo"]=>
+  string(8) "foo-data"
+  ["bar"]=>
+  string(8) "bar-data"
   ["baz"]=>
   string(8) "baz-data"
   ["lol"]=>
   string(8) "lol-data"
   ["kek"]=>
   string(8) "kek-data"
-  ["foo"]=>
-  string(8) "foo-data"
-  ["bar"]=>
-  string(8) "bar-data"
 }
 array(5) {
   ["foo"]=>

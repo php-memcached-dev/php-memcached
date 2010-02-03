@@ -600,12 +600,12 @@ static void php_memc_getMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 	MEMC_METHOD_INIT_VARS;
 
 	if (by_key) {
-		if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sa|zl", &server_key,
+		if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sa/|zl", &server_key,
 								  &server_key_len, &keys, &cas_tokens, &get_flags) == FAILURE) {
 			return;
 		}
 	} else {
-		if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "a|zl", &keys, &cas_tokens, &get_flags) == FAILURE) {
+		if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "a/|zl", &keys, &cas_tokens, &get_flags) == FAILURE) {
 			return;
 		}
 	}
@@ -626,13 +626,20 @@ static void php_memc_getMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 	for (zend_hash_internal_pointer_reset(Z_ARRVAL_P(keys));
 		zend_hash_get_current_data(Z_ARRVAL_P(keys), (void**)&entry) == SUCCESS;
 		zend_hash_move_forward(Z_ARRVAL_P(keys))) {
+		zval copy, *copy_ptr;
+
+		if (Z_TYPE_PP(entry) != IS_STRING) {
+			convert_to_string_ex(entry);
+		}
 
 		if (Z_TYPE_PP(entry) == IS_STRING && Z_STRLEN_PP(entry) > 0) {
 			mkeys[i]     = Z_STRVAL_PP(entry);
 			mkeys_len[i] = Z_STRLEN_PP(entry);
+			
 			if (preserve_order) {
-				add_assoc_null_ex(return_value, mkeys[i], mkeys_len[i]+1);
+				add_assoc_null_ex(return_value, mkeys[i], mkeys_len[i] + 1);
 			}
+
 			i++;
 		}
 	}
@@ -714,7 +721,6 @@ static void php_memc_getMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 			continue;
 		}
 
-		i++;
 		add_assoc_zval_ex(return_value, res_key, res_key_len+1, value);
 		if (cas_tokens) {
 			cas = memcached_result_cas(&result);
@@ -771,12 +777,12 @@ static void php_memc_getDelayed_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_
 	MEMC_METHOD_INIT_VARS;
 
 	if (by_key) {
-		if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sa|bf!", &server_key,
+		if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sa/|bf!", &server_key,
 								  &server_key_len, &keys, &with_cas, &fci, &fcc) == FAILURE) {
 			return;
 		}
 	} else {
-		if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "a|bf!", &keys, &with_cas,
+		if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "a/|bf!", &keys, &with_cas,
 								  &fci, &fcc) == FAILURE) {
 			return;
 		}
@@ -796,6 +802,10 @@ static void php_memc_getDelayed_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_
 	for (zend_hash_internal_pointer_reset(Z_ARRVAL_P(keys));
 		zend_hash_get_current_data(Z_ARRVAL_P(keys), (void**)&entry) == SUCCESS;
 		zend_hash_move_forward(Z_ARRVAL_P(keys))) {
+
+		if (Z_TYPE_PP(entry) != IS_STRING) {
+			convert_to_string_ex(entry);
+		}
 
 		if (Z_TYPE_PP(entry) == IS_STRING && Z_STRLEN_PP(entry) > 0) {
 			mkeys[i]     = Z_STRVAL_PP(entry);
@@ -1037,6 +1047,7 @@ static void php_memc_setMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 	size_t payload_len;
 	uint32_t flags = 0;
 	memcached_return status;
+	char  tmp_key[MEMCACHED_MAX_KEY];
 	MEMC_METHOD_INIT_VARS;
 
 	if (by_key) {
@@ -1056,8 +1067,17 @@ static void php_memc_setMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 	for (zend_hash_internal_pointer_reset(Z_ARRVAL_P(entries));
 		zend_hash_get_current_data(Z_ARRVAL_P(entries), (void**)&entry) == SUCCESS;
 		zend_hash_move_forward(Z_ARRVAL_P(entries))) {
+		int key_type = zend_hash_get_current_key_ex(Z_ARRVAL_P(entries), &str_key, &str_key_len, &num_key, 0, NULL);
 
-		if (zend_hash_get_current_key_ex(Z_ARRVAL_P(entries), &str_key, &str_key_len, &num_key, 0, NULL) != HASH_KEY_IS_STRING) {
+		if (key_type == HASH_KEY_IS_LONG) {
+			/* Array keys are unsigned, but php integers are signed.
+			 * Keys must be converted to signed strings that match
+			 * php integers. */
+			assert(sizeof(tmp_key) >= sizeof(ZEND_TOSTR(LONG_MIN)));
+
+			str_key_len = sprintf(tmp_key, "%ld", (long)num_key) + 1;
+			str_key = (char *)tmp_key;
+		} else if (key_type != HASH_KEY_IS_STRING) {
 			continue;
 		}
 
@@ -1472,8 +1492,23 @@ static void php_memc_deleteMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by
 	for (zend_hash_internal_pointer_reset(Z_ARRVAL_P(entries));
 		zend_hash_get_current_data(Z_ARRVAL_P(entries), (void**)&entry) == SUCCESS;
 		zend_hash_move_forward(Z_ARRVAL_P(entries))) {
+		int use_copy = 0;
+		zval entry_copy, *entry_copy_ptr;
+
+
+		if (Z_TYPE_PP(entry) != IS_STRING) {
+			MAKE_COPY_ZVAL(entry, &entry_copy);
+			convert_to_string(&entry_copy);
+			entry_copy_ptr = &entry_copy;
+			entry = &entry_copy_ptr;
+			use_copy = 1;
+		}
 
 		if (Z_TYPE_PP(entry) != IS_STRING || Z_STRLEN_PP(entry) <= 0) {
+			if (use_copy) {
+				zval_dtor(&entry_copy);
+			}
+
 			continue;
 		}
 
@@ -1488,6 +1523,10 @@ static void php_memc_deleteMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by
 			add_assoc_long(return_value, Z_STRVAL_PP(entry), status);
 		} else {
 			add_assoc_bool(return_value, Z_STRVAL_PP(entry), 1);
+		}
+
+		if (use_copy) {
+			zval_dtor(&entry_copy);
 		}
 	}
 
@@ -2101,6 +2140,7 @@ static PHP_METHOD(Memcached, setOptions)
 			}
 		} else {
 			php_error_docref(NULL TSRMLS_CC, E_WARNING, "invalid configuration option");
+			ok = 0;
 		}
 	}
 

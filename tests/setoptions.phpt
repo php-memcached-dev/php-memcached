@@ -19,12 +19,19 @@ var_dump($m->getOption(Memcached::OPT_SERIALIZER) == Memcached::SERIALIZER_PHP);
 var_dump($m->getOption(Memcached::OPT_COMPRESSION) == 0);
 var_dump($m->getOption(Memcached::OPT_LIBKETAMA_COMPATIBLE) == 1);
 
-echo "test invalid options";
+echo "test invalid options\n";
+error_reporting(0);
 
 var_dump($m->setOptions(array(
-	-1 => 123,
-	"hello" => 12
+	"asdf" => 123
 )));
+echo $php_errormsg, "\n";
+
+$php_errormsg = '';
+var_dump($m->setOptions(array(
+	-1 => 123
+)));
+echo $php_errormsg, "\n";
 
 --EXPECTF--
 bool(true)
@@ -33,7 +40,7 @@ bool(true)
 bool(true)
 bool(true)
 test invalid options
-Warning: Memcached::setOptions(): error setting memcached option in %s on line %d
-
-Warning: Memcached::setOptions(): invalid configuration option in %s on line %d
 bool(false)
+%s::setOptions(): invalid configuration option
+bool(false)
+%s::setOptions(): error setting memcached option
