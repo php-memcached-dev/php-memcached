@@ -585,8 +585,6 @@ static void php_memc_getMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 	size_t payload_len = 0;
 	char **mkeys = NULL;
 	size_t *mkeys_len = NULL;
-	char **mkeys_copy = NULL;
-	int  mkeys_ncopy = 0;
 	char *res_key = NULL;
 	size_t res_key_len = 0;
 	uint32_t flags;
@@ -602,12 +600,12 @@ static void php_memc_getMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 	MEMC_METHOD_INIT_VARS;
 
 	if (by_key) {
-		if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sa|zl", &server_key,
+		if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sa/|zl", &server_key,
 								  &server_key_len, &keys, &cas_tokens, &get_flags) == FAILURE) {
 			return;
 		}
 	} else {
-		if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "a|zl", &keys, &cas_tokens, &get_flags) == FAILURE) {
+		if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "a/|zl", &keys, &cas_tokens, &get_flags) == FAILURE) {
 			return;
 		}
 	}
@@ -631,18 +629,7 @@ static void php_memc_getMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 		zval copy, *copy_ptr;
 
 		if (Z_TYPE_PP(entry) != IS_STRING) {
-			/* this should be relatively uncommon, defer allocation */
-			if (UNEXPECTED(mkeys_copy == NULL)) {
-				mkeys_copy = safe_emalloc(num_keys, sizeof(*mkeys_copy), 0);
-			}
-
-			MAKE_COPY_ZVAL(entry, &copy);
-			convert_to_string(&copy);
-
-			mkeys_copy[mkeys_ncopy] = Z_STRVAL(copy);
-			copy_ptr = &copy;
-			entry = &copy_ptr;
-			mkeys_ncopy++;
+			convert_to_string_ex(entry);
 		}
 
 		if (Z_TYPE_PP(entry) == IS_STRING && Z_STRLEN_PP(entry) > 0) {
@@ -661,12 +648,6 @@ static void php_memc_getMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 		i_obj->rescode = MEMCACHED_NOTFOUND;
 		efree(mkeys);
 		efree(mkeys_len);
-		for (i = 0; i < mkeys_ncopy; i++) {
-			efree(mkeys_copy[i]);
-		}
-		if (mkeys_copy) {
-			efree(mkeys_copy);
-		}
 		return;
 	}
 
@@ -695,12 +676,6 @@ static void php_memc_getMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 
 	efree(mkeys);
 	efree(mkeys_len);
-	for (i = 0; i < mkeys_ncopy; i++) {
-		efree(mkeys_copy[i]);
-	}
-	if (mkeys_copy) {
-		efree(mkeys_copy);
-	}
 
 	/*
 	 * Iterate through the result set and create the result array. The CAS tokens are
