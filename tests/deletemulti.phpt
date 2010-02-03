@@ -10,6 +10,18 @@ $m->addServer('localhost', 11211, 1);
 
 $m->flush();
 
+function has_all_keys($keys, $array, $check_true = false)
+{
+	foreach ($keys as $key) {
+		if (!isset($array[$key]))
+			return false;
+		
+		if ($check_true && $array[$key] !== true)
+			return false;
+	}
+	return true;
+}
+
 $data = array(
 	'foo' => 'foo-data',
 	'bar' => 'bar-data',
@@ -20,19 +32,33 @@ $data = array(
 
 $keys = array_keys($data);
 
+$null = null;
 $m->setMulti($data, 3600);
 
-var_dump($m->getMulti(array_keys($data)));
-var_dump($m->deleteMulti($keys));
-var_dump($m->getMulti(array_keys($data)));
+/* Check that all keys were stored */
+var_dump(has_all_keys($keys, $m->getMulti($keys)));
 
+/* Check that all keys get deleted */
+$deleted = $m->deleteMulti($keys);
+var_dump(has_all_keys($keys, $deleted, true));
+
+/* Try to get the deleted keys, should give empty array */
+var_dump($m->getMulti($keys));
+
+/* ---- same tests for byKey variants ---- */
 $m->setMultiByKey("hi", $data, 3600);
-var_dump($m->getMultiByKey("hi", $keys));
-var_dump($m->deleteMultiByKey("hi", $keys));
-var_dump($m->getMultiByKey("hi", $keys));
 
-$m->setMulti($data, 3600);
+var_dump(has_all_keys($keys, $m->getMultiByKey('hi', $keys)));
 
+/* Check that all keys get deleted */
+$deleted = $m->deleteMultiByKey('hi', $keys);
+var_dump(has_all_keys($keys, $deleted, true));
+
+/* Try to get the deleted keys, should give empty array */
+var_dump($m->getMultiByKey('hi', $keys));
+
+/* Test deleting non-existent keys */
+$keys = array();
 $keys[] = "nothere";
 $keys[] = "nothere2";
 
@@ -47,56 +73,12 @@ foreach ($retval as $key => $value) {
 
 ?>
 --EXPECT--
-array(5) {
-  ["foo"]=>
-  string(8) "foo-data"
-  ["bar"]=>
-  string(8) "bar-data"
-  ["baz"]=>
-  string(8) "baz-data"
-  ["lol"]=>
-  string(8) "lol-data"
-  ["kek"]=>
-  string(8) "kek-data"
-}
-array(5) {
-  ["foo"]=>
-  bool(true)
-  ["bar"]=>
-  bool(true)
-  ["baz"]=>
-  bool(true)
-  ["lol"]=>
-  bool(true)
-  ["kek"]=>
-  bool(true)
-}
+bool(true)
+bool(true)
 array(0) {
 }
-array(5) {
-  ["foo"]=>
-  string(8) "foo-data"
-  ["bar"]=>
-  string(8) "bar-data"
-  ["baz"]=>
-  string(8) "baz-data"
-  ["lol"]=>
-  string(8) "lol-data"
-  ["kek"]=>
-  string(8) "kek-data"
-}
-array(5) {
-  ["foo"]=>
-  bool(true)
-  ["bar"]=>
-  bool(true)
-  ["baz"]=>
-  bool(true)
-  ["lol"]=>
-  bool(true)
-  ["kek"]=>
-  bool(true)
-}
+bool(true)
+bool(true)
 array(0) {
 }
 nothere NOT FOUND

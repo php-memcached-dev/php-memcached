@@ -1,6 +1,7 @@
 --TEST--
 Memcached::getMulti() partial error
 --SKIPIF--
+--XFAIL--
 <?php if (!extension_loaded("memcached")) print "skip"; ?>
 --FILE--
 <?php
@@ -13,7 +14,8 @@ for ($i = 0; $i < 1000; $i++) {
 }
 var_dump($m->setMulti($data));
 
-var_dump($m->addServer('localhost', 37712, 1));
+/* make sure that all keys are not there */
+var_dump(count($m->deleteMulti(array("key1", "key2"))) == 2);
 
 $v = $m->getMulti(array_keys($data));
 var_dump(is_array($v));

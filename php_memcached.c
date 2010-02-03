@@ -1497,7 +1497,9 @@ static void php_memc_deleteMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by
 
 
 		if (Z_TYPE_PP(entry) != IS_STRING) {
-			MAKE_COPY_ZVAL(entry, &entry_copy);
+			entry_copy = **entry;
+			zval_copy_ctor(&entry_copy);
+			INIT_PZVAL(&entry_copy);
 			convert_to_string(&entry_copy);
 			entry_copy_ptr = &entry_copy;
 			entry = &entry_copy_ptr;
