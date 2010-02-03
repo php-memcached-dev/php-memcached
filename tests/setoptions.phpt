@@ -22,7 +22,8 @@ var_dump($m->getOption(Memcached::OPT_LIBKETAMA_COMPATIBLE) == 1);
 echo "test invalid options";
 
 var_dump($m->setOptions(array(
-	-1 => 123
+	-1 => 123,
+	"hello" => 12
 )));
 
 --EXPECTF--
@@ -33,4 +34,6 @@ bool(true)
 bool(true)
 test invalid options
 Warning: Memcached::setOptions(): error setting memcached option in %s on line %d
+
+Warning: Memcached::setOptions(): invalid configuration option in %s on line %d
 bool(false)
