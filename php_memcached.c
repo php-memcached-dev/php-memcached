@@ -989,10 +989,7 @@ PHP_METHOD(Memcached, fetchAll)
 		add_assoc_stringl_ex(entry, ZEND_STRS("key"), res_key, res_key_len, 1);
 		add_assoc_zval_ex(entry, ZEND_STRS("value"), value);
 		if (cas != 0) {
-<<<<<<< HEAD
-=======
 			/* XXX: also check against ULLONG_MAX or memc_behavior */
->>>>>>> Only add CAS to output array in fetch and fetchAll if result has CAS.
 			add_assoc_double_ex(entry, ZEND_STRS("cas"), (double)cas);
 		}
 		add_next_index_zval(return_value, entry);
