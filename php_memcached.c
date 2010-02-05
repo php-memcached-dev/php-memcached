@@ -26,7 +26,6 @@
 #endif
 
 #include <stdlib.h>
-#include <error.h>
 #include <string.h>
 #include <php.h>
 #include <php_main.h>
@@ -2104,7 +2103,8 @@ static int php_memc_set_option(php_memc_t *i_obj, long option, zval *value TSRML
 			 */
 			flag = (memcached_behavior) option;
 			convert_to_long(value);
-			if (memcached_behavior_set(m_obj->memc, flag, (uint64_t)Z_LVAL_P(value)) != MEMCACHED_SUCCESS) {
+			if (flag < 0 || flag >= MEMCACHED_BEHAVIOR_MAX ||
+				memcached_behavior_set(m_obj->memc, flag, (uint64_t)Z_LVAL_P(value)) != MEMCACHED_SUCCESS) {
 				php_error_docref(NULL TSRMLS_CC, E_WARNING, "error setting memcached option");
 				return 0;
 			}
@@ -3434,7 +3434,6 @@ static void php_memc_register_constants(INIT_FUNC_ARGS)
 #if defined(LIBMEMCACHED_VERSION_HEX) && LIBMEMCACHED_VERSION_HEX >= 0x00037000
 	REGISTER_MEMC_CLASS_CONST_LONG(OPT_NUMBER_OF_REPLICAS, MEMCACHED_BEHAVIOR_NUMBER_OF_REPLICAS);
 	REGISTER_MEMC_CLASS_CONST_LONG(OPT_RANDOMIZE_REPLICA_READ, MEMCACHED_BEHAVIOR_RANDOMIZE_REPLICA_READ);
-	REGISTER_MEMC_CLASS_CONST_LONG(OPT_MAX, MEMCACHED_BEHAVIOR_MAX);
 #endif
 
 	/*
