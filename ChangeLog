@@ -19,6 +19,10 @@ Version 2.0.0
 	* Implement a few speed optimizations
 	* Many bug fixes and memory leaks plugged
 	* Add several more tests
+	* Add constants for libmemcached 0.37+:
+	    - Memcached::OPT_NUMBER_OF_REPLICAS
+	    - Memcached::OPT_RANDOMIZE_REPLICA_READ
+	    - Memcached::OPT_MAX
 
 Version 1.0.1
 -------------
