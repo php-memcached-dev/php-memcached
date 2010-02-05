@@ -17,8 +17,8 @@ http://pear.php.net/dtd/package-2.0.xsd">
  </lead>
  <date>2009-07-07</date>
  <version>
-  <release>1.0.0</release>
-  <api>1.0.0</api>
+  <release>2.0.0</release>
+  <api>2.0.0</api>
  </version>
  <stability>
   <release>stable</release>
@@ -40,10 +40,13 @@ http://pear.php.net/dtd/package-2.0.xsd">
    <file role='doc' name='ChangeLog'/>
    <file role='doc' name='memcached-api.php'/>
    <file role='doc' name='memcached.ini'/>
+   <file role='doc' name='fastlz/LICENSE'/>
    <file role='src' name='config.m4'/>
    <file role='src' name='config.w32'/>
    <file role='src' name='php_memcached.c'/>
    <file role='src' name='php_memcached.h'/>
+   <file role='src' name='fastlz/fastlz.c'/>
+   <file role='src' name='fastlz/fastlz.h'/>
   </dir> <!-- / -->
  </contents>
  <dependencies>
