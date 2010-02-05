@@ -57,12 +57,12 @@ if test "$PHP_MEMCACHED" != "no"; then
   fi
 
   AC_MSG_CHECKING([for zlib location])
-  if test "$PHP_ZLIB_DIR" = "no"; then
-    AC_MSG_ERROR([memcached support requires ZLIB. Use --with-zlib-dir=<DIR> to specify the prefix where ZLIB headers and library are located])
-  else
+  if test "$PHP_ZLIB_DIR" != "no" && test "$PHP_ZLIB_DIR" != "yes"; then
     AC_MSG_RESULT([$PHP_ZLIB_DIR])
     PHP_ADD_LIBRARY_WITH_PATH(z, $PHP_ZLIB_DIR/$PHP_LIBDIR, MEMCACHE_SHARED_LIBADD)
     PHP_ADD_INCLUDE($PHP_ZLIB_INCDIR)
+  else
+    AC_MSG_ERROR([memcached support requires ZLIB. Use --with-zlib-dir=<DIR> to specify the prefix where ZLIB headers and library are located])
   fi
 
   dnl add FastLZ
