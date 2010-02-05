@@ -698,11 +698,11 @@ static void php_memc_getMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 		MAKE_STD_ZVAL(value);
 
 		if (php_memc_zval_from_payload(value, payload, payload_len, flags, m_obj->serializer TSRMLS_CC) < 0) {
-			/* XXX: remember memcached_quit? */
 			zval_ptr_dtor(&value);
 			if (EG(exception)) {
 				status = MEMC_RES_PAYLOAD_FAILURE;
 				php_memc_handle_error(i_obj, status TSRMLS_CC);
+				memcached_quit(m_obj->memc);
 
 				break;
 			}
