@@ -70,6 +70,8 @@ class Memcached {
 	const OPT_NOREPLY;
 
 	const OPT_VERIFY_KEY;
+	
+	const OPT_RANDOMIZE_REPLICA_READS;
 
 
 	/**
