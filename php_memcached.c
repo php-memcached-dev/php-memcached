@@ -2103,7 +2103,11 @@ static int php_memc_set_option(php_memc_t *i_obj, long option, zval *value TSRML
 			 */
 			flag = (memcached_behavior) option;
 			convert_to_long(value);
-			if (flag < 0 || flag >= MEMCACHED_BEHAVIOR_MAX ||
+			if (flag < 0 ||
+/* MEMCACHED_BEHAVIOR_MAX was added in somewhere around 0.36 or 0.37 */
+#if defined(LIBMEMCACHED_VERSION_HEX) && LIBMEMCACHED_VERSION_HEX >= 0x00037000			
+				flag >= MEMCACHED_BEHAVIOR_MAX ||
+#endif
 				memcached_behavior_set(m_obj->memc, flag, (uint64_t)Z_LVAL_P(value)) != MEMCACHED_SUCCESS) {
 				php_error_docref(NULL TSRMLS_CC, E_WARNING, "error setting memcached option");
 				return 0;
