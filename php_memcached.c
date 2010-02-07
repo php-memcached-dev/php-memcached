@@ -2142,9 +2142,15 @@ static PHP_METHOD(Memcached, setOptions)
 		 zend_hash_move_forward(Z_ARRVAL_P(options))) {
 
 		if (zend_hash_get_current_key_ex(Z_ARRVAL_P(options), &key, &key_len, &key_index, 0, NULL) == HASH_KEY_IS_LONG) {
-			if (!php_memc_set_option(i_obj, (long) key_index, *value TSRMLS_CC)) {
+			zval copy = **value;
+			zval_copy_ctor(&copy);
+			INIT_PZVAL(&copy);
+
+			if (!php_memc_set_option(i_obj, (long) key_index, &copy TSRMLS_CC)) {
 				ok = 0;
 			}
+
+			zval_dtor(&copy);
 		} else {
 			php_error_docref(NULL TSRMLS_CC, E_WARNING, "invalid configuration option");
 			ok = 0;
