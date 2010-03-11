@@ -1780,8 +1780,14 @@ static PHP_METHOD(Memcached, setOption)
 			 * (non-weighted) case. We have to clean up ourselves.
 			 */
 			if (!Z_LVAL_P(value)) {
+#if defined(LIBMEMCACHED_VERSION_HEX) && LIBMEMCACHED_VERSION_HEX > 0x00037000
+				(void)memcached_behavior_set_key_hash(i_obj->memc, MEMCACHED_HASH_DEFAULT);
+				(void)memcached_behavior_set_distribution_hash(i_obj->memc, MEMCACHED_HASH_DEFAULT);
+				(void)memcached_behavior_set_distribution(i_obj->memc, MEMCACHED_DISTRIBUTION_MODULA);
+#else
 				i_obj->memc->hash = 0;
 				i_obj->memc->distribution = 0;
+#endif
 			}
 			break;
 
