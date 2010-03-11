@@ -2065,8 +2065,14 @@ static int php_memc_set_option(php_memc_t *i_obj, long option, zval *value TSRML
 			 * (non-weighted) case. We have to clean up ourselves.
 			 */
 			if (!Z_LVAL_P(value)) {
+#if defined(LIBMEMCACHED_VERSION_HEX) && LIBMEMCACHED_VERSION_HEX > 0x00037000
+			(void)memcached_behavior_set_key_hash(m_obj->memc, MEMCACHED_HASH_DEFAULT);
+			(void)memcached_behavior_set_distribution_hash(m_obj->memc, MEMCACHED_HASH_DEFAULT);
+			(void)memcached_behavior_set_distribution(m_obj->memc, MEMCACHED_DISTRIBUTION_MODULA);
+#else
 				m_obj->memc->hash = 0;
 				m_obj->memc->distribution = 0;
+#endif
 			}
 			break;
 
