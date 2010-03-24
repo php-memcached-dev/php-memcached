@@ -446,6 +446,10 @@ static void php_memc_get_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 
 		status = memcached_mget_by_key(m_obj->memc, server_key, server_key_len, keys, key_lens, 1);
 
+		if (orig_cas_flag == 0) {
+			memcached_behavior_set(m_obj->memc, MEMCACHED_BEHAVIOR_SUPPORT_CAS, orig_cas_flag);
+		}
+
 		if (php_memc_handle_error(i_obj, status TSRMLS_CC) < 0) {
 			RETURN_FROM_GET;
 		}
@@ -497,12 +501,6 @@ static void php_memc_get_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 
 		memcached_result_free(&result);
 
-		/*
-		 * Restore the CAS support flag, but only if we had to turn it on.
-		 */
-		if (orig_cas_flag == 0) {
-			memcached_behavior_set(m_obj->memc, MEMCACHED_BEHAVIOR_SUPPORT_CAS, orig_cas_flag);
-		}
 		return;
 
 	} else {
@@ -665,10 +663,8 @@ static void php_memc_getMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 	/*
 	 * Restore the CAS support flag, but only if we had to turn it on.
 	 */
-	if (cas_tokens) {
-		if (orig_cas_flag == 0) {
-			memcached_behavior_set(m_obj->memc, MEMCACHED_BEHAVIOR_SUPPORT_CAS, orig_cas_flag);
-		}
+	if (cas_tokens && orig_cas_flag == 0) {
+		memcached_behavior_set(m_obj->memc, MEMCACHED_BEHAVIOR_SUPPORT_CAS, orig_cas_flag);
 	}
 
 	efree(mkeys);
@@ -839,10 +835,8 @@ static void php_memc_getDelayed_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_
 	/*
 	 * Restore the CAS support flag, but only if we had to turn it on.
 	 */
-	if (with_cas) {
-		if (orig_cas_flag == 0) {
-			memcached_behavior_set(m_obj->memc, MEMCACHED_BEHAVIOR_SUPPORT_CAS, orig_cas_flag);
-		}
+	if (with_cas && orig_cas_flag == 0) {
+		memcached_behavior_set(m_obj->memc, MEMCACHED_BEHAVIOR_SUPPORT_CAS, orig_cas_flag);
 	}
 
 	efree(mkeys);
