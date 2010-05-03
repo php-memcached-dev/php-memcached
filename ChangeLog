@@ -1,5 +1,9 @@
 memcached extension changelog
 
+Version 1.0.2
+-------------
+	* Fix build for libmemcached-0.39 (memcached_server_list() issue)
+
 Version 1.0.1
 -------------
 	* Fix build for libmemcached-0.38.
