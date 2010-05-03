@@ -201,6 +201,16 @@ static int le_memc;
 
 static zend_class_entry *memcached_ce = NULL;
 static zend_class_entry *memcached_exception_ce = NULL;
+
+struct callbackContext
+{
+	zval *array;
+	zval *entry;
+	memcached_stat_st *stats; /* for use with functions that need stats */
+	void *return_value;
+	unsigned int i; /* for use with structures mapped against servers */
+};
+
 static zend_class_entry *spl_ce_RuntimeException = NULL;
 
 #if (PHP_MAJOR_VERSION == 5 && PHP_MINOR_VERSION < 3)
@@ -287,6 +297,9 @@ static void php_memc_incdec_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool incr);
 static void php_memc_getDelayed_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key);
 static memcached_return php_memc_do_cache_callback(zval *memc_obj, zend_fcall_info *fci, zend_fcall_info_cache *fcc, char *key, size_t key_len, zval *value TSRMLS_DC);
 static int php_memc_do_result_callback(zval *memc_obj, zend_fcall_info *fci, zend_fcall_info_cache *fcc, memcached_result_st *result TSRMLS_DC);
+static memcached_return php_memc_do_serverlist_callback(const memcached_st *ptr, memcached_server_instance_st instance, void *in_context);
+static memcached_return php_memc_do_stats_callback(const memcached_st *ptr, memcached_server_instance_st instance, void *in_context);
+static memcached_return php_memc_do_version_callback(const memcached_st *ptr, memcached_server_instance_st instance, void *in_context);
 
 
 /****************************************
@@ -1683,7 +1696,7 @@ PHP_METHOD(Memcached, addServers)
 			}
 
 			list = memcached_server_list_append_with_weight(list, Z_STRVAL_PP(z_host),
-															Z_LVAL_PP(z_port), weight, &status);
+				Z_LVAL_PP(z_port), weight, &status);
 
 			if (php_memc_handle_error(i_obj, status TSRMLS_CC) == 0) {
 				continue;
@@ -1704,13 +1717,14 @@ PHP_METHOD(Memcached, addServers)
 }
 /* }}} */
 
+
 /* {{{ Memcached::getServerList()
    Returns the list of the memcache servers in use */
 PHP_METHOD(Memcached, getServerList)
 {
-	memcached_server_st *servers;
-	unsigned int i, servers_count;
 	zval *array;
+	struct callbackContext context = {0};
+	memcached_server_function callbacks[1];
 	MEMC_METHOD_INIT_VARS;
 
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "") == FAILURE) {
@@ -1719,21 +1733,11 @@ PHP_METHOD(Memcached, getServerList)
 
 	MEMC_METHOD_FETCH_OBJECT;
 
+	callbacks[0] = php_memc_do_serverlist_callback;
 	array_init(return_value);
-	servers = memcached_server_list(m_obj->memc);
-	if (servers == NULL) {
-		return;
-	}
-	servers_count = memcached_server_count(m_obj->memc);
-
-	for (i = 0; i < servers_count; i++) {
-		MAKE_STD_ZVAL(array);
-		array_init(array);
-		add_assoc_string(array, "host", servers[i].hostname, 1);
-		add_assoc_long(array, "port", servers[i].port);
-		add_assoc_long(array, "weight", servers[i].weight);
-		add_next_index_zval(return_value, array);
-	}
+	context.array = array;
+	context.return_value = return_value;
+	memcached_server_cursor(m_obj->memc, callbacks, &context, 1);
 }
 /* }}} */
 
@@ -1777,13 +1781,12 @@ PHP_METHOD(Memcached, getServerByKey)
    Returns statistics for the memcache servers */
 PHP_METHOD(Memcached, getStats)
 {
-    memcached_stat_st *stats;
+	memcached_stat_st *stats;
 	memcached_server_st *servers;
-	unsigned int i, servers_count;
 	memcached_return status;
-	char *hostport = NULL;
-	int hostport_len;
 	zval *entry;
+	struct callbackContext context = {0};
+	memcached_server_function callbacks[1];
 	MEMC_METHOD_INIT_VARS;
 
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "") == FAILURE) {
@@ -1802,52 +1805,13 @@ PHP_METHOD(Memcached, getStats)
 	}
 
 	array_init(return_value);
-	servers = memcached_server_list(m_obj->memc);
-	if (servers == NULL) {
-		memcached_stat_free(m_obj->memc, stats);
-		return;
-	}
-	servers_count = memcached_server_count(m_obj->memc);
 
-	for (i = 0; i < servers_count; i++) {
-		hostport_len = spprintf(&hostport, 0, "%s:%u", servers[i].hostname, servers[i].port);
-
-		/* This is to skip over failed servers from the statistics array.
-		 * Libmemcached returns an empty statistics struct in case of failure,
-		 * so we use the pid as a sentinel. */
-		if (stats[i].pid > 0) {
-			MAKE_STD_ZVAL(entry);
-			array_init(entry);
-
-			add_assoc_long(entry, "pid", stats[i].pid);
-			add_assoc_long(entry, "uptime", stats[i].uptime);
-			add_assoc_long(entry, "threads", stats[i].threads);
-			add_assoc_long(entry, "time", stats[i].time);
-			add_assoc_long(entry, "pointer_size", stats[i].pointer_size);
-			add_assoc_long(entry, "rusage_user_seconds", stats[i].rusage_user_seconds);
-			add_assoc_long(entry, "rusage_user_microseconds", stats[i].rusage_user_microseconds);
-			add_assoc_long(entry, "rusage_system_seconds", stats[i].rusage_system_seconds);
-			add_assoc_long(entry, "rusage_system_microseconds", stats[i].rusage_system_microseconds);
-			add_assoc_long(entry, "curr_items", stats[i].curr_items);
-			add_assoc_long(entry, "total_items", stats[i].total_items);
-			add_assoc_long(entry, "limit_maxbytes", stats[i].limit_maxbytes);
-			add_assoc_long(entry, "curr_connections", stats[i].curr_connections);
-			add_assoc_long(entry, "total_connections", stats[i].total_connections);
-			add_assoc_long(entry, "connection_structures", stats[i].connection_structures);
-			add_assoc_long(entry, "bytes", stats[i].bytes);
-			add_assoc_long(entry, "cmd_get", stats[i].cmd_get);
-			add_assoc_long(entry, "cmd_set", stats[i].cmd_set);
-			add_assoc_long(entry, "get_hits", stats[i].get_hits);
-			add_assoc_long(entry, "get_misses", stats[i].get_misses);
-			add_assoc_long(entry, "evictions", stats[i].evictions);
-			add_assoc_long(entry, "bytes_read", stats[i].bytes_read);
-			add_assoc_long(entry, "bytes_written", stats[i].bytes_written);
-			add_assoc_stringl(entry, "version", stats[i].version, strlen(stats[i].version), 1);
-
-			add_assoc_zval_ex(return_value, hostport, hostport_len+1, entry);
-		}
-		efree(hostport);
-	}
+	callbacks[0] = php_memc_do_stats_callback;
+	context.i = 0;
+	context.entry = entry;
+	context.stats = stats;
+	context.return_value = return_value;
+	memcached_server_cursor(m_obj->memc, callbacks, &context, 1);
 
 	memcached_stat_free(m_obj->memc, stats);
 }
@@ -1858,11 +1822,9 @@ PHP_METHOD(Memcached, getStats)
 PHP_METHOD(Memcached, getVersion)
 {
 	memcached_server_st *servers;
-	unsigned int i, servers_count;
-	char *hostport = NULL;
-	char version[16];
-	int hostport_len, version_len;
 	memcached_return status = MEMCACHED_SUCCESS;
+	struct callbackContext context = {0};
+	memcached_server_function callbacks[1];
 	MEMC_METHOD_INIT_VARS;
 
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "") == FAILURE) {
@@ -1872,11 +1834,6 @@ PHP_METHOD(Memcached, getVersion)
 	MEMC_METHOD_FETCH_OBJECT;
 
 	array_init(return_value);
-	servers = memcached_server_list(m_obj->memc);
-	servers_count = memcached_server_count(m_obj->memc);
-	if (servers == NULL) {
-		return;
-	}
 
 	status = memcached_version(m_obj->memc);
 	if (php_memc_handle_error(i_obj, status TSRMLS_CC) < 0) {
@@ -1884,22 +1841,16 @@ PHP_METHOD(Memcached, getVersion)
 		RETURN_FALSE;
 	}
 
-	for (i = 0; i < servers_count; i++) {
-		hostport_len = spprintf(&hostport, 0, "%s:%u",
-			servers[i].hostname, servers[i].port);
-		version_len = snprintf(version, sizeof(version), "%d.%d.%d",
-			servers[i].major_version, servers[i].minor_version,
-			servers[i].micro_version);
+	callbacks[0] = php_memc_do_version_callback;
+	context.return_value = return_value;
 
-		add_assoc_stringl_ex(return_value, hostport, hostport_len+1, version, version_len, 1);
-		efree(hostport);
-	}
+	memcached_server_cursor(m_obj->memc, callbacks, &context, 1);
 }
 /* }}} */
 
 /* {{{ Memcached::getAllKeys()
 	Returns the keys stored on all the servers */
-static memcached_return php_memc_dump_func_callback(memcached_st *ptr __attribute__((unused)), \
+static memcached_return php_memc_dump_func_callback(const memcached_st *ptr __attribute__((unused)), \
 	const char *key, size_t key_length, void *context)
 {
 	zval *ctx = (zval*) context;
@@ -1914,7 +1865,7 @@ PHP_METHOD(Memcached, getAllKeys)
 	memcached_dump_func callback[1];
 	MEMC_METHOD_INIT_VARS;
 
-	callback[0] = &php_memc_dump_func_callback;
+	callback[0] = php_memc_dump_func_callback;
 	MEMC_METHOD_FETCH_OBJECT;
 
 	array_init(return_value);
@@ -2317,6 +2268,79 @@ ZEND_RSRC_DTOR_FUNC(php_memc_dtor)
 /* }}} */
 
 /* {{{ internal API functions */
+static memcached_return php_memc_do_serverlist_callback(const memcached_st *ptr, memcached_server_instance_st instance, void *in_context)
+{
+	struct callbackContext* context = (struct callbackContext*) in_context;
+
+	MAKE_STD_ZVAL(context->array);
+	array_init(context->array);
+	add_assoc_string(context->array, "host", instance->hostname, 1);
+	add_assoc_long(context->array, "port", instance->port);
+	add_assoc_long(context->array, "weight", instance->weight);
+	add_next_index_zval(context->return_value, context->array);
+	return MEMCACHED_SUCCESS;
+}
+
+static memcached_return php_memc_do_stats_callback(const memcached_st *ptr, memcached_server_instance_st instance, void *in_context)
+{
+	char *hostport = NULL;
+	int hostport_len;
+	struct callbackContext* context = (struct callbackContext*) in_context;
+	hostport_len = spprintf(&hostport, 0, "%s:%d", instance->hostname, instance->port);
+
+	MAKE_STD_ZVAL(context->entry);
+	array_init(context->entry);
+
+	add_assoc_long(context->entry, "pid", context->stats[context->i].pid);
+	add_assoc_long(context->entry, "uptime", context->stats[context->i].uptime);
+	add_assoc_long(context->entry, "threads", context->stats[context->i].threads);
+	add_assoc_long(context->entry, "time", context->stats[context->i].time);
+	add_assoc_long(context->entry, "pointer_size", context->stats[context->i].pointer_size);
+	add_assoc_long(context->entry, "rusage_user_seconds", context->stats[context->i].rusage_user_seconds);
+	add_assoc_long(context->entry, "rusage_user_microseconds", context->stats[context->i].rusage_user_microseconds);
+	add_assoc_long(context->entry, "rusage_system_seconds", context->stats[context->i].rusage_system_seconds);
+	add_assoc_long(context->entry, "rusage_system_microseconds", context->stats[context->i].rusage_system_microseconds);
+	add_assoc_long(context->entry, "curr_items", context->stats[context->i].curr_items);
+	add_assoc_long(context->entry, "total_items", context->stats[context->i].total_items);
+	add_assoc_long(context->entry, "limit_maxbytes", context->stats[context->i].limit_maxbytes);
+	add_assoc_long(context->entry, "curr_connections", context->stats[context->i].curr_connections);
+	add_assoc_long(context->entry, "total_connections", context->stats[context->i].total_connections);
+	add_assoc_long(context->entry, "connection_structures", context->stats[context->i].connection_structures);
+	add_assoc_long(context->entry, "bytes", context->stats[context->i].bytes);
+	add_assoc_long(context->entry, "cmd_get", context->stats[context->i].cmd_get);
+	add_assoc_long(context->entry, "cmd_set", context->stats[context->i].cmd_set);
+	add_assoc_long(context->entry, "get_hits", context->stats[context->i].get_hits);
+	add_assoc_long(context->entry, "get_misses", context->stats[context->i].get_misses);
+	add_assoc_long(context->entry, "evictions", context->stats[context->i].evictions);
+	add_assoc_long(context->entry, "bytes_read", context->stats[context->i].bytes_read);
+	add_assoc_long(context->entry, "bytes_written", context->stats[context->i].bytes_written);
+	add_assoc_stringl(context->entry, "version", context->stats[context->i].version, strlen(context->stats[context->i].version), 1);
+
+	add_assoc_zval_ex(context->return_value, hostport, hostport_len+1, context->entry);
+	efree(hostport);
+
+	/* Increment the server count in our context structure. Failure to do so will cause only the stats for the last server to get displayed. */
+	context->i++;
+	return MEMCACHED_SUCCESS;
+}
+
+static memcached_return php_memc_do_version_callback(const memcached_st *ptr, memcached_server_instance_st instance, void *in_context)
+{
+	char *hostport = NULL;
+	char version[16];
+	int hostport_len, version_len;
+	struct callbackContext* context = (struct callbackContext*) in_context;
+
+	hostport_len = spprintf(&hostport, 0, "%s:%d", instance->hostname, instance->port);
+	version_len = snprintf(version, sizeof(version), "%d.%d.%d",
+				instance->major_version, instance->minor_version,
+				instance->micro_version);
+
+	add_assoc_stringl_ex(context->return_value, hostport, hostport_len+1, version, version_len, 1);
+	efree(hostport);
+	return MEMCACHED_SUCCESS;
+}
+
 static int php_memc_handle_error(php_memc_t *i_obj, memcached_return status TSRMLS_DC)
 {
 	int result = 0;
