@@ -1,7 +1,6 @@
 --TEST--
 Memcached::getMulti() partial error
 --SKIPIF--
---XFAIL--
 <?php if (!extension_loaded("memcached")) print "skip"; ?>
 --FILE--
 <?php
@@ -20,11 +19,12 @@ var_dump(count($m->deleteMulti(array("key1", "key2"))) == 2);
 $v = $m->getMulti(array_keys($data));
 var_dump(is_array($v));
 var_dump(count($v) < count($data));
-var_dump($m->getResultCode() == Memcached::RES_SUCCESS);
+var_dump($m->getResultCode() == Memcached::RES_SUCCESS ||
+	$m->getResultCode() == Memcached::RES_SOME_ERRORS);
 
 --EXPECT--
 bool(true)
 bool(true)
 bool(true)
 bool(true)
-bool(false)
+bool(true)

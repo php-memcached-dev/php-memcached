@@ -11,7 +11,14 @@ echo $m->getResultMessage(), "\n";
 $m->addServer('localhost', 37712, 1);
 
 var_dump($m->getMulti(array('foo', 'bar')));
-echo $m->getResultMessage(), "\n";
+switch ($m->getResultCode()) {
+	case Memcached::RES_ERRNO:
+	case Memcached::RES_SOME_ERRORS:
+		break;
+	default:
+		echo $m->getResultCode(), ": ";
+		echo $m->getResultMessage(), "\n";
+}
 
 --EXPECT--
 array(0) {
@@ -19,4 +26,3 @@ array(0) {
 NO SERVERS DEFINED
 array(0) {
 }
-SYSTEM ERROR
