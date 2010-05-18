@@ -22,6 +22,7 @@ $data = array(
 	array('integer_zero_integer', 0),
 
 	array('float_positive1', 3.912131),
+	array('float_positive2', 1.2131E+501),
 	array('float_positive2', 1.2131E+52),
 	array('float_negative', -42.123312),
 	array('float_zero', 0.0),
