@@ -2496,7 +2496,7 @@ static char *php_memc_zval_to_payload(zval *value, size_t *payload_len, uint32_t
 			switch (serializer) {
 #ifdef HAVE_MEMCACHED_IGBINARY
 				case SERIALIZER_IGBINARY:
-					if (igbinary_serialize((uint8_t **) &buf.c, &buf.len, value) != 0) {
+					if (igbinary_serialize((uint8_t **) &buf.c, &buf.len, value TSRMLS_CC) != 0) {
 						smart_str_free(&buf);
 						return NULL;
 					}
@@ -2708,7 +2708,7 @@ static int php_memc_zval_from_payload(zval *value, char *payload, size_t payload
 
 		case MEMC_VAL_IS_IGBINARY:
 #ifdef HAVE_MEMCACHED_IGBINARY
-			if (igbinary_unserialize((uint8_t *)payload, payload_len, &value)) {
+			if (igbinary_unserialize((uint8_t *)payload, payload_len, &value TSRMLS_CC)) {
 				ZVAL_FALSE(value);
 				php_error_docref(NULL TSRMLS_CC, E_WARNING, "could not unserialize value with igbinary");
 				goto my_error;
