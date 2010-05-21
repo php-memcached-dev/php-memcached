@@ -1,8 +1,15 @@
 --TEST--
 Serializer: exception while serializing
---XFAIL--
 --SKIPIF--
-<?php if (!extension_loaded("memcached")) print "skip"; ?>
+<?php
+	if (!extension_loaded("memcached")) print "skip";
+	if ($_ENV['TEST_MEMC_SERIALIZER'] == 'Memcached::SERIALIZER_JSON') {
+		echo "skip skip when using JSON";
+	}
+	if ($_ENV['TEST_MEMC_SERIALIZER'] == 'Memcached::SERIALIZER_PHP' ||
+		!isset($_ENV['TEST_MEMC_SERIALIZER'])) {
+		echo "skip skip when using PHP internal";
+	}
 --FILE--
 <?php
 class Foo {

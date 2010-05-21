@@ -1,7 +1,6 @@
 --TEST--
 Memcached::set() with bad serialize
 --SKIPIF--
---XFAIL--
 <?php if (!extension_loaded("memcached")) print "skip"; ?>
 --FILE--
 <?php

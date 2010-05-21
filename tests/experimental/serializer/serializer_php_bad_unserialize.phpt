@@ -1,7 +1,11 @@
 --TEST--
 Serializer: exception while unserializing
 --SKIPIF--
-<?php if (!extension_loaded("memcached")) print "skip"; ?>
+<?php
+	if (!extension_loaded("memcached")) print "skip";
+	if ($_ENV['TEST_MEMC_SERIALIZER'] == 'Memcached::SERIALIZER_JSON') {
+		echo "skip skip when using JSON";
+	}
 --FILE--
 <?php
 class Foo implements Serializable {
