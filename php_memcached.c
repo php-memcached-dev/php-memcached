@@ -211,7 +211,9 @@ struct callbackContext
 	unsigned int i; /* for use with structures mapped against servers */
 };
 
+#if HAVE_SPL
 static zend_class_entry *spl_ce_RuntimeException = NULL;
+#endif
 
 #if (PHP_MAJOR_VERSION == 5 && PHP_MINOR_VERSION < 3)
 const zend_fcall_info empty_fcall_info = { 0, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0 };
@@ -635,7 +637,6 @@ static void php_memc_getMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 	for (zend_hash_internal_pointer_reset(Z_ARRVAL_P(keys));
 		zend_hash_get_current_data(Z_ARRVAL_P(keys), (void**)&entry) == SUCCESS;
 		zend_hash_move_forward(Z_ARRVAL_P(keys))) {
-		zval copy, *copy_ptr;
 
 		if (Z_TYPE_PP(entry) != IS_STRING) {
 			convert_to_string_ex(entry); 
@@ -1782,7 +1783,6 @@ PHP_METHOD(Memcached, getServerByKey)
 PHP_METHOD(Memcached, getStats)
 {
 	memcached_stat_st *stats;
-	memcached_server_st *servers;
 	memcached_return status;
 	zval *entry;
 	struct callbackContext context = {0};
@@ -1821,7 +1821,6 @@ PHP_METHOD(Memcached, getStats)
    Returns the version of each memcached server in the pool */
 PHP_METHOD(Memcached, getVersion)
 {
-	memcached_server_st *servers;
 	memcached_return status = MEMCACHED_SUCCESS;
 	struct callbackContext context = {0};
 	memcached_server_function callbacks[1];
