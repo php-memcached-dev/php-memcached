@@ -329,7 +329,7 @@ static PHP_METHOD(Memcached, __construct)
 	i_obj = (php_memc_t *) zend_object_store_get_object(object TSRMLS_CC);
 	i_obj->is_pristine = 0;
 
-	if (persistent_id) {
+	if (persistent_id && *persistent_id) {
 		zend_rsrc_list_entry *le = NULL;
 
 		is_persistent = 1;
