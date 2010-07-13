@@ -163,7 +163,7 @@ typedef unsigned long int uint32_t;
 #endif
 #endif
 
-#define RETURN_FROM_GET RETURN_NULL()
+#define RETURN_FROM_GET RETURN_FALSE
 
 /****************************************
   Structures and definitions
@@ -497,7 +497,7 @@ static void php_memc_get_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 			/* if we have a callback, all processing is done */
 			if (fci.size != 0) {
 				memcached_result_free(&result);
-				return;
+				RETURN_FALSE;
 			}
 		}
 
@@ -517,7 +517,7 @@ static void php_memc_get_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 
 		memcached_result_free(&result);
 
-		return;
+		RETURN_FALSE;
 
 	} else {
 		int rc;
