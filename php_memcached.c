@@ -2471,7 +2471,7 @@ static char *php_memc_zval_to_payload(zval *value, size_t *payload_len, uint32_t
 		zend_bool compress_status = 0;
 
 		/* Additional 5% for the data */
-		unsigned long payload_comp_len = (unsigned long)((buf.len + 1.05) + 1);
+		unsigned long payload_comp_len = (unsigned long)((buf.len * 1.05) + 1);
 		char *payload_comp = emalloc(payload_comp_len + sizeof(uint32_t));
 		payload = payload_comp;
 		memcpy(payload_comp, &buf.len, sizeof(uint32_t));
