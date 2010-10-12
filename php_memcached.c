@@ -306,7 +306,39 @@ static memcached_return php_memc_do_version_callback(const memcached_st *ptr, me
   Method implementations
 ****************************************/
 
-/* {{{ Memcached::__construct([string persisten_id]))
+static void php_memcached_on_new_callback(zval *object, zend_fcall_info *fci, zend_fcall_info_cache *fci_cache, char *persistent_id, int persistent_id_len)
+{
+	zval *retval_ptr, *pid_z;
+	zval **params[2];	
+	
+	ALLOC_INIT_ZVAL(pid_z);
+	
+	if (persistent_id) {
+		ZVAL_STRINGL(pid_z, persistent_id, persistent_id_len, 1);
+	} else {
+		ZVAL_NULL(pid_z);
+	}
+
+	/* Call the cb */	
+	params[0] = &object;
+	params[1] = &pid_z;
+	
+	fci->params         = params;
+	fci->param_count    = 2;
+	fci->retval_ptr_ptr = &retval_ptr;
+	fci->no_separation  = 1;
+	
+	if (zend_call_function(fci, fci_cache TSRMLS_CC) == FAILURE) {
+		php_error_docref(NULL TSRMLS_CC, E_WARNING, "Failed to invoke 'on_new' callback %s()", Z_STRVAL_P(fci->function_name));
+	}
+	zval_ptr_dtor(&pid_z);
+	
+	if (retval_ptr) {
+		zval_ptr_dtor(&retval_ptr);
+	}
+}
+
+/* {{{ Memcached::__construct([string persistent_id[, callback on_new]]))
    Creates a Memcached object, optionally using persistent memcache connection */
 static PHP_METHOD(Memcached, __construct)
 {
@@ -319,9 +351,13 @@ static PHP_METHOD(Memcached, __construct)
 
 	char *plist_key = NULL;
 	int plist_key_len = 0;
+	
+	zend_fcall_info fci;
+	zend_fcall_info_cache fci_cache;
+	zend_bool invoke_callback = 0;
 
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|s", &persistent_id,
-		&persistent_id_len) == FAILURE) {
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|sf", &persistent_id,
+		&persistent_id_len, &fci, &fci_cache) == FAILURE) {
 		ZVAL_NULL(object);
 		return;
 	}
@@ -377,6 +413,7 @@ static PHP_METHOD(Memcached, __construct)
 				/* not reached */
 			}
 		}
+		invoke_callback = 1;
 	}
 
 	i_obj->is_persistent = is_persistent;
@@ -384,6 +421,10 @@ static PHP_METHOD(Memcached, __construct)
 
 	if (plist_key != NULL) {
 		efree(plist_key);
+	}
+	
+	if (ZEND_NUM_ARGS() >= 2 && invoke_callback) {
+		php_memcached_on_new_callback(object, &fci, &fci_cache, persistent_id, persistent_id_len);
 	}
 }
 /* }}} */
@@ -3070,6 +3111,7 @@ PS_GC_FUNC(memcached)
 /* {{{ methods arginfo */
 ZEND_BEGIN_ARG_INFO_EX(arginfo___construct, 0, 0, 0)
 	ZEND_ARG_INFO(0, persistent_id)
+	ZEND_ARG_INFO(0, callback)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO(arginfo_getResultCode, 0)
