@@ -57,5 +57,8 @@ foreach ($data as $key => $value) {
 	}
 }
 
+echo "OK\n";
+
 ?>
 --EXPECT--
+OK

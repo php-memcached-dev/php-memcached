@@ -23,4 +23,7 @@ set_error_handler('handler', E_ALL);
 session_start();
 session_write_close();
 
+echo "OK\n";
+
 --EXPECTF--
+OK

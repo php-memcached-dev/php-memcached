@@ -17,5 +17,9 @@ if ($v !== Memcached::GET_ERROR_RETURN_VALUE) {
 	echo "Got: ";
 	var_dump($v);
 }
+
+echo "OK\n";
+
 ?>
 --EXPECT--
+OK
