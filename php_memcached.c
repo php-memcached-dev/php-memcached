@@ -356,7 +356,7 @@ static PHP_METHOD(Memcached, __construct)
 	zend_fcall_info_cache fci_cache;
 	zend_bool invoke_callback = 0;
 
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|sf", &persistent_id,
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|s!f", &persistent_id,
 		&persistent_id_len, &fci, &fci_cache) == FAILURE) {
 		ZVAL_NULL(object);
 		return;
