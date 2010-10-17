@@ -373,6 +373,7 @@ static PHP_METHOD(Memcached, __construct)
 		plist_key_len += 1;
 
 		if (plist_key == NULL) {
+			efree(plist_key);
 			php_error_docref(NULL TSRMLS_CC, E_ERROR, "out of memory: cannot allocate peristent list handler");
 			/* not reached */
 		}
@@ -387,12 +388,14 @@ static PHP_METHOD(Memcached, __construct)
 	if (!m_obj) {
 		m_obj = pecalloc(1, sizeof(*m_obj), is_persistent);
 		if (m_obj == NULL) {
+			efree(plist_key);
 			php_error_docref(NULL TSRMLS_CC, E_ERROR, "out of memory: cannot allocate handle");
 			/* not reached */
 		}
 
 		m_obj->memc = memcached_create(NULL);
 		if (m_obj->memc == NULL) {
+			efree(plist_key);
 			php_error_docref(NULL TSRMLS_CC, E_ERROR, "could not allocate libmemcached structure");
 			/* not reached */
 		}
@@ -409,6 +412,7 @@ static PHP_METHOD(Memcached, __construct)
 			le.ptr = m_obj;
 			if (zend_hash_update(&EG(persistent_list), (char *)plist_key,
 				plist_key_len, (void *)&le, sizeof(le), NULL) == FAILURE) {
+				efree(plist_key);
 				php_error_docref(NULL TSRMLS_CC, E_ERROR, "could not register persistent entry");
 				/* not reached */
 			}
@@ -689,7 +693,6 @@ static void php_memc_getMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 			if (preserve_order) {
 				add_assoc_null_ex(return_value, mkeys[i], mkeys_len[i] + 1);
 			}
-
 			i++;
 		}
 	}
@@ -1525,12 +1528,12 @@ static void php_memc_deleteMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by
 	MEMC_METHOD_INIT_VARS;
 
 	if (by_key) {
-		if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sa|l", &server_key,
+		if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sa/|l", &server_key,
 								  &server_key_len, &entries, &expiration) == FAILURE) {
 			return;
 		}
 	} else {
-		if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "a|l", &entries, &expiration) == FAILURE) {
+		if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "a/|l", &entries, &expiration) == FAILURE) {
 			return;
 		}
 	}
@@ -1542,24 +1545,12 @@ static void php_memc_deleteMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by
 	for (zend_hash_internal_pointer_reset(Z_ARRVAL_P(entries));
 		zend_hash_get_current_data(Z_ARRVAL_P(entries), (void**)&entry) == SUCCESS;
 		zend_hash_move_forward(Z_ARRVAL_P(entries))) {
-		int use_copy = 0;
-		zval entry_copy, *entry_copy_ptr;
-
+		
 		if (Z_TYPE_PP(entry) != IS_STRING) {
-			entry_copy = **entry;
-			zval_copy_ctor(&entry_copy);
-			INIT_PZVAL(&entry_copy);
-			convert_to_string(&entry_copy);
-			entry_copy_ptr = &entry_copy;
-			entry = &entry_copy_ptr;
-			use_copy = 1;
+			convert_to_string_ex(entry);
 		}
-
-		if (Z_TYPE_PP(entry) != IS_STRING || Z_STRLEN_PP(entry) <= 0) {
-			if (use_copy) {
-				zval_dtor(&entry_copy);
-			}
-
+		
+		if (Z_STRLEN_PP(entry) == 0) {
 			continue;
 		}
 
@@ -1574,10 +1565,6 @@ static void php_memc_deleteMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by
 			add_assoc_long(return_value, Z_STRVAL_PP(entry), status);
 		} else {
 			add_assoc_bool(return_value, Z_STRVAL_PP(entry), 1);
-		}
-
-		if (use_copy) {
-			zval_dtor(&entry_copy);
 		}
 	}
 
