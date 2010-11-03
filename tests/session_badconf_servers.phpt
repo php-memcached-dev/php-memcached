@@ -1,7 +1,10 @@
 --TEST--
 Session bad configurations, invalid save path (server list)
 --SKIPIF--
-<?php if (!extension_loaded("memcached")) print "skip"; ?>
+<?php 
+if (!extension_loaded("memcached")) print "skip"; 
+if (!Memcached::HAVE_SESSION) print "skip";
+?>
 --INI--
 memcached.sess_locking = on
 memcached.sess_lock_wait = 150000

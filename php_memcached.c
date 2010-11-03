@@ -3458,6 +3458,12 @@ static void php_memc_register_constants(INIT_FUNC_ARGS)
 	REGISTER_MEMC_CLASS_CONST_LONG(HAVE_JSON, 0);
 #endif
 
+#ifdef HAVE_MEMCACHED_SESSION
+	REGISTER_MEMC_CLASS_CONST_LONG(HAVE_SESSION, 1);
+#else
+	REGISTER_MEMC_CLASS_CONST_LONG(HAVE_SESSION, 0);
+#endif
+
 	/*
 	 * libmemcached behavior options
 	 */
