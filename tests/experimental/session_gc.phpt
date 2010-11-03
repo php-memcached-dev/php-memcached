@@ -1,7 +1,10 @@
 --TEST--
 Session expiration
 --SKIPIF--
-<?php if (!extension_loaded("memcached")) print "skip"; ?>
+<?php 
+if (!extension_loaded("memcached")) print "skip"; 
+if (!Memcached::HAVE_SESSION) print "skip";
+?>
 --INI--
 memcached.sess_prefix = "memc.sess.key."
 session.save_path="127.0.0.1:11211"
