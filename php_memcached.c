@@ -300,13 +300,13 @@ static int php_memc_do_result_callback(zval *memc_obj, zend_fcall_info *fci, zen
 static memcached_return php_memc_do_serverlist_callback(const memcached_st *ptr, memcached_server_instance_st instance, void *in_context);
 static memcached_return php_memc_do_stats_callback(const memcached_st *ptr, memcached_server_instance_st instance, void *in_context);
 static memcached_return php_memc_do_version_callback(const memcached_st *ptr, memcached_server_instance_st instance, void *in_context);
-
+static void php_memc_destroy(struct memc_obj *m_obj, zend_bool persistent TSRMLS_DC);
 
 /****************************************
   Method implementations
 ****************************************/
 
-static void php_memcached_on_new_callback(zval *object, zend_fcall_info *fci, zend_fcall_info_cache *fci_cache, char *persistent_id, int persistent_id_len)
+static zend_bool php_memcached_on_new_callback(zval *object, zend_fcall_info *fci, zend_fcall_info_cache *fci_cache, char *persistent_id, int persistent_id_len)
 {
 	zval *retval_ptr, *pid_z;
 	zval **params[2];	
@@ -330,12 +330,14 @@ static void php_memcached_on_new_callback(zval *object, zend_fcall_info *fci, ze
 	
 	if (zend_call_function(fci, fci_cache TSRMLS_CC) == FAILURE) {
 		php_error_docref(NULL TSRMLS_CC, E_WARNING, "Failed to invoke 'on_new' callback %s()", Z_STRVAL_P(fci->function_name));
+		return 0;
 	}
 	zval_ptr_dtor(&pid_z);
 	
 	if (retval_ptr) {
 		zval_ptr_dtor(&retval_ptr);
 	}
+	return 1;
 }
 
 /* {{{ Memcached::__construct([string persistent_id[, callback on_new]]))
@@ -374,7 +376,7 @@ static PHP_METHOD(Memcached, __construct)
 
 		if (plist_key == NULL) {
 			efree(plist_key);
-			php_error_docref(NULL TSRMLS_CC, E_ERROR, "out of memory: cannot allocate peristent list handler");
+			php_error_docref(NULL TSRMLS_CC, E_ERROR, "out of memory: cannot allocate persistent list handler");
 			/* not reached */
 		}
 
@@ -383,8 +385,11 @@ static PHP_METHOD(Memcached, __construct)
 				m_obj = (struct memc_obj *) le->ptr;
 			}
 		}
+		i_obj->obj = m_obj;
 	}
-
+	
+	i_obj->is_persistent = is_persistent;
+	
 	if (!m_obj) {
 		m_obj = pecalloc(1, sizeof(*m_obj), is_persistent);
 		if (m_obj == NULL) {
@@ -403,7 +408,20 @@ static PHP_METHOD(Memcached, __construct)
 		m_obj->serializer = MEMC_G(serializer);
 		m_obj->compression_type = MEMC_G(compression_type_real);
 		m_obj->compression = 1;
+		
+		i_obj->obj = m_obj;
 		i_obj->is_pristine = 1;
+
+		if (ZEND_NUM_ARGS() >= 2) {
+			if (!php_memcached_on_new_callback(object, &fci, &fci_cache, persistent_id, persistent_id_len) || EG(exception)) {
+				/* error calling or exception thrown from callback */
+				if (plist_key != NULL) {
+					efree(plist_key);
+				}
+				php_memc_destroy(m_obj, is_persistent TSRMLS_CC);
+				return;
+			}
+		}
 
 		if (is_persistent) {
 			zend_rsrc_list_entry le;
@@ -417,18 +435,9 @@ static PHP_METHOD(Memcached, __construct)
 				/* not reached */
 			}
 		}
-		invoke_callback = 1;
 	}
-
-	i_obj->is_persistent = is_persistent;
-	i_obj->obj = m_obj;
-
 	if (plist_key != NULL) {
 		efree(plist_key);
-	}
-	
-	if (ZEND_NUM_ARGS() >= 2 && invoke_callback) {
-		php_memcached_on_new_callback(object, &fci, &fci_cache, persistent_id, persistent_id_len);
 	}
 }
 /* }}} */
