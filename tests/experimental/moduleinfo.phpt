@@ -1,7 +1,10 @@
 --TEST--
 Memcached::phpinfo()
 --SKIPIF--
-<?php if (!extension_loaded("memcached")) print "skip"; ?>
+<?php 
+if (!extension_loaded("memcached")) print "skip"; 
+if (!Memcached::HAVE_SESSION) print "skip";
+?>
 --FILE--
 <?php
 ob_start();
