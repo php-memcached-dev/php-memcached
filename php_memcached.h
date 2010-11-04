@@ -86,15 +86,6 @@ PHP_MINFO_FUNCTION(memcached);
 #define MEMC_G(v) (php_memcached_globals.v)
 #endif
 
-/* session handler struct */
-#if HAVE_MEMCACHED_SESSION
-#include "ext/session/php_session.h"
-
-extern ps_module ps_mod_memcached;
-#define ps_memcached_ptr &ps_mod_memcached
-
-PS_FUNCS(memcached);
-#endif
 #endif /* PHP_MEMCACHED_H */
 
 

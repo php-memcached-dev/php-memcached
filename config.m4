@@ -240,8 +240,14 @@ if test "$PHP_MEMCACHED" != "no"; then
     PHP_ADD_LIBRARY_WITH_PATH(memcached, $PHP_LIBMEMCACHED_DIR/$PHP_LIBDIR, MEMCACHED_SHARED_LIBADD)
 
     PHP_SUBST(MEMCACHED_SHARED_LIBADD)
+    
+    PHP_MEMCACHED_FILES="php_memcached.c fastlz/fastlz.c"
 
-    PHP_NEW_EXTENSION(memcached, php_memcached.c fastlz/fastlz.c, $ext_shared,,$SESSION_INCLUDES $IGBINARY_INCLUDES)
+    if test "$PHP_MEMCACHED_SESSION" != "no"; then
+      PHP_MEMCACHED_FILES="${PHP_MEMCACHED_FILES} php_memcached_session.c"
+    fi
+
+    PHP_NEW_EXTENSION(memcached, $PHP_MEMCACHED_FILES, $ext_shared,,$SESSION_INCLUDES $IGBINARY_INCLUDES)
     PHP_ADD_BUILD_DIR($ext_builddir/fastlz, 1)
  
     ifdef([PHP_ADD_EXTENSION_DEP],
