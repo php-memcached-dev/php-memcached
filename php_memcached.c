@@ -312,20 +312,18 @@ static void php_memc_destroy(struct memc_obj *m_obj, zend_bool persistent TSRMLS
 
 static zend_bool php_memcached_on_new_callback(zval *object, zend_fcall_info *fci, zend_fcall_info_cache *fci_cache, char *persistent_id, int persistent_id_len)
 {
-	zval *retval_ptr, *pid_z;
+	zval pid_z;
+	zval *retval_ptr, *pid_z_ptr = &pid_z;
 	zval **params[2];	
 	
-	ALLOC_INIT_ZVAL(pid_z);
-	
+	INIT_ZVAL(pid_z);
 	if (persistent_id) {
-		ZVAL_STRINGL(pid_z, persistent_id, persistent_id_len, 1);
-	} else {
-		ZVAL_NULL(pid_z);
+		ZVAL_STRINGL(pid_z_ptr, persistent_id, persistent_id_len, 1);
 	}
 
 	/* Call the cb */	
 	params[0] = &object;
-	params[1] = &pid_z;
+	params[1] = &pid_z_ptr;
 	
 	fci->params         = params;
 	fci->param_count    = 2;
@@ -336,7 +334,7 @@ static zend_bool php_memcached_on_new_callback(zval *object, zend_fcall_info *fc
 		php_error_docref(NULL TSRMLS_CC, E_WARNING, "Failed to invoke 'on_new' callback %s()", Z_STRVAL_P(fci->function_name));
 		return 0;
 	}
-	zval_ptr_dtor(&pid_z);
+	zval_dtor(pid_z_ptr);
 	
 	if (retval_ptr) {
 		zval_ptr_dtor(&retval_ptr);
@@ -378,7 +376,6 @@ static PHP_METHOD(Memcached, __construct)
 		plist_key_len += 1;
 
 		if (plist_key == NULL) {
-			efree(plist_key);
 			php_error_docref(NULL TSRMLS_CC, E_ERROR, "out of memory: cannot allocate persistent list handler");
 			/* not reached */
 		}
@@ -421,7 +418,12 @@ static PHP_METHOD(Memcached, __construct)
 				if (plist_key != NULL) {
 					efree(plist_key);
 				}
-				php_memc_destroy(m_obj, is_persistent TSRMLS_CC);
+
+				i_obj->obj = NULL;
+				if (is_persistent) {
+					php_memc_destroy(m_obj, is_persistent TSRMLS_CC);
+				}
+
 				return;
 			}
 		}
@@ -439,6 +441,7 @@ static PHP_METHOD(Memcached, __construct)
 			}
 		}
 	}
+
 	if (plist_key != NULL) {
 		efree(plist_key);
 	}
