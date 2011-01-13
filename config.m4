@@ -59,7 +59,7 @@ if test "$PHP_MEMCACHED" != "no"; then
   AC_MSG_CHECKING([for zlib location])
   if test "$PHP_ZLIB_DIR" != "no" && test "$PHP_ZLIB_DIR" != "yes"; then
     AC_MSG_RESULT([$PHP_ZLIB_DIR])
-    PHP_ADD_LIBRARY_WITH_PATH(z, $PHP_ZLIB_DIR/$PHP_LIBDIR, MEMCACHE_SHARED_LIBADD)
+    PHP_ADD_LIBRARY_WITH_PATH(z, $PHP_ZLIB_DIR/$PHP_LIBDIR, MEMCACHED_SHARED_LIBADD)
     PHP_ADD_INCLUDE($PHP_ZLIB_INCDIR)
   else
     AC_MSG_ERROR([memcached support requires ZLIB. Use --with-zlib-dir=<DIR> to specify the prefix where ZLIB headers and library are located])
@@ -237,11 +237,17 @@ if test "$PHP_MEMCACHED" != "no"; then
     AC_MSG_RESULT([$PHP_LIBMEMCACHED_DIR])
     PHP_LIBMEMCACHED_INCDIR="$PHP_LIBMEMCACHED_DIR/include"
     PHP_ADD_INCLUDE($PHP_LIBMEMCACHED_INCDIR)
-    PHP_ADD_LIBRARY_WITH_PATH(memcached, $PHP_LIBMEMCACHED_DIR/lib, MEMCACHED_SHARED_LIBADD)
+    PHP_ADD_LIBRARY_WITH_PATH(memcached, $PHP_LIBMEMCACHED_DIR/$PHP_LIBDIR, MEMCACHED_SHARED_LIBADD)
 
     PHP_SUBST(MEMCACHED_SHARED_LIBADD)
+    
+    PHP_MEMCACHED_FILES="php_memcached.c fastlz/fastlz.c"
 
-    PHP_NEW_EXTENSION(memcached, php_memcached.c fastlz/fastlz.c, $ext_shared,,$SESSION_INCLUDES $IGBINARY_INCLUDES)
+    if test "$PHP_MEMCACHED_SESSION" != "no"; then
+      PHP_MEMCACHED_FILES="${PHP_MEMCACHED_FILES} php_memcached_session.c"
+    fi
+
+    PHP_NEW_EXTENSION(memcached, $PHP_MEMCACHED_FILES, $ext_shared,,$SESSION_INCLUDES $IGBINARY_INCLUDES)
     PHP_ADD_BUILD_DIR($ext_builddir/fastlz, 1)
  
     ifdef([PHP_ADD_EXTENSION_DEP],

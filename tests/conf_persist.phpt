@@ -26,5 +26,8 @@ for ($i = 1000; $i > 0; $i--) {
 	}
 }
 
+echo "OK\n";
+
 ?>
 --EXPECT--
+OK

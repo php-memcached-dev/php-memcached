@@ -64,5 +64,8 @@ if ($m->get("sdfjhw38rwdenfoqu29eiajfroehr8jaiodfhjaoierhjadf") !== NULL) {
 	echo "Actual: " . get_type($actual);
 }
 
+echo "OK\n";
+
 ?>
 --EXPECT--
+OK

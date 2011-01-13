@@ -21,5 +21,8 @@ if ($v !== Memcached::GET_ERROR_RETURN_VALUE) {
 	echo "from get of expired value. Got:\n";
 	var_dump($v);
 }
+
+echo "OK\n";
 ?>
 --EXPECT--
+OK

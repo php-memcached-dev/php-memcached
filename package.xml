@@ -45,6 +45,8 @@ http://pear.php.net/dtd/package-2.0.xsd">
    <file role='src' name='config.w32'/>
    <file role='src' name='php_memcached.c'/>
    <file role='src' name='php_memcached.h'/>
+   <file role='src' name='php_memcached_session.c'/>
+   <file role='src' name='php_memcached_session.h'/>
    <file role='src' name='fastlz/fastlz.c'/>
    <file role='src' name='fastlz/fastlz.h'/>
   </dir> <!-- / -->

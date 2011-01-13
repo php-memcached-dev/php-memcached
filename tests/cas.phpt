@@ -30,5 +30,7 @@ if ($v !== 11) {
 	echo "Wanted cas_test to be 11, value is: ";
 	var_dump($v);
 }
+echo "OK\n";
 ?>
 --EXPECT--
+OK

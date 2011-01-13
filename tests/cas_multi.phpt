@@ -45,6 +45,8 @@ foreach ($data as $key => $v) {
 	}
 }
 
+echo "OK\n";
 
 ?>
 --EXPECT--
+OK
