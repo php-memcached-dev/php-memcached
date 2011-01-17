@@ -18,7 +18,7 @@
 #define PHP_MEMCACHED_SESSION_H
 
 /* session handler struct */
-#if HAVE_MEMCACHED_SESSION
+#ifdef HAVE_MEMCACHED_SESSION
 #include "ext/session/php_session.h"
 
 extern ps_module ps_mod_memcached;

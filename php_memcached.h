@@ -52,7 +52,7 @@ enum memcached_serializer {
 #endif //HAVE_MEMCACHED_IGBINARY
 
 ZEND_BEGIN_MODULE_GLOBALS(php_memcached)
-#if HAVE_MEMCACHED_SESSION
+#ifdef HAVE_MEMCACHED_SESSION
 	zend_bool sess_locking_enabled;
 	long  sess_lock_wait;
 	char* sess_prefix;

@@ -272,7 +272,7 @@ static PHP_INI_MH(OnUpdateSerializer)
 
 /* {{{ INI entries */
 PHP_INI_BEGIN()
-#if HAVE_MEMCACHED_SESSION
+#ifdef HAVE_MEMCACHED_SESSION
 	STD_PHP_INI_ENTRY("memcached.sess_locking",		"1",		PHP_INI_ALL, OnUpdateBool,		sess_locking_enabled,	zend_php_memcached_globals,	php_memcached_globals)
 	STD_PHP_INI_ENTRY("memcached.sess_lock_wait",		"150000",	PHP_INI_ALL, OnUpdateLongGEZero,sess_lock_wait,			zend_php_memcached_globals,	php_memcached_globals)
 	STD_PHP_INI_ENTRY("memcached.sess_prefix",		"memc.sess.key.",	PHP_INI_ALL, OnUpdateString, sess_prefix,		zend_php_memcached_globals,	php_memcached_globals)
@@ -2721,7 +2721,7 @@ static int php_memc_list_entry(void)
 
 static void php_memc_init_globals(zend_php_memcached_globals *php_memcached_globals_p TSRMLS_DC)
 {
-#if HAVE_MEMCACHED_SESSION
+#ifdef HAVE_MEMCACHED_SESSION
 	MEMC_G(sess_locking_enabled) = 1;
 	MEMC_G(sess_prefix) = NULL;
 	MEMC_G(sess_lock_wait) = 0;
@@ -3427,7 +3427,7 @@ PHP_MINIT_FUNCTION(memcached)
 	php_memc_init_globals(&php_memcached_globals TSRMLS_CC);
 #endif
 
-#if HAVE_MEMCACHED_SESSION
+#ifdef HAVE_MEMCACHED_SESSION
 	php_session_register_module(ps_memcached_ptr);
 #endif
 
@@ -3459,7 +3459,7 @@ PHP_MINFO_FUNCTION(memcached)
 	php_info_print_table_row(2, "Version", PHP_MEMCACHED_VERSION);
 	php_info_print_table_row(2, "libmemcached version", memcached_lib_version());
 
-#if HAVE_MEMCACHED_SESSION
+#ifdef HAVE_MEMCACHED_SESSION
 	php_info_print_table_row(2, "Session support", "yes");
 #else
 	php_info_print_table_row(2, "Session support ", "no");

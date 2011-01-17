@@ -19,7 +19,7 @@
 #endif
 
 /* {{{ session support */
-#if HAVE_MEMCACHED_SESSION
+#ifdef HAVE_MEMCACHED_SESSION
 
 #include <stdlib.h>
 #include <string.h>
