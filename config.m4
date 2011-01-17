@@ -65,9 +65,6 @@ if test "$PHP_MEMCACHED" != "no"; then
     AC_MSG_ERROR([memcached support requires ZLIB. Use --with-zlib-dir=<DIR> to specify the prefix where ZLIB headers and library are located])
   fi
 
-  dnl add FastLZ
-  PHP_ADD_BUILD_DIR($ext_builddir/fastlz, 1)
-
   if test "$PHP_MEMCACHED_SESSION" != "no"; then
     AC_MSG_CHECKING([for session includes])
     session_inc_path=""
