@@ -14,13 +14,6 @@
   +----------------------------------------------------------------------+
 */
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
-/* {{{ session support */
-#ifdef HAVE_MEMCACHED_SESSION
-
 #include <stdlib.h>
 #include <string.h>
 #include <php.h>
@@ -225,6 +218,4 @@ PS_GC_FUNC(memcached)
 {
 	return SUCCESS;
 }
-
-#endif
 /* }}} */

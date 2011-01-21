@@ -18,7 +18,7 @@
 #define PHP_MEMCACHED_SESSION_H
 
 /* session handler struct */
-#ifdef HAVE_MEMCACHED_SESSION
+
 #include "ext/session/php_session.h"
 
 extern ps_module ps_mod_memcached;
@@ -32,7 +32,3 @@ PS_READ_FUNC(memcached);
 PS_WRITE_FUNC(memcached);
 PS_DESTROY_FUNC(memcached);
 PS_GC_FUNC(memcached);
-
-#endif
-
-#endif /* PHP_MEMCACHED_SESSION_H */
