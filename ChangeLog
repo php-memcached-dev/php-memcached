@@ -22,6 +22,7 @@ Version 2.0.0
 	* Add constants for libmemcached 0.37+:
 	    - Memcached::OPT_NUMBER_OF_REPLICAS
 	    - Memcached::OPT_RANDOMIZE_REPLICA_READ
+    * Add 'on_new' callback to constructor
 
 Version 1.0.1
 -------------
