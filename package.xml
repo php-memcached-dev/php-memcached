@@ -15,22 +15,38 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <email>andrei@php.net</email>
   <active>yes</active>
  </lead>
- <date>2009-07-07</date>
+ <date>2011-02-11</date>
  <version>
-  <release>2.0.0</release>
-  <api>2.0.0</api>
+  <release>2.0.0b1</release>
+  <api>2.0.0b1</api>
  </version>
  <stability>
-  <release>stable</release>
-  <api>stable</api>
+  <release>beta</release>
+  <api>beta</api>
  </stability>
  <license uri="http://www.php.net/license">PHP</license>
  <notes>
-- First stable release.
-- Add getResultMessage() method.
-- Fix OPT_RECV_TIMEOUT definition.
-- Initialize Session lock wait to max execution time (if max execution
-  time is unlimited, default to 30 seconds).
+- Change the return value for non-existing keys to be NULL rather than
+  'false', affects simple get only
+- Add fastlz library that provides better/faster payload compression
+- Add configure switch to enable/disable JSON serialization support
+- Add getAllKeys() method
+- Add deleteMulti() and deleteMultiByKey() methods
+- Add isPristine() and isPersistent() methods
+- Add setOptions() method to set multiple options at once
+- Add SERIALIZER_JSON_ARRAY type that decodes JSON payloads as arrays
+  instead of objects
+- Add support for Unix domain socket connections
+- Add memcached.compression_threshold INI setting
+- Add memcached.compression_factor INI setting
+- Add memcached.compression_type INI setting
+- Implement a few speed optimizations
+- Many bug fixes and memory leaks plugged
+- Add several more tests
+- Add constants for libmemcached 0.37+:
+ 	    - Memcached::OPT_NUMBER_OF_REPLICAS
+ 	    - Memcached::OPT_RANDOMIZE_REPLICA_READ
+- Add 'on_new' callback to constructor
  </notes>
  <contents>
   <dir name="/">
