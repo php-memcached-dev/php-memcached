@@ -32,3 +32,5 @@ PS_READ_FUNC(memcached);
 PS_WRITE_FUNC(memcached);
 PS_DESTROY_FUNC(memcached);
 PS_GC_FUNC(memcached);
+
+#endif /* PHP_MEMCACHED_SESSION_H */
