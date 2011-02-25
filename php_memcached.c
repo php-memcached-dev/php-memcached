@@ -2331,6 +2331,7 @@ zend_object_value php_memc_new(zend_class_entry *ce TSRMLS_DC)
 
 	retval.handle = zend_objects_store_put(i_obj, (zend_objects_store_dtor_t)zend_objects_destroy_object, (zend_objects_free_object_storage_t)php_memc_free_storage, NULL TSRMLS_CC);
 	retval.handlers = zend_get_std_object_handlers();
+	retval.handlers->clone_obj = NULL;
 
 	return retval;
 }
