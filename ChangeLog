@@ -23,6 +23,7 @@ Version 2.0.0b1
 	    - Memcached::OPT_NUMBER_OF_REPLICAS
 	    - Memcached::OPT_RANDOMIZE_REPLICA_READ
     * Add 'on_new' callback to constructor
+    * Add SASL support
 
 Version 1.0.1
 -------------
