@@ -84,6 +84,8 @@ PHP_MEMCACHED_API zend_class_entry *php_memc_get_ce(void);
 PHP_MEMCACHED_API zend_class_entry *php_memc_get_exception(void);
 PHP_MEMCACHED_API zend_class_entry *php_memc_get_exception_base(int root TSRMLS_DC);
 
+PHP_RINIT_FUNCTION(memcached);
+PHP_RSHUTDOWN_FUNCTION(memcached);
 PHP_MINIT_FUNCTION(memcached);
 PHP_MSHUTDOWN_FUNCTION(memcached);
 PHP_MINFO_FUNCTION(memcached);

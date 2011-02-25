@@ -3288,8 +3288,8 @@ zend_module_entry memcached_module_entry = {
 	NULL,
 	PHP_MINIT(memcached),
 	PHP_MSHUTDOWN(memcached),
-	NULL,
-	NULL,
+	PHP_RINIT(memcached),
+	PHP_RSHUTDOWN(memcached),
 	PHP_MINFO(memcached),
 	PHP_MEMCACHED_VERSION,
 	STANDARD_MODULE_PROPERTIES
@@ -3457,6 +3457,28 @@ static void php_memc_register_constants(INIT_FUNC_ARGS)
 }
 /* }}} */
 
+PHP_RINIT_FUNCTION(memcached)
+{
+#if HAVE_MEMCACHED_SASL
+	if (MEMC_G(use_sasl)) {
+		if (sasl_client_init(NULL) != SASL_OK) {
+			php_error_docref(NULL TSRMLS_CC, E_ERROR, "Failed to initialize SASL library");
+		}
+	}
+#endif
+	return SUCCESS;
+}
+
+PHP_RSHUTDOWN_FUNCTION(memcached)
+{
+#if HAVE_MEMCACHED_SASL
+	if (MEMC_G(use_sasl)) {
+		sasl_done();
+	}
+#endif
+	return SUCCESS;
+}
+
 /* {{{ PHP_MINIT_FUNCTION */
 PHP_MINIT_FUNCTION(memcached)
 {
@@ -3488,13 +3510,6 @@ PHP_MINIT_FUNCTION(memcached)
 #endif
 
 	REGISTER_INI_ENTRIES();
-#if HAVE_MEMCACHED_SASL
-	if (MEMC_G(use_sasl)) {
-		if (sasl_client_init(NULL) != SASL_OK) {
-			php_error_docref(NULL TSRMLS_CC, E_ERROR, "Failed to initialize SASL library");
-		}
-	}
-#endif
 	return SUCCESS;
 }
 /* }}} */
@@ -3508,11 +3523,6 @@ PHP_MSHUTDOWN_FUNCTION(memcached)
 	php_memc_destroy_globals(&php_memcached_globals TSRMLS_CC);
 #endif
 
-#if HAVE_MEMCACHED_SASL
-	if (MEMC_G(use_sasl)) {
-		sasl_done();
-	}
-#endif
 	UNREGISTER_INI_ENTRIES();
 	return SUCCESS;
 }
