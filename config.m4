@@ -226,6 +226,8 @@ if test "$PHP_MEMCACHED" != "no"; then
       fi
     done
   fi
+  
+  AC_CHECK_HEADERS([sasl/sasl.h])
 
   AC_MSG_CHECKING([for libmemcached location])
   if test "$PHP_LIBMEMCACHED_DIR" = "no"; then

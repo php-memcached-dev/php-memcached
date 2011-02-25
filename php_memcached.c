@@ -185,6 +185,9 @@ typedef struct {
 		zend_bool compression;
 		enum memcached_serializer serializer;
 		enum memcached_compression_type compression_type;
+#if HAVE_MEMCACHED_SASL
+		zend_bool has_sasl_data;
+#endif
 	} *obj;
 
 	zend_bool is_persistent;
@@ -282,6 +285,9 @@ PHP_INI_BEGIN()
 	STD_PHP_INI_ENTRY("memcached.compression_threshold",	"2000",		PHP_INI_ALL, OnUpdateLong, compression_threshold,		zend_php_memcached_globals,	php_memcached_globals)
 
 	STD_PHP_INI_ENTRY("memcached.serializer",		SERIALIZER_DEFAULT_NAME, PHP_INI_ALL, OnUpdateSerializer, serializer_name,	zend_php_memcached_globals,	php_memcached_globals)
+#if HAVE_MEMCACHED_SASL
+	STD_PHP_INI_ENTRY("memcached.use_sasl",	"0", PHP_INI_SYSTEM, OnUpdateBool, use_sasl,	zend_php_memcached_globals,	php_memcached_globals)
+#endif
 PHP_INI_END()
 /* }}} */
 
@@ -2173,6 +2179,31 @@ static PHP_METHOD(Memcached, setOption)
 }
 /* }}} */
 
+#ifdef HAVE_MEMCACHED_SASL
+/* {{{ Memcached::setSaslAuthData(string user, string pass)
+   Sets sasl credentials */
+static PHP_METHOD(Memcached, setSaslAuthData)
+{
+	MEMC_METHOD_INIT_VARS;
+
+	char *user, *pass;
+	int user_len, pass_len, rc;
+
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ss", &user, &user_len, &pass, &pass_len) == FAILURE) {
+		return;
+	}
+
+	MEMC_METHOD_FETCH_OBJECT;
+
+	if (!memcached_behavior_get(m_obj->memc, MEMCACHED_BEHAVIOR_BINARY_PROTOCOL)) {
+		php_error_docref(NULL TSRMLS_CC, E_WARNING, "SASL is only supported with binary protocol");
+		RETURN_FALSE;
+	}
+	RETURN_BOOL(memcached_set_sasl_auth_data(m_obj->memc, user, pass));
+}
+/* }}} */
+#endif /* HAVE_MEMCACHED_SASL */
+
 /* {{{ Memcached::getResultCode()
    Returns the result code from the last operation */
 static PHP_METHOD(Memcached, getResultCode)
@@ -2264,6 +2295,11 @@ static PHP_METHOD(Memcached, isPristine)
 /* {{{ constructor/destructor */
 static void php_memc_destroy(struct memc_obj *m_obj, zend_bool persistent TSRMLS_DC)
 {
+#if HAVE_MEMCACHED_SASL	
+	if (m_obj->has_sasl_data) {
+		memcached_destroy_sasl_auth_data(m_obj->memc);
+	}
+#endif
 	if (m_obj->memc) {
 		memcached_free(m_obj->memc);
 	}
@@ -2734,6 +2770,9 @@ static void php_memc_init_globals(zend_php_memcached_globals *php_memcached_glob
 	MEMC_G(compression_type) = NULL;
 	MEMC_G(compression_type_real) = COMPRESSION_TYPE_FASTLZ;
 	MEMC_G(compression_factor) = 1.30;
+#if HAVE_MEMCACHED_SASL
+	MEMC_G(use_sasl) = 0;
+#endif
 }
 
 static void php_memc_destroy_globals(zend_php_memcached_globals *php_memcached_globals_p TSRMLS_DC)
@@ -3126,6 +3165,11 @@ ZEND_BEGIN_ARG_INFO(arginfo_getOption, 0)
 	ZEND_ARG_INFO(0, option)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO(arginfo_setSaslAuthData, 0)
+	ZEND_ARG_INFO(0, username)
+	ZEND_ARG_INFO(0, password)
+ZEND_END_ARG_INFO()
+
 ZEND_BEGIN_ARG_INFO(arginfo_setOption, 0)
 	ZEND_ARG_INFO(0, option)
 	ZEND_ARG_INFO(0, value)
@@ -3205,6 +3249,8 @@ static zend_function_entry memcached_class_methods[] = {
 	MEMC_ME(getOption,          arginfo_getOption)
 	MEMC_ME(setOption,          arginfo_setOption)
 	MEMC_ME(setOptions,         arginfo_setOptions)
+
+    MEMC_ME(setSaslAuthData,    arginfo_setSaslAuthData)
 
 	MEMC_ME(isPersistent,       arginfo_isPersistent)
 	MEMC_ME(isPristine,         arginfo_isPristine)
@@ -3290,6 +3336,12 @@ static void php_memc_register_constants(INIT_FUNC_ARGS)
 	REGISTER_MEMC_CLASS_CONST_LONG(HAVE_SESSION, 0);
 #endif
 
+#ifdef HAVE_MEMCACHED_SASL
+	REGISTER_MEMC_CLASS_CONST_LONG(HAVE_SASL, 1);
+#else
+	REGISTER_MEMC_CLASS_CONST_LONG(HAVE_SASL, 0);
+#endif
+
 	/*
 	 * libmemcached behavior options
 	 */
@@ -3366,7 +3418,11 @@ static void php_memc_register_constants(INIT_FUNC_ARGS)
 	REGISTER_MEMC_CLASS_CONST_LONG(RES_INVALID_HOST_PROTOCOL, MEMCACHED_INVALID_HOST_PROTOCOL);
 	REGISTER_MEMC_CLASS_CONST_LONG(RES_MEMORY_ALLOCATION_FAILURE, MEMCACHED_MEMORY_ALLOCATION_FAILURE);
 	REGISTER_MEMC_CLASS_CONST_LONG(RES_CONNECTION_SOCKET_CREATE_FAILURE, MEMCACHED_CONNECTION_SOCKET_CREATE_FAILURE);
-
+#if HAVE_MEMCACHED_SASL
+	REGISTER_MEMC_CLASS_CONST_LONG(RES_AUTH_PROBLEM, MEMCACHED_AUTH_PROBLEM);
+	REGISTER_MEMC_CLASS_CONST_LONG(RES_AUTH_FAILURE, MEMCACHED_AUTH_FAILURE);
+	REGISTER_MEMC_CLASS_CONST_LONG(RES_AUTH_CONTINUE, MEMCACHED_AUTH_CONTINUE);
+#endif
 	/*
 	 * Our result codes.
 	 */
@@ -3432,7 +3488,13 @@ PHP_MINIT_FUNCTION(memcached)
 #endif
 
 	REGISTER_INI_ENTRIES();
-
+#if HAVE_MEMCACHED_SASL
+	if (MEMC_G(use_sasl)) {
+		if (sasl_client_init(NULL) != SASL_OK) {
+			php_error_docref(NULL TSRMLS_CC, E_ERROR, "Failed to initialize SASL library");
+		}
+	}
+#endif
 	return SUCCESS;
 }
 /* }}} */
@@ -3446,6 +3508,11 @@ PHP_MSHUTDOWN_FUNCTION(memcached)
 	php_memc_destroy_globals(&php_memcached_globals TSRMLS_CC);
 #endif
 
+#if HAVE_MEMCACHED_SASL
+	if (MEMC_G(use_sasl)) {
+		sasl_done();
+	}
+#endif
 	UNREGISTER_INI_ENTRIES();
 	return SUCCESS;
 }

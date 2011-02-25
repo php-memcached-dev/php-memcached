@@ -49,7 +49,14 @@ enum memcached_serializer {
 #else
 #define SERIALIZER_DEFAULT SERIALIZER_PHP
 #define SERIALIZER_DEFAULT_NAME "php"
-#endif //HAVE_MEMCACHED_IGBINARY
+#endif /* HAVE_MEMCACHED_IGBINARY */
+
+#if LIBMEMCACHED_WITH_SASL_SUPPORT
+# if defined(HAVE_SASL_SASL_H)
+#  include <sasl/sasl.h>
+#  define HAVE_MEMCACHED_SASL 1
+# endif
+#endif
 
 ZEND_BEGIN_MODULE_GLOBALS(php_memcached)
 #ifdef HAVE_MEMCACHED_SESSION
@@ -68,6 +75,9 @@ ZEND_BEGIN_MODULE_GLOBALS(php_memcached)
 	int   compression_threshold;
 
 	double compression_factor;
+#if HAVE_MEMCACHED_SASL
+	bool use_sasl;
+#endif
 ZEND_END_MODULE_GLOBALS(php_memcached)
 
 PHP_MEMCACHED_API zend_class_entry *php_memc_get_ce(void);
