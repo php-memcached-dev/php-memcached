@@ -47,6 +47,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
  	    - Memcached::OPT_NUMBER_OF_REPLICAS
  	    - Memcached::OPT_RANDOMIZE_REPLICA_READ
 - Add 'on_new' callback to constructor
+- Add SASL support
  </notes>
  <contents>
   <dir name="/">
