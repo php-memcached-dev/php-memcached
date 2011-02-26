@@ -3250,9 +3250,9 @@ static zend_function_entry memcached_class_methods[] = {
 	MEMC_ME(getOption,          arginfo_getOption)
 	MEMC_ME(setOption,          arginfo_setOption)
 	MEMC_ME(setOptions,         arginfo_setOptions)
-
+#ifdef HAVE_MEMCACHED_SASL
     MEMC_ME(setSaslAuthData,    arginfo_setSaslAuthData)
-
+#endif
 	MEMC_ME(isPersistent,       arginfo_isPersistent)
 	MEMC_ME(isPristine,         arginfo_isPristine)
 	{ NULL, NULL, NULL }
