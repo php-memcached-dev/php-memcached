@@ -3455,7 +3455,7 @@ static void php_memc_register_constants(INIT_FUNC_ARGS)
 	/*
 	 * Return value from simple get errors
 	 */
-	REGISTER_MEMC_CLASS_CONST_NULL(GET_ERROR_RETURN_VALUE);
+	REGISTER_MEMC_CLASS_CONST_BOOL(GET_ERROR_RETURN_VALUE, 0);
 }
 /* }}} */
 

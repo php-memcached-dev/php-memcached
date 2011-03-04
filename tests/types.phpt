@@ -59,9 +59,9 @@ foreach ($data as $types) {
 
 $m->flush();
 
-if ($m->get("sdfjhw38rwdenfoqu29eiajfroehr8jaiodfhjaoierhjadf") !== NULL) {
+if (($actual = $m->get("sdfjhw38rwdenfoqu29eiajfroehr8jaiodfhjaoierhjadf")) !== false) {
 	echo "Expected: null";
-	echo "Actual: " . get_type($actual);
+	echo "Actual: " . gettype($actual);
 }
 
 echo "OK\n";
