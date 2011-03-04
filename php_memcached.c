@@ -209,6 +209,8 @@ static int le_memc;
 static zend_class_entry *memcached_ce = NULL;
 static zend_class_entry *memcached_exception_ce = NULL;
 
+static zend_object_handlers memcached_object_handlers;
+
 struct callbackContext
 {
 	zval *array;
@@ -2330,8 +2332,7 @@ zend_object_value php_memc_new(zend_class_entry *ce TSRMLS_DC)
 	zend_hash_copy(i_obj->zo.properties, &ce->default_properties, (copy_ctor_func_t) zval_add_ref, (void *) &tmp, sizeof(zval *));
 
 	retval.handle = zend_objects_store_put(i_obj, (zend_objects_store_dtor_t)zend_objects_destroy_object, (zend_objects_free_object_storage_t)php_memc_free_storage, NULL TSRMLS_CC);
-	retval.handlers = zend_get_std_object_handlers();
-	retval.handlers->clone_obj = NULL;
+	retval.handlers = &memcached_object_handlers;
 
 	return retval;
 }
@@ -3484,6 +3485,9 @@ PHP_RSHUTDOWN_FUNCTION(memcached)
 PHP_MINIT_FUNCTION(memcached)
 {
 	zend_class_entry ce;
+
+	memcpy(&memcached_object_handlers, zend_get_std_object_handlers(), sizeof(zend_object_handlers));
+	memcached_object_handlers.clone_obj = NULL;
 
 	le_memc = zend_register_list_destructors_ex(NULL, php_memc_dtor, "Memcached persistent connection", module_number);
 
