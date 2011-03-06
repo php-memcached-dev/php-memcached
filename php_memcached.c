@@ -324,28 +324,28 @@ static zend_bool php_memcached_on_new_callback(zval *object, zend_fcall_info *fc
 {
 	zval pid_z;
 	zval *retval_ptr, *pid_z_ptr = &pid_z;
-	zval **params[2];	
-	
+	zval **params[2];
+
 	INIT_ZVAL(pid_z);
 	if (persistent_id) {
 		ZVAL_STRINGL(pid_z_ptr, persistent_id, persistent_id_len, 1);
 	}
 
-	/* Call the cb */	
+	/* Call the cb */
 	params[0] = &object;
 	params[1] = &pid_z_ptr;
-	
+
 	fci->params         = params;
 	fci->param_count    = 2;
 	fci->retval_ptr_ptr = &retval_ptr;
 	fci->no_separation  = 1;
-	
+
 	if (zend_call_function(fci, fci_cache TSRMLS_CC) == FAILURE) {
 		php_error_docref(NULL TSRMLS_CC, E_WARNING, "Failed to invoke 'on_new' callback %s()", Z_STRVAL_P(fci->function_name));
 		return 0;
 	}
 	zval_dtor(pid_z_ptr);
-	
+
 	if (retval_ptr) {
 		zval_ptr_dtor(&retval_ptr);
 	}
@@ -365,7 +365,7 @@ static PHP_METHOD(Memcached, __construct)
 
 	char *plist_key = NULL;
 	int plist_key_len = 0;
-	
+
 	zend_fcall_info fci;
 	zend_fcall_info_cache fci_cache;
 
@@ -397,9 +397,9 @@ static PHP_METHOD(Memcached, __construct)
 		}
 		i_obj->obj = m_obj;
 	}
-	
+
 	i_obj->is_persistent = is_persistent;
-	
+
 	if (!m_obj) {
 		m_obj = pecalloc(1, sizeof(*m_obj), is_persistent);
 		if (m_obj == NULL) {
@@ -418,7 +418,7 @@ static PHP_METHOD(Memcached, __construct)
 		m_obj->serializer = MEMC_G(serializer);
 		m_obj->compression_type = MEMC_G(compression_type_real);
 		m_obj->compression = 1;
-		
+
 		i_obj->obj = m_obj;
 		i_obj->is_pristine = 1;
 
@@ -707,13 +707,13 @@ static void php_memc_getMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 		zend_hash_move_forward(Z_ARRVAL_P(keys))) {
 
 		if (Z_TYPE_PP(entry) != IS_STRING) {
-			convert_to_string_ex(entry); 
+			convert_to_string_ex(entry);
 		}
 
 		if (Z_TYPE_PP(entry) == IS_STRING && Z_STRLEN_PP(entry) > 0) {
 			mkeys[i]     = Z_STRVAL_PP(entry);
 			mkeys_len[i] = Z_STRLEN_PP(entry);
-			
+
 			if (preserve_order) {
 				add_assoc_null_ex(return_value, mkeys[i], mkeys_len[i] + 1);
 			}
@@ -1569,11 +1569,11 @@ static void php_memc_deleteMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by
 	for (zend_hash_internal_pointer_reset(Z_ARRVAL_P(entries));
 		zend_hash_get_current_data(Z_ARRVAL_P(entries), (void**)&entry) == SUCCESS;
 		zend_hash_move_forward(Z_ARRVAL_P(entries))) {
-		
+
 		if (Z_TYPE_PP(entry) != IS_STRING) {
 			convert_to_string_ex(entry);
 		}
-		
+
 		if (Z_STRLEN_PP(entry) == 0) {
 			continue;
 		}
@@ -2107,7 +2107,7 @@ static int php_memc_set_option(php_memc_t *i_obj, long option, zval *value TSRML
 			convert_to_long(value);
 			if (flag < 0 ||
 /* MEMCACHED_BEHAVIOR_MAX was added in somewhere around 0.36 or 0.37 */
-#if defined(LIBMEMCACHED_VERSION_HEX) && LIBMEMCACHED_VERSION_HEX >= 0x00037000			
+#if defined(LIBMEMCACHED_VERSION_HEX) && LIBMEMCACHED_VERSION_HEX >= 0x00037000
 				flag >= MEMCACHED_BEHAVIOR_MAX ||
 #endif
 				memcached_behavior_set(m_obj->memc, flag, (uint64_t)Z_LVAL_P(value)) != MEMCACHED_SUCCESS) {
@@ -2297,7 +2297,7 @@ static PHP_METHOD(Memcached, isPristine)
 /* {{{ constructor/destructor */
 static void php_memc_destroy(struct memc_obj *m_obj, zend_bool persistent TSRMLS_DC)
 {
-#if HAVE_MEMCACHED_SASL	
+#if HAVE_MEMCACHED_SASL
 	if (m_obj->has_sasl_data) {
 		memcached_destroy_sasl_auth_data(m_obj->memc);
 	}
