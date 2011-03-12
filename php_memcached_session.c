@@ -35,7 +35,7 @@
 #include "php_memcached.h"
 #include "php_memcached_session.h"
 
-ZEND_DECLARE_MODULE_GLOBALS(php_memcached)
+extern ZEND_DECLARE_MODULE_GLOBALS(php_memcached)
 
 #define MEMC_SESS_DEFAULT_LOCK_WAIT 150000
 #define MEMC_SESS_LOCK_EXPIRATION 30
