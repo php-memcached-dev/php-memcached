@@ -15,7 +15,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <email>andrei@php.net</email>
   <active>yes</active>
  </lead>
- <date>2011-02-11</date>
+ <date>2011-03-12</date>
  <version>
   <release>2.0.0b1</release>
   <api>2.0.0b1</api>
@@ -44,8 +44,8 @@ http://pear.php.net/dtd/package-2.0.xsd">
 - Many bug fixes and memory leaks plugged
 - Add several more tests
 - Add constants for libmemcached 0.37+:
- 	    - Memcached::OPT_NUMBER_OF_REPLICAS
- 	    - Memcached::OPT_RANDOMIZE_REPLICA_READ
+  * Memcached::OPT_NUMBER_OF_REPLICAS
+  * Memcached::OPT_RANDOMIZE_REPLICA_READ
 - Add 'on_new' callback to constructor
 - Add SASL support
  </notes>
@@ -83,6 +83,54 @@ http://pear.php.net/dtd/package-2.0.xsd">
  <providesextension>memcached</providesextension>
  <extsrcrelease/>
  <changelog>
+   <release>
+   <stability><release>beta</release><api>beta</api></stability>
+   <version><release>2.0.0b1</release><api>2.0.0b1</api></version>
+   <date>2011-03-12</date>
+   <notes>
+- Change the return value for non-existing keys to be NULL rather than
+  'false', affects simple get only
+- Add fastlz library that provides better/faster payload compression
+- Add configure switch to enable/disable JSON serialization support
+- Add getAllKeys() method
+- Add deleteMulti() and deleteMultiByKey() methods
+- Add isPristine() and isPersistent() methods
+- Add setOptions() method to set multiple options at once
+- Add SERIALIZER_JSON_ARRAY type that decodes JSON payloads as arrays
+  instead of objects
+- Add support for Unix domain socket connections
+- Add memcached.compression_threshold INI setting
+- Add memcached.compression_factor INI setting
+- Add memcached.compression_type INI setting
+- Implement a few speed optimizations
+- Many bug fixes and memory leaks plugged
+- Add several more tests
+- Add constants for libmemcached 0.37+:
+  * Memcached::OPT_NUMBER_OF_REPLICAS
+  * Memcached::OPT_RANDOMIZE_REPLICA_READ
+- Add 'on_new' callback to constructor
+- Add SASL support
+   </notes>
+  </release>
+
+   <release>
+   <stability><release>stable</release><api>stable</api></stability>
+   <version><release>1.0.2</release><api>1.0.2</api></version>
+   <date>2010-05-03</date>
+   <notes>
+- Fix build for libmemcached-0.39 (memcached_server_list() issue)
+   </notes>
+  </release>
+
+  <release>
+   <stability><release>stable</release><api>stable</api></stability>
+   <version><release>1.0.1</release><api>1.0.1</api></version>
+   <date>2010-03-11</date>
+   <notes>
+- Fix build for libmemcached-0.38.
+   </notes>
+  </release>
+
   <release>
    <stability><release>stable</release><api>stable</api></stability>
    <version><release>1.0.0</release><api>1.0.0</api></version>
