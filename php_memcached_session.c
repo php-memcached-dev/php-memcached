@@ -177,8 +177,9 @@ PS_READ_FUNC(memcached)
 	uint32_t flags = 0;
 	memcached_return status;
 	memcached_st *memc_sess = PS_GET_MOD_DATA();
-	size_t key_length = strlen(key);
+	size_t key_length;
 
+	key_length = strlen(MEMC_G(sess_prefix)) + strlen(key) + 5; // prefix + "lock."
 	if (memcached_validate_key_length(key_length, false) != MEMCACHED_SUCCESS) {
 		php_error_docref(NULL TSRMLS_CC, E_WARNING, "The session id is too long or contains illegal characters");
 		PS(invalid_session_id) = 1;
@@ -212,8 +213,9 @@ PS_WRITE_FUNC(memcached)
 	time_t expiration = 0;
 	memcached_return status;
 	memcached_st *memc_sess = PS_GET_MOD_DATA();
-	size_t key_length = strlen(key);
+	size_t key_length;
 
+	key_length = strlen(MEMC_G(sess_prefix)) + strlen(key) + 5; // prefix + "lock."
 	if (memcached_validate_key_length(key_length, false) != MEMCACHED_SUCCESS) {
 		php_error_docref(NULL TSRMLS_CC, E_WARNING, "The session id is too long or contains illegal characters");
 		PS(invalid_session_id) = 1;
