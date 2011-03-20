@@ -73,6 +73,8 @@ static int php_memc_sess_lock(memcached_st *memc, const char *key TSRMLS_DC)
 			MEMC_G(sess_lock_key) = lock_key;
 			MEMC_G(sess_lock_key_len) = lock_key_len;
 			return 0;
+		} else if (status != MEMCACHED_NOTSTORED) {
+			break;
 		}
 
 		if (lock_wait > 0) {
