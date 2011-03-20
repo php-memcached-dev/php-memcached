@@ -44,6 +44,26 @@ ps_module ps_mod_memcached = {
 	PS_MOD(memcached)
 };
 
+/*
+ * Stolen from libmemcached/common.h, because we need it and they don't expose it.
+ */
+static inline memcached_return_t memcached_validate_key_length(size_t key_length, bool binary)
+{
+	if (key_length == 0)
+		return MEMCACHED_BAD_KEY_PROVIDED;
+
+	if (binary)
+	{
+		if (key_length > 0xffff)
+			return MEMCACHED_BAD_KEY_PROVIDED;
+	} else {
+		if (key_length >= MEMCACHED_MAX_KEY)
+			return MEMCACHED_BAD_KEY_PROVIDED;
+	}
+
+	return MEMCACHED_SUCCESS;
+}
+
 static int php_memc_sess_lock(memcached_st *memc, const char *key TSRMLS_DC)
 {
 	char *lock_key = NULL;
@@ -157,6 +177,13 @@ PS_READ_FUNC(memcached)
 	uint32_t flags = 0;
 	memcached_return status;
 	memcached_st *memc_sess = PS_GET_MOD_DATA();
+	size_t key_length = strlen(key);
+
+	if (memcached_validate_key_length(key_length, false) != MEMCACHED_SUCCESS) {
+		php_error_docref(NULL TSRMLS_CC, E_WARNING, "The session id is too long or contains illegal characters");
+		PS(invalid_session_id) = 1;
+		return FAILURE;
+	}
 
 	if (MEMC_G(sess_locking_enabled)) {
 		if (php_memc_sess_lock(memc_sess, key TSRMLS_CC) < 0) {
@@ -185,6 +212,13 @@ PS_WRITE_FUNC(memcached)
 	time_t expiration = 0;
 	memcached_return status;
 	memcached_st *memc_sess = PS_GET_MOD_DATA();
+	size_t key_length = strlen(key);
+
+	if (memcached_validate_key_length(key_length, false) != MEMCACHED_SUCCESS) {
+		php_error_docref(NULL TSRMLS_CC, E_WARNING, "The session id is too long or contains illegal characters");
+		PS(invalid_session_id) = 1;
+		return FAILURE;
+	}
 
 	sess_key_len = spprintf(&sess_key, 0, "%s", key);
 	if (PS(gc_maxlifetime) > 0) {
