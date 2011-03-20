@@ -1,5 +1,9 @@
 memcached extension changelog
 
+Version *******
+---------------
+	* Fix a case where invalid session ID could lock the script.
+
 Version 2.0.0b1
 ---------------
 	* Change the return value for non-existing keys to be NULL rather than
