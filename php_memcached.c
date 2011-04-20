@@ -320,7 +320,7 @@ static void php_memc_destroy(struct memc_obj *m_obj, zend_bool persistent TSRMLS
   Method implementations
 ****************************************/
 
-static zend_bool php_memcached_on_new_callback(zval *object, zend_fcall_info *fci, zend_fcall_info_cache *fci_cache, char *persistent_id, int persistent_id_len)
+static zend_bool php_memcached_on_new_callback(zval *object, zend_fcall_info *fci, zend_fcall_info_cache *fci_cache, char *persistent_id, int persistent_id_len TSRMLS_DC)
 {
 	zval pid_z;
 	zval *retval_ptr, *pid_z_ptr = &pid_z;
@@ -423,7 +423,7 @@ static PHP_METHOD(Memcached, __construct)
 		i_obj->is_pristine = 1;
 
 		if (ZEND_NUM_ARGS() >= 2) {
-			if (!php_memcached_on_new_callback(object, &fci, &fci_cache, persistent_id, persistent_id_len) || EG(exception)) {
+			if (!php_memcached_on_new_callback(object, &fci, &fci_cache, persistent_id, persistent_id_len TSRMLS_CC) || EG(exception)) {
 				/* error calling or exception thrown from callback */
 				if (plist_key != NULL) {
 					efree(plist_key);
