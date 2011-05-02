@@ -1849,6 +1849,11 @@ PHP_METHOD(Memcached, getStats)
 
 	MEMC_METHOD_FETCH_OBJECT;
 
+	if (memcached_server_count(m_obj->memc) == 0) {
+		array_init(return_value);
+		return;
+	}
+
 	stats = memcached_stat(m_obj->memc, NULL, &status);
 	php_memc_handle_error(i_obj, status TSRMLS_CC);
 	if (stats == NULL) {
