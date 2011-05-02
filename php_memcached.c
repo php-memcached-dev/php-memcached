@@ -42,9 +42,11 @@
 #include <zend_exceptions.h>
 #include <ext/standard/php_smart_str.h>
 #include <ext/standard/php_var.h>
+#include <ext/standard/basic_functions.h>
 #include <libmemcached/memcached.h>
 
 #include "php_memcached.h"
+#include "g_fmt.h"
 
 #ifdef HAVE_MEMCACHED_SESSION
 # include "php_memcached_session.h"
@@ -2480,27 +2482,28 @@ static char *php_memc_zval_to_payload(zval *value, size_t *payload_len, uint32_t
 			break;
 
 		case IS_LONG:
+			smart_str_append_long(&buf, Z_LVAL_P(value));
+			MEMC_VAL_SET_TYPE(*flags, MEMC_VAL_IS_LONG);
+			break;
+
 		case IS_DOUBLE:
-		case IS_BOOL:
 		{
-			zval value_copy;
+			char dstr[40] = {0};
 
-			value_copy = *value;
-			zval_copy_ctor(&value_copy);
-			convert_to_string(&value_copy);
-			smart_str_appendl(&buf, Z_STRVAL(value_copy), Z_STRLEN(value_copy));
-			zval_dtor(&value_copy);
-
-			*flags &= ~MEMC_VAL_COMPRESSED;
-			if (Z_TYPE_P(value) == IS_LONG) {
-				MEMC_VAL_SET_TYPE(*flags, MEMC_VAL_IS_LONG);
-			} else if (Z_TYPE_P(value) == IS_DOUBLE) {
-				MEMC_VAL_SET_TYPE(*flags, MEMC_VAL_IS_DOUBLE);
-			} else if (Z_TYPE_P(value) == IS_BOOL) {
-				MEMC_VAL_SET_TYPE(*flags, MEMC_VAL_IS_BOOL);
-			}
+			php_memcached_g_fmt(dstr, Z_DVAL_P(value));
+			smart_str_appends(&buf, dstr);
+			MEMC_VAL_SET_TYPE(*flags, MEMC_VAL_IS_DOUBLE);
 			break;
 		}
+
+		case IS_BOOL:
+			if (Z_BVAL_P(value)) {
+				smart_str_appendc(&buf, '1');
+			} else {
+				smart_str_appendl(&buf, "", 0);
+			}
+			MEMC_VAL_SET_TYPE(*flags, MEMC_VAL_IS_BOOL);
+			break;
 
 		default:
 			switch (serializer) {
@@ -2690,11 +2693,16 @@ static int php_memc_zval_from_payload(zval *value, char *payload, size_t payload
 		}
 
 		case MEMC_VAL_IS_DOUBLE:
-		{
-			double dval = zend_strtod(payload, NULL);
-			ZVAL_DOUBLE(value, dval);
+			if (payload_len == 8 && memcmp(payload, "Infinity", 8) == 0) {
+				ZVAL_DOUBLE(value, php_get_inf());
+			} else if (payload_len == 9 && memcmp(payload, "-Infinity", 9) == 0) {
+				ZVAL_DOUBLE(value, -php_get_inf());
+			} else if (payload_len == 3 && memcmp(payload, "NaN", 3) == 0) {
+				ZVAL_DOUBLE(value, php_get_nan());
+			} else {
+				ZVAL_DOUBLE(value, zend_strtod(payload, NULL));
+			}
 			break;
-		}
 
 		case MEMC_VAL_IS_BOOL:
 			ZVAL_BOOL(value, payload_len > 0 && payload[0] == '1');

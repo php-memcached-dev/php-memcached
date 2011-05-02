@@ -242,7 +242,7 @@ if test "$PHP_MEMCACHED" != "no"; then
 
     PHP_SUBST(MEMCACHED_SHARED_LIBADD)
     
-    PHP_MEMCACHED_FILES="php_memcached.c fastlz/fastlz.c"
+    PHP_MEMCACHED_FILES="php_memcached.c fastlz/fastlz.c g_fmt.c"
 
     if test "$PHP_MEMCACHED_SESSION" != "no"; then
       PHP_MEMCACHED_FILES="${PHP_MEMCACHED_FILES} php_memcached_session.c"
