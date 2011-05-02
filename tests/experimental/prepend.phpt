@@ -25,6 +25,6 @@ var_dump($m->get('foo'));
 NULL
 %s: cannot append/prepend with compression turned on
 bool(false)
-NULL
+bool(false)
 bool(true)
 string(2) "ba"

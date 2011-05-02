@@ -26,3 +26,4 @@ memcached.serializer => %s => %s
 memcached.sess_lock_wait => %d => %d
 memcached.sess_locking => %d => %d
 memcached.sess_prefix => %s => %s
+memcached.use_sasl => %s => %s

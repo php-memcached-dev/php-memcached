@@ -59,7 +59,7 @@ Exception in callback
 Miss
 string(3) "foo"
 NULL
-NULL
+bool(false)
 Miss
 string(3) "foo"
 NULL

@@ -30,5 +30,5 @@ int(1)
 SUCCESS
 string(4) "asdf"
 SUCCESS
-NULL
+bool(false)
 NOT FOUND

@@ -28,6 +28,6 @@ SUCCESS
 array(0) {
 }
 SOME ERRORS WERE REPORTED
-int(1)
+int(2)
 bool(true)
 int(%d)

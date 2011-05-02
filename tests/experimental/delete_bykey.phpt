@@ -29,7 +29,7 @@ bool(true)
 SUCCESS
 bool(false)
 NOT FOUND
-NULL
+bool(false)
 bool(false)
 A BAD KEY WAS PROVIDED/CHARACTERS OUT OF RANGE
 bool(false)

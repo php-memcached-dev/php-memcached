@@ -20,6 +20,6 @@ var_dump($m->get('foo'));
 --EXPECTF--
 bool(false)
 
-NULL
+bool(false)
 bool(true)
 string(3) "bar"

@@ -58,10 +58,10 @@ SUCCESS
 string(4) "asdf"
 float(%d)
 SUCCESS
-NULL
+bool(false)
 NULL
 NOT FOUND
-NULL
+bool(false)
 NULL
 A BAD KEY WAS PROVIDED/CHARACTERS OUT OF RANGE
 called

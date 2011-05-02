@@ -23,11 +23,11 @@ $m->delete('foo');
 var_dump($m->get(' д foo jkh a s едц'));
 echo $m->getResultMessage(), "\n";
 --EXPECT--
-NULL
+bool(false)
 NOT FOUND
-NULL
+bool(false)
 A BAD KEY WAS PROVIDED/CHARACTERS OUT OF RANGE
 string(4) "asdf"
 SUCCESS
-NULL
+bool(false)
 NOT FOUND

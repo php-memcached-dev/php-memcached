@@ -22,6 +22,6 @@ var_dump($m->getByKey('kef', 'foo'));
 bool(false)
 
 %rNOT STORED|NOT FOUND%r
-NULL
+bool(false)
 bool(true)
 string(3) "bar"

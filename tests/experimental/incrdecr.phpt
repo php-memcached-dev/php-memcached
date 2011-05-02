@@ -38,7 +38,7 @@ var_dump($m->get('foo'));
 Not there
 bool(false)
 bool(false)
-NULL
+bool(false)
 Normal
 int(1)
 int(2)
