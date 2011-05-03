@@ -2453,15 +2453,23 @@ static int php_memc_handle_error(php_memc_t *i_obj, memcached_return status TSRM
 
 		case MEMCACHED_SOME_ERRORS:
 			i_obj->rescode = status;
-			/* Hnngghgh! */
-			i_obj->memc_errno = i_obj->obj->memc->cached_errno;
+#if defined(LIBMEMCACHED_VERSION_HEX) && LIBMEMCACHED_VERSION_HEX >= 0x00049000
+			i_obj->memc_errno = memcached_last_error_errno(i_obj->obj->memc);
+#else
+			i_obj->memc_errno = i_obj->obj->memc->cached_errno;	/* Hnngghgh! */
+
+#endif
 			result = 0;
 			break;
 
 		default:
 			i_obj->rescode = status;
-			/* Hnngghgh! */
-			i_obj->memc_errno = i_obj->obj->memc->cached_errno;
+#if defined(LIBMEMCACHED_VERSION_HEX) && LIBMEMCACHED_VERSION_HEX >= 0x00049000
+			i_obj->memc_errno = memcached_last_error_errno(i_obj->obj->memc);
+#else
+			i_obj->memc_errno = i_obj->obj->memc->cached_errno; /* Hnngghgh! */
+
+#endif
 			result = -1;
 			break;
 	}
@@ -3406,6 +3414,9 @@ static void php_memc_register_constants(INIT_FUNC_ARGS)
 #if defined(LIBMEMCACHED_VERSION_HEX) && LIBMEMCACHED_VERSION_HEX >= 0x00037000
 	REGISTER_MEMC_CLASS_CONST_LONG(OPT_NUMBER_OF_REPLICAS, MEMCACHED_BEHAVIOR_NUMBER_OF_REPLICAS);
 	REGISTER_MEMC_CLASS_CONST_LONG(OPT_RANDOMIZE_REPLICA_READ, MEMCACHED_BEHAVIOR_RANDOMIZE_REPLICA_READ);
+#endif
+#if defined(LIBMEMCACHED_VERSION_HEX) && LIBMEMCACHED_VERSION_HEX >= 0x00049000
+	REGISTER_MEMC_CLASS_CONST_LONG(OPT_REMOVE_FAILED_SERVERS, MEMCACHED_BEHAVIOR_REMOVE_FAILED_SERVERS);
 #endif
 
 	/*

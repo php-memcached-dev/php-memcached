@@ -2,6 +2,8 @@ memcached extension changelog
 
 Version *******
 ---------------
+	* Add OPT_REMOVE_FAILED_SERVERS option.
+	* Make it work with libmemcached up to 0.49.
 	* Fix a case where invalid session ID could lock the script.
 
 Version 2.0.0b1
