@@ -16,7 +16,7 @@ var_dump($m->getServerList());
 
 echo "OK\n";
 
---EXPECT--
+--EXPECTF--
 array(1) {
   [0]=>
   array(3) {
@@ -25,7 +25,7 @@ array(1) {
     ["port"]=>
     int(11211)
     ["weight"]=>
-    int(0)
+    int(%r[01]%r)
   }
 }
 OK

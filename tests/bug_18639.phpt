@@ -1,5 +1,5 @@
 --TEST--
-Memcached::getServerByKey(): Bug pecl#18639 (Segfault in getServerByKet)
+Memcached::getServerByKey(): Bug pecl#18639 (Segfault in getServerByKey)
 --SKIPIF--
 <?php if (!extension_loaded("memcached")) print "skip"; ?>
 --FILE--
@@ -19,5 +19,5 @@ array(3) {
   ["port"]=>
   int(11211)
   ["weight"]=>
-  int(0)
+  int(%r[01]%r)
 }

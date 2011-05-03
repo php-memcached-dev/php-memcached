@@ -14,6 +14,7 @@ var_dump($m->getMulti(array('foo', 'bar')));
 switch ($m->getResultCode()) {
 	case Memcached::RES_ERRNO:
 	case Memcached::RES_SOME_ERRORS:
+	case Memcached::RES_FAILURE:
 		break;
 	default:
 		echo $m->getResultCode(), ": ";

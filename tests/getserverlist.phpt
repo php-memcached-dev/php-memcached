@@ -15,7 +15,7 @@ $m = new memcached();
 $m->addServer('127.0.0.1', 11211);
 var_dump($m->getServerList());
 ?>
---EXPECT--
+--EXPECTF--
 array(0) {
 }
 array(1) {
@@ -57,6 +57,6 @@ array(1) {
     ["port"]=>
     int(11211)
     ["weight"]=>
-    int(0)
+    int(%r[01]%r)
   }
 }

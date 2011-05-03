@@ -21,7 +21,7 @@ function handler($errno, $errstr) {
 
 set_error_handler('handler', E_ALL);
 
-ini_set('memcached.sess_prefix', '');
+ini_set('memcached.sess_prefix', " \n");
 session_start();
 session_write_close();
 
