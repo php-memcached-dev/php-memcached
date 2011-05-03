@@ -2552,6 +2552,12 @@ static char *php_memc_zval_to_payload(zval *value, size_t *payload_len, uint32_t
 			break;
 	}
 
+	/* Check for exceptions caused by serializers */
+	if (EG(exception)) {
+		smart_str_free(&buf);
+		return NULL;
+	}
+
 	/* turn off compression for values below the threshold */
 	if ((*flags & MEMC_VAL_COMPRESSED) && buf.len < MEMC_G(compression_threshold)) {
 		*flags &= ~MEMC_VAL_COMPRESSED;
