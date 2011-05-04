@@ -480,7 +480,7 @@ PHP_METHOD(Memcached, getByKey)
 static void php_memc_get_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 {
 	char *key = NULL;
-	size_t key_len = 0;
+	int key_len = 0;
 	char *server_key = NULL;
 	int   server_key_len = 0;
 	char  *payload = NULL;
