@@ -1673,6 +1673,8 @@ PHP_METHOD(Memcached, addServer)
 
 	if (host[0] == '/') { /* unix domain socket */
 		status = memcached_server_add_unix_socket_with_weight(m_obj->memc, host, weight);
+	} else if (memcached_behavior_get(m_obj->memc, MEMCACHED_BEHAVIOR_USE_UDP)) {
+		status = memcached_server_add_udp_with_weight(m_obj->memc, host, port, weight);
 	} else {
 		status = memcached_server_add_with_weight(m_obj->memc, host, port, weight);
 	}
