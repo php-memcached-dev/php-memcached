@@ -47,7 +47,7 @@ ps_module ps_mod_memcached = {
 /*
  * Stolen from libmemcached/common.h, because we need it and they don't expose it.
  */
-static inline memcached_return_t memcached_validate_key_length(size_t key_length, bool binary)
+static inline int memcached_validate_key_length(size_t key_length, bool binary)
 {
 	if (key_length == 0)
 		return MEMCACHED_BAD_KEY_PROVIDED;

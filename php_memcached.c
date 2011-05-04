@@ -45,6 +45,7 @@
 #include <ext/standard/basic_functions.h>
 #include <libmemcached/memcached.h>
 
+#include "php_libmemcached_compat.h"
 #include "php_memcached.h"
 #include "g_fmt.h"
 
