@@ -1272,7 +1272,7 @@ static void php_memc_store_impl(INTERNAL_FUNCTION_PARAMETERS, int op, zend_bool 
 	if (by_key) {
 		if (op == MEMC_OP_APPEND || op == MEMC_OP_PREPEND) {
 			if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sss", &server_key,
-									  &server_key_len, &key, &key_len, &s_value, &s_value_len, &expiration) == FAILURE) {
+									  &server_key_len, &key, &key_len, &s_value, &s_value_len) == FAILURE) {
 				return;
 			}
 			INIT_ZVAL(s_zvalue);
