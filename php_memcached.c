@@ -2468,37 +2468,44 @@ static int php_memc_handle_error(php_memc_t *i_obj, memcached_return status TSRM
 static char *php_memc_zval_to_payload(zval *value, size_t *payload_len, uint32_t *flags, enum memcached_serializer serializer, enum memcached_compression_type compression_type TSRMLS_DC)
 {
 	char *payload;
+	char *p;
+	int l;
+	zend_bool buf_used = 0;
 	smart_str buf = {0};
+	char tmp[40] = {0};
 
 	switch (Z_TYPE_P(value)) {
 
 		case IS_STRING:
-			smart_str_appendl(&buf, Z_STRVAL_P(value), Z_STRLEN_P(value));
+			p = Z_STRVAL_P(value);
+			l = Z_STRLEN_P(value);
 			MEMC_VAL_SET_TYPE(*flags, MEMC_VAL_IS_STRING);
 			break;
 
 		case IS_LONG:
-		case IS_DOUBLE:
-		case IS_BOOL:
-		{
-			zval value_copy;
-
-			value_copy = *value;
-			zval_copy_ctor(&value_copy);
-			convert_to_string(&value_copy);
-			smart_str_appendl(&buf, Z_STRVAL(value_copy), Z_STRLEN(value_copy));
-			zval_dtor(&value_copy);
-
-			*flags &= ~MEMC_VAL_COMPRESSED;
-			if (Z_TYPE_P(value) == IS_LONG) {
-				MEMC_VAL_SET_TYPE(*flags, MEMC_VAL_IS_LONG);
-			} else if (Z_TYPE_P(value) == IS_DOUBLE) {
-				MEMC_VAL_SET_TYPE(*flags, MEMC_VAL_IS_DOUBLE);
-			} else if (Z_TYPE_P(value) == IS_BOOL) {
-				MEMC_VAL_SET_TYPE(*flags, MEMC_VAL_IS_BOOL);
-			}
+			l = sprintf(tmp, "%ld", Z_LVAL_P(value));
+			p = tmp;
+			MEMC_VAL_SET_TYPE(*flags, MEMC_VAL_IS_LONG);
 			break;
-		}
+
+		case IS_DOUBLE:
+			l = sprintf(tmp, "%f", Z_DVAL_P(value));
+			p = tmp;
+			MEMC_VAL_SET_TYPE(*flags, MEMC_VAL_IS_DOUBLE);
+			break;
+
+		case IS_BOOL:
+			if (Z_BVAL_P(value)) {
+				l = 1;
+				tmp[0] = '1';
+				tmp[1] = '\0';
+			} else {
+				l = 0;
+				tmp[0] = '\0';
+			}
+			p = tmp;
+			MEMC_VAL_SET_TYPE(*flags, MEMC_VAL_IS_BOOL);
+			break;
 
 		default:
 			switch (serializer) {
@@ -2508,6 +2515,9 @@ static char *php_memc_zval_to_payload(zval *value, size_t *payload_len, uint32_t
 						smart_str_free(&buf);
 						return NULL;
 					}
+					p = buf.c;
+					l = buf.len;
+					buf_used = 1;
 					MEMC_VAL_SET_TYPE(*flags, MEMC_VAL_IS_IGBINARY);
 					break;
 #endif
@@ -2522,6 +2532,9 @@ static char *php_memc_zval_to_payload(zval *value, size_t *payload_len, uint32_t
 					php_json_encode(&buf, value, 0 TSRMLS_CC); /* options */
 #endif
 					buf.c[buf.len] = 0;
+					p = buf.c;
+					l = buf.len;
+					buf_used = 1;
 					MEMC_VAL_SET_TYPE(*flags, MEMC_VAL_IS_JSON);
 					break;
 				}
@@ -2538,13 +2551,21 @@ static char *php_memc_zval_to_payload(zval *value, size_t *payload_len, uint32_t
 						smart_str_free(&buf);
 						return NULL;
 					}
-
+					p = buf.c;
+					l = buf.len;
+					buf_used = 1;
 					MEMC_VAL_SET_TYPE(*flags, MEMC_VAL_IS_SERIALIZED);
 					break;
 				}
 			}
 
 			break;
+	}
+
+	/* Check for exceptions caused by serializers */
+	if (EG(exception) && buf_used) {
+		smart_str_free(&buf);
+		return NULL;
 	}
 
 	/* turn off compression for values below the threshold */
@@ -2557,44 +2578,48 @@ static char *php_memc_zval_to_payload(zval *value, size_t *payload_len, uint32_t
 		zend_bool compress_status = 0;
 
 		/* Additional 5% for the data */
-		unsigned long payload_comp_len = (unsigned long)((buf.len * 1.05) + 1);
+		unsigned long payload_comp_len = (unsigned long)((l * 1.05) + 1);
 		char *payload_comp = emalloc(payload_comp_len + sizeof(uint32_t));
 		payload = payload_comp;
-		memcpy(payload_comp, &buf.len, sizeof(uint32_t));
+		memcpy(payload_comp, &l, sizeof(uint32_t));
 		payload_comp += sizeof(uint32_t);
 
 		if (compression_type == COMPRESSION_TYPE_FASTLZ) {
-			compress_status = ((payload_comp_len = fastlz_compress(buf.c, buf.len, payload_comp)) > 0);
+			compress_status = ((payload_comp_len = fastlz_compress(p, l, payload_comp)) > 0);
 			*flags |= MEMC_VAL_COMPRESSION_FASTLZ;
 		} else if (compression_type == COMPRESSION_TYPE_ZLIB) {
-			compress_status = (compress((Bytef *)payload_comp, &payload_comp_len, (Bytef *)buf.c, buf.len) == Z_OK);
+			compress_status = (compress((Bytef *)payload_comp, &payload_comp_len, (Bytef *)p, l) == Z_OK);
 			*flags |= MEMC_VAL_COMPRESSION_ZLIB;
 		}
 
 		if (!compress_status) {
 			php_error_docref(NULL TSRMLS_CC, E_WARNING, "could not compress value");
 			efree(payload);
-			smart_str_free(&buf);
+			if (buf_used) {
+				smart_str_free(&buf);
+			}
 			return NULL;
 		}
 
 		/* Check that we are above ratio */
-		if (buf.len > (payload_comp_len * MEMC_G(compression_factor))) {
+		if (l > (payload_comp_len * MEMC_G(compression_factor))) {
 			*payload_len = payload_comp_len + sizeof(uint32_t);
 			payload[*payload_len] = 0;
 		} else {
 			/* Store plain value */
 			*flags &= ~MEMC_VAL_COMPRESSED;
-			*payload_len = buf.len;
-			memcpy(payload, buf.c, buf.len);
-			payload[buf.len] = 0;
+			*payload_len = l;
+			memcpy(payload, p, l);
+			payload[l] = 0;
 		}
 	} else {
-		*payload_len = buf.len;
-		payload = estrndup(buf.c, buf.len);
+		*payload_len = l;
+		payload = estrndup(p, l);
 	}
 
-	smart_str_free(&buf);
+	if (buf_used) {
+		smart_str_free(&buf);
+	}
 	return payload;
 }
 
