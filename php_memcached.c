@@ -307,7 +307,6 @@ static void php_memc_get_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key);
 static void php_memc_getMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key);
 static void php_memc_store_impl(INTERNAL_FUNCTION_PARAMETERS, int op, zend_bool by_key);
 static void php_memc_setMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key);
-static void php_memc_cas_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key);
 static void php_memc_delete_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key);
 static void php_memc_deleteMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key);
 static void php_memc_getDelayed_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key);
@@ -1109,6 +1108,29 @@ PHP_METHOD(Memcached, setMultiByKey)
 }
 /* }}} */
 
+#define PHP_MEMC_FAILOVER_RETRY	\
+	if (!server_key && retry < 2) {	\
+		switch (i_obj->rescode) {	\
+			case MEMCACHED_HOST_LOOKUP_FAILURE:	\
+			case MEMCACHED_CONNECTION_FAILURE:	\
+			case MEMCACHED_CONNECTION_BIND_FAILURE:	\
+			case MEMCACHED_WRITE_FAILURE:	\
+			case MEMCACHED_READ_FAILURE:	\
+			case MEMCACHED_UNKNOWN_READ_FAILURE:	\
+			case MEMCACHED_PROTOCOL_ERROR:	\
+			case MEMCACHED_SERVER_ERROR:	\
+			case MEMCACHED_CONNECTION_SOCKET_CREATE_FAILURE:	\
+			case MEMCACHED_TIMEOUT:	\
+			case MEMCACHED_FAIL_UNIX_SOCKET:	\
+			case MEMCACHED_SERVER_MARKED_DEAD:	\
+				if (memcached_server_count(m_obj->memc) > 0) {	\
+					retry++;	\
+					goto retry;	\
+				}	\
+				break;	\
+		}	\
+	}	\
+
 /* {{{ -- php_memc_setMulti_impl */
 static void php_memc_setMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 {
@@ -1123,6 +1145,7 @@ static void php_memc_setMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 	char  *payload;
 	size_t payload_len;
 	uint32_t flags = 0;
+	uint32_t retry = 0;
 	memcached_return status;
 	char  tmp_key[MEMCACHED_MAX_KEY];
 	MEMC_METHOD_INIT_VARS;
@@ -1173,13 +1196,15 @@ static void php_memc_setMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 			server_key     = str_key;
 			server_key_len = str_key_len-1;
 		}
-		status = memcached_set_by_key(m_obj->memc, server_key, server_key_len, str_key,
-									  str_key_len-1, payload, payload_len, expiration, flags);
-		efree(payload);
+retry:
+		status = memcached_set_by_key(m_obj->memc, server_key, server_key_len, str_key, str_key_len-1, payload, payload_len, expiration, flags);
 
 		if (php_memc_handle_error(i_obj, status TSRMLS_CC) < 0) {
+			PHP_MEMC_FAILOVER_RETRY
+			efree(payload);
 			RETURN_FALSE;
 		}
+		efree(payload);
 	}
 
 	RETURN_TRUE;
@@ -1250,6 +1275,7 @@ PHP_METHOD(Memcached, replaceByKey)
 }
 /* }}} */
 
+
 /* {{{ -- php_memc_store_impl */
 static void php_memc_store_impl(INTERNAL_FUNCTION_PARAMETERS, int op, zend_bool by_key)
 {
@@ -1265,6 +1291,7 @@ static void php_memc_store_impl(INTERNAL_FUNCTION_PARAMETERS, int op, zend_bool 
 	char  *payload;
 	size_t payload_len;
 	uint32_t flags = 0;
+	uint32_t retry = 0;
 	memcached_return status;
 	MEMC_METHOD_INIT_VARS;
 
@@ -1326,7 +1353,7 @@ static void php_memc_store_impl(INTERNAL_FUNCTION_PARAMETERS, int op, zend_bool 
 		i_obj->rescode = MEMC_RES_PAYLOAD_FAILURE;
 		RETURN_FALSE;
 	}
-
+retry:
 	switch (op) {
 		case MEMC_OP_SET:
 			if (!server_key) {
@@ -1379,28 +1406,13 @@ static void php_memc_store_impl(INTERNAL_FUNCTION_PARAMETERS, int op, zend_bool 
 			break;
 	}
 
-	efree(payload);
 	if (php_memc_handle_error(i_obj, status TSRMLS_CC) < 0) {
-		RETURN_FALSE;
+		PHP_MEMC_FAILOVER_RETRY
+		RETVAL_FALSE;
+	} else {
+		RETVAL_TRUE;
 	}
-
-	RETURN_TRUE;
-}
-/* }}} */
-
-/* {{{ Memcached::cas(double cas_token, string key, mixed value [, int expiration ])
-   Sets the value for the given key, failing if the cas_token doesn't match the one in memcache */
-PHP_METHOD(Memcached, cas)
-{
-	php_memc_cas_impl(INTERNAL_FUNCTION_PARAM_PASSTHRU, 0);
-}
-/* }}} */
-
-/* {{{ Memcached::casByKey(double cas_token, string server_key, string key, mixed value [, int expiration ])
-   Sets the value for the given key on the server identified by the server_key, failing if the cas_token doesn't match the one in memcache */
-PHP_METHOD(Memcached, casByKey)
-{
-	php_memc_cas_impl(INTERNAL_FUNCTION_PARAM_PASSTHRU, 1);
+	efree(payload);
 }
 /* }}} */
 
@@ -1464,6 +1476,22 @@ static void php_memc_cas_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 	}
 
 	RETURN_TRUE;
+}
+/* }}} */
+
+/* {{{ Memcached::cas(double cas_token, string key, mixed value [, int expiration ])
+   Sets the value for the given key, failing if the cas_token doesn't match the one in memcache */
+PHP_METHOD(Memcached, cas)
+{
+	php_memc_cas_impl(INTERNAL_FUNCTION_PARAM_PASSTHRU, 0);
+}
+/* }}} */
+
+/* {{{ Memcached::casByKey(double cas_token, string server_key, string key, mixed value [, int expiration ])
+   Sets the value for the given key on the server identified by the server_key, failing if the cas_token doesn't match the one in memcache */
+PHP_METHOD(Memcached, casByKey)
+{
+	php_memc_cas_impl(INTERNAL_FUNCTION_PARAM_PASSTHRU, 1);
 }
 /* }}} */
 
@@ -1610,7 +1638,7 @@ static void php_memc_incdec_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key,
 	time_t expiry = 0;
 	memcached_return status;
 	int n_args = ZEND_NUM_ARGS();
-	
+	uint32_t retry = 0;
 	MEMC_METHOD_INIT_VARS;
 
 	if (!by_key) {
@@ -1636,6 +1664,7 @@ static void php_memc_incdec_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key,
 		RETURN_FALSE;
 	}
 
+retry:
 	if ((!by_key && n_args < 3) || (by_key && n_args < 4)) {
 		if (by_key) {
 			if (incr) {
@@ -1667,6 +1696,7 @@ static void php_memc_incdec_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key,
 	}
 
 	if (php_memc_handle_error(i_obj, status TSRMLS_CC) < 0) {
+		PHP_MEMC_FAILOVER_RETRY
 		RETURN_FALSE;
 	}
 
