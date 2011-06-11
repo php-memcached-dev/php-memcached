@@ -1450,8 +1450,12 @@ static void php_memc_cas_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 		i_obj->rescode = MEMC_RES_PAYLOAD_FAILURE;
 		RETURN_FALSE;
 	}
-	status = memcached_cas_by_key(m_obj->memc, server_key, server_key_len, key, key_len,
-								  payload, payload_len, expiration, flags, cas);
+
+	if (by_key) {
+		status = memcached_cas_by_key(m_obj->memc, server_key, server_key_len, key, key_len, payload, payload_len, expiration, flags, cas);
+	} else {
+		status = memcached_cas(m_obj->memc, key, key_len, payload, payload_len, expiration, flags, cas);
+	}
 	efree(payload);
 	if (php_memc_handle_error(i_obj, status TSRMLS_CC) < 0) {
 		RETURN_FALSE;
