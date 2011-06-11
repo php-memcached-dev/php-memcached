@@ -2635,7 +2635,7 @@ static char *php_memc_zval_to_payload(zval *value, size_t *payload_len, uint32_t
 	}
 
 	/* turn off compression for values below the threshold */
-	if ((*flags & MEMC_VAL_COMPRESSED) && buf.len < MEMC_G(compression_threshold)) {
+	if ((*flags & MEMC_VAL_COMPRESSED) && l < MEMC_G(compression_threshold)) {
 		*flags &= ~MEMC_VAL_COMPRESSED;
 	}
 
