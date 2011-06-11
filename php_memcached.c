@@ -307,7 +307,6 @@ static void php_memc_setMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 static void php_memc_cas_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key);
 static void php_memc_delete_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key);
 static void php_memc_deleteMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key);
-static void php_memc_incdec_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool incr);
 static void php_memc_getDelayed_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key);
 static memcached_return php_memc_do_cache_callback(zval *memc_obj, zend_fcall_info *fci, zend_fcall_info_cache *fcc, char *key, size_t key_len, zval *value TSRMLS_DC);
 static int php_memc_do_result_callback(zval *memc_obj, zend_fcall_info *fci, zend_fcall_info_cache *fcc, memcached_result_st *result TSRMLS_DC);
@@ -1598,34 +1597,27 @@ static void php_memc_deleteMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by
 }
 /* }}} */
 
-/* {{{ Memcached::increment(string key [, int delta ])
-   Increments the value for the given key by delta, defaulting to 1 */
-PHP_METHOD(Memcached, increment)
-{
-	php_memc_incdec_impl(INTERNAL_FUNCTION_PARAM_PASSTHRU, 1);
-}
-/* }}} */
-
-/* {{{ Memcached::decrement(string key [, int delta ])
-   Decrements the value for the given key by delta, defaulting to 1 */
-PHP_METHOD(Memcached, decrement)
-{
-	php_memc_incdec_impl(INTERNAL_FUNCTION_PARAM_PASSTHRU, 0);
-}
-/* }}} */
-
 /* {{{ -- php_memc_incdec_impl */
-static void php_memc_incdec_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool incr)
+static void php_memc_incdec_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key, zend_bool incr)
 {
-	char *key = NULL;
-	int   key_len = 0;
+	char *key, *server_key;
+	int   key_len, server_key_len;
 	long  offset = 1;
-	uint64_t value;
+	uint64_t value, initial = 0;
+	time_t expiry = 0;
 	memcached_return status;
+	int n_args = ZEND_NUM_ARGS();
+	
 	MEMC_METHOD_INIT_VARS;
 
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|l", &key, &key_len, &offset) == FAILURE) {
-		return;
+	if (!by_key) {
+		if (zend_parse_parameters(n_args TSRMLS_CC, "s|lll", &key, &key_len, &offset, &initial, &expiry) == FAILURE) {
+			return;
+		}
+	} else {
+		if (zend_parse_parameters(n_args TSRMLS_CC, "ss|lll", &server_key, &server_key_len, &key, &key_len, &offset, &initial, &expiry) == FAILURE) {
+			return;
+		}
 	}
 
 	MEMC_METHOD_FETCH_OBJECT;
@@ -1641,10 +1633,34 @@ static void php_memc_incdec_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool incr)
 		RETURN_FALSE;
 	}
 
-	if (incr) {
-		status = memcached_increment(m_obj->memc, key, key_len, (unsigned int)offset, &value);
+	if ((!by_key && n_args < 3) || (by_key && n_args < 4)) {
+		if (by_key) {
+			if (incr) {
+				status = memcached_increment_by_key(m_obj->memc, server_key, server_key_len, key, key_len, (unsigned int)offset, &value);
+			} else {
+				status = memcached_decrement_by_key(m_obj->memc, server_key, server_key_len, key, key_len, (unsigned int)offset, &value);
+			}
+		} else {
+			if (incr) {
+				status = memcached_increment(m_obj->memc, key, key_len, (unsigned int)offset, &value);
+			} else {
+				status = memcached_decrement(m_obj->memc, key, key_len, (unsigned int)offset, &value);
+			}
+		}
 	} else {
-		status = memcached_decrement(m_obj->memc, key, key_len, (unsigned int)offset, &value);
+		if (by_key) {
+			if (incr) {
+				status = memcached_increment_with_initial_by_key(m_obj->memc, server_key, server_key_len, key, key_len, (unsigned int)offset, initial, expiry, &value);
+			} else {
+				status = memcached_decrement_with_initial_by_key(m_obj->memc, server_key, server_key_len, key, key_len, (unsigned int)offset, initial, expiry, &value);
+			}
+		} else {
+			if (incr) {
+				status = memcached_increment_with_initial(m_obj->memc, key, key_len, (unsigned int)offset, initial, expiry, &value);
+			} else {
+				status = memcached_decrement_with_initial(m_obj->memc, key, key_len, (unsigned int)offset, initial, expiry, &value);
+			}
+		}
 	}
 
 	if (php_memc_handle_error(i_obj, status TSRMLS_CC) < 0) {
@@ -1652,6 +1668,38 @@ static void php_memc_incdec_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool incr)
 	}
 
 	RETURN_LONG((long)value);
+}
+/* }}} */
+
+/* {{{ Memcached::increment(string key [, int delta [, initial_value [, expiry time ] ] ])
+   Increments the value for the given key by delta, defaulting to 1 */
+PHP_METHOD(Memcached, increment)
+{
+	php_memc_incdec_impl(INTERNAL_FUNCTION_PARAM_PASSTHRU, 0, 1);
+}
+/* }}} */
+
+/* {{{ Memcached::decrement(string key [, int delta [, initial_value [, expiry time ] ] ])
+   Decrements the value for the given key by delta, defaulting to 1 */
+PHP_METHOD(Memcached, decrement)
+{
+	php_memc_incdec_impl(INTERNAL_FUNCTION_PARAM_PASSTHRU, 0, 0);
+}
+/* }}} */
+
+/* {{{ Memcached::decrementByKey(string server_key, string key [, int delta [, initial_value [, expiry time ] ] ])
+   Decrements by server the value for the given key by delta, defaulting to 1 */
+PHP_METHOD(Memcached, decrementByKey)
+{
+	php_memc_incdec_impl(INTERNAL_FUNCTION_PARAM_PASSTHRU, 1, 0);
+}
+/* }}} */
+
+/* {{{ Memcached::increment(string server_key, string key [, int delta [, initial_value [, expiry time ] ] ])
+   Increments by server the value for the given key by delta, defaulting to 1 */
+PHP_METHOD(Memcached, incrementByKey)
+{
+	php_memc_incdec_impl(INTERNAL_FUNCTION_PARAM_PASSTHRU, 1, 1);
 }
 /* }}} */
 
@@ -3168,11 +3216,31 @@ ZEND_END_ARG_INFO()
 ZEND_BEGIN_ARG_INFO_EX(arginfo_increment, 0, 0, 1)
 	ZEND_ARG_INFO(0, key)
 	ZEND_ARG_INFO(0, offset)
+	ZEND_ARG_INFO(0, initial_value)
+	ZEND_ARG_INFO(0, expiry)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_decrement, 0, 0, 1)
 	ZEND_ARG_INFO(0, key)
 	ZEND_ARG_INFO(0, offset)
+	ZEND_ARG_INFO(0, initial_value)
+	ZEND_ARG_INFO(0, expiry)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_incrementByKey, 0, 0, 2)
+	ZEND_ARG_INFO(0, server_key)
+	ZEND_ARG_INFO(0, key)
+	ZEND_ARG_INFO(0, offset)
+	ZEND_ARG_INFO(0, initial_value)
+	ZEND_ARG_INFO(0, expiry)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_decrementByKey, 0, 0, 2)
+	ZEND_ARG_INFO(0, server_key)
+	ZEND_ARG_INFO(0, key)
+	ZEND_ARG_INFO(0, offset)
+	ZEND_ARG_INFO(0, initial_value)
+	ZEND_ARG_INFO(0, expiry)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_flush, 0, 0, 0)
@@ -3269,6 +3337,8 @@ static zend_function_entry memcached_class_methods[] = {
 
 	MEMC_ME(increment,          arginfo_increment)
 	MEMC_ME(decrement,          arginfo_decrement)
+	MEMC_ME(incrementByKey,     arginfo_incrementByKey)
+	MEMC_ME(decrementByKey,     arginfo_decrementByKey)
 
 	MEMC_ME(addServer,          arginfo_addServer)
 	MEMC_ME(addServers,         arginfo_addServers)
