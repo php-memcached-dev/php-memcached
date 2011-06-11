@@ -8,9 +8,7 @@ Serialize JSON
 ?>
 --REDIRECTTEST--
 
-$path = implode(DIRECTORY_SEPARATOR, array('tests', 'experimental', 'serializer'));
-
 return array(
-	'TESTS' => $path,
+	'TESTS' => sys_get_temp_dir(),
 	'ENV' => array('TEST_MEMC_SERIALIZER' => 'Memcached::SERIALIZER_JSON'),
 );
