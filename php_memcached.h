@@ -98,6 +98,13 @@ PHP_MINFO_FUNCTION(memcached);
 #define MEMC_G(v) (php_memcached_globals.v)
 #endif
 
+static int le_memc;
+
+static int php_memc_list_entry(void)
+{
+	return le_memc;
+}
+
 #endif /* PHP_MEMCACHED_H */
 
 

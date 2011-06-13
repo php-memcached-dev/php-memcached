@@ -99,35 +99,98 @@ static void php_memc_sess_unlock(memcached_st *memc TSRMLS_DC)
 PS_OPEN_FUNC(memcached)
 {
 	memcached_st *memc_sess = PS_GET_MOD_DATA();
-	memcached_server_st *servers;
 	memcached_return status;
+	char *p, *plist_key = NULL;
+	int plist_key_len;
 
-	servers = memcached_servers_parse((char *)save_path);
-	if (servers) {
-		memc_sess = memcached_create(NULL);
-		if (memc_sess) {
-			status = memcached_server_push(memc_sess, servers);
-			memcached_server_list_free(servers);
+	if (!strncmp((char *)save_path, "PERSISTENT=", sizeof("PERSISTENT=") - 1)) {
+		zend_rsrc_list_entry *le = NULL;
+		char *e;
 
-			if (memcached_callback_set(memc_sess, MEMCACHED_CALLBACK_PREFIX_KEY, MEMC_G(sess_prefix)) != MEMCACHED_SUCCESS) {
-				PS_SET_MOD_DATA(NULL);
-				memcached_free(memc_sess);
-				php_error_docref(NULL TSRMLS_CC, E_WARNING, "bad memcached key prefix in memcached.sess_prefix");
-				return FAILURE;
-			}
-
-			if (status == MEMCACHED_SUCCESS) {
+		p = (char *)save_path + sizeof("PERSISTENT=") - 1;
+		if (!*p) {
+error:
+			php_error_docref(NULL TSRMLS_CC, E_WARNING, "Invalid persistent id for session storage");
+			return FAILURE;
+		}
+		if ((e = strchr(p, ' '))) {
+			plist_key_len = spprintf(&plist_key, 0, "memcached_sessions:id=%.*s", (int)(e - p), p);
+		} else {
+			goto error;
+		}
+		plist_key_len++;
+		if (zend_hash_find(&EG(persistent_list), plist_key, plist_key_len, (void *)&le) == SUCCESS) {
+			if (le->type == php_memc_list_entry()) {
+				memc_sess = (struct memc_obj *) le->ptr;
 				PS_SET_MOD_DATA(memc_sess);
 				return SUCCESS;
 			}
-		} else {
-			memcached_server_list_free(servers);
-			php_error_docref(NULL TSRMLS_CC, E_WARNING, "could not allocate libmemcached structure");
 		}
+		p = e + 1;
 	} else {
-		php_error_docref(NULL TSRMLS_CC, E_WARNING, "failed to parse session.save_path");
+		p = (char *)save_path;
 	}
 
+	if (!strstr(p, "--SERVER")) {
+		memcached_server_st *servers = memcached_servers_parse(p);
+		if (servers) {
+			memc_sess = memcached_create(NULL);
+			if (memc_sess) {
+				status = memcached_server_push(memc_sess, servers);
+				memcached_server_list_free(servers);
+
+				if (memcached_callback_set(memc_sess, MEMCACHED_CALLBACK_PREFIX_KEY, MEMC_G(sess_prefix)) != MEMCACHED_SUCCESS) {
+					PS_SET_MOD_DATA(NULL);
+					if (plist_key) {
+						efree(plist_key);
+					}
+					memcached_free(memc_sess);
+					php_error_docref(NULL TSRMLS_CC, E_WARNING, "bad memcached key prefix in memcached.sess_prefix");
+					return FAILURE;
+				}
+
+				if (status == MEMCACHED_SUCCESS) {
+					goto success;
+				}
+			} else {
+				memcached_server_list_free(servers);
+				php_error_docref(NULL TSRMLS_CC, E_WARNING, "could not allocate libmemcached structure");
+			}
+		} else {
+			php_error_docref(NULL TSRMLS_CC, E_WARNING, "failed to parse session.save_path");
+		}
+	} else {
+		memc_sess = memcached(p, strlen(p));
+		if (!memc_sess) {
+			char error_buffer[1024];
+			if (libmemcached_check_configuration(p, strlen(p), error_buffer, sizeof(error_buffer)) != MEMCACHED_SUCCESS) {
+				php_error_docref(NULL TSRMLS_CC, E_WARNING, "session.save_path configuration error %s", error_buffer);
+			} else {
+				php_error_docref(NULL TSRMLS_CC, E_WARNING, "failed to initialize memcached session storage");
+			}
+		} else {
+success:
+			PS_SET_MOD_DATA(memc_sess);
+
+			if (plist_key) {
+				zend_rsrc_list_entry le;
+
+				le.type = php_memc_list_entry();
+				le.ptr = memc_sess;
+
+				if (zend_hash_update(&EG(persistent_list), (char *)plist_key, plist_key_len, (void *)&le, sizeof(le), NULL) == FAILURE) {
+					efree(plist_key);
+					php_error_docref(NULL TSRMLS_CC, E_ERROR, "could not register persistent entry");
+				}
+				efree(plist_key);
+			}
+			return SUCCESS;
+		}
+	}
+
+	if (plist_key) {
+		efree(plist_key);
+	}
 	PS_SET_MOD_DATA(NULL);
 	return FAILURE;
 }

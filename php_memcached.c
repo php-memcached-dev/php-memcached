@@ -207,8 +207,6 @@ enum {
 	MEMC_OP_PREPEND
 };
 
-static int le_memc;
-
 static zend_class_entry *memcached_ce = NULL;
 static zend_class_entry *memcached_exception_ce = NULL;
 
@@ -299,7 +297,6 @@ PHP_INI_END()
 /****************************************
   Forward declarations
 ****************************************/
-static int php_memc_list_entry(void);
 static int php_memc_handle_error(php_memc_t *i_obj, memcached_return status TSRMLS_DC);
 static char *php_memc_zval_to_payload(zval *value, size_t *payload_len, uint32_t *flags, enum memcached_serializer serializer, enum memcached_compression_type compression_type TSRMLS_DC);
 static int php_memc_zval_from_payload(zval *value, char *payload, size_t payload_len, uint32_t flags, enum memcached_serializer serializer TSRMLS_DC);
@@ -385,11 +382,6 @@ static PHP_METHOD(Memcached, __construct)
 		is_persistent = 1;
 		plist_key_len = spprintf(&plist_key, 0, "memcached:id=%s", persistent_id);
 		plist_key_len += 1;
-
-		if (plist_key == NULL) {
-			php_error_docref(NULL TSRMLS_CC, E_ERROR, "out of memory: cannot allocate persistent list handler");
-			/* not reached */
-		}
 
 		if (zend_hash_find(&EG(persistent_list), plist_key, plist_key_len, (void *)&le) == SUCCESS) {
 			if (le->type == php_memc_list_entry()) {
@@ -2898,11 +2890,6 @@ my_error:
 		efree(payload);
 	}
 	return -1;
-}
-
-static int php_memc_list_entry(void)
-{
-	return le_memc;
 }
 
 static void php_memc_init_globals(zend_php_memcached_globals *php_memcached_globals_p TSRMLS_DC)
