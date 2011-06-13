@@ -350,6 +350,13 @@ static zend_bool php_memcached_on_new_callback(zval *object, zend_fcall_info *fc
 	return 1;
 }
 
+static int le_memc, le_memc_sess;
+
+static int php_memc_list_entry(void)
+{
+	return le_memc;
+}
+
 /* {{{ Memcached::__construct([string persistent_id[, callback on_new]]))
    Creates a Memcached object, optionally using persistent memcache connection */
 static PHP_METHOD(Memcached, __construct)
@@ -2444,6 +2451,16 @@ ZEND_RSRC_DTOR_FUNC(php_memc_dtor)
 		rsrc->ptr = NULL;
 	}
 }
+
+ZEND_RSRC_DTOR_FUNC(php_memc_sess_dtor)
+{
+	if (rsrc->ptr) {
+		memcached_sess *memc_sess = (memcached_sess *)rsrc->ptr;
+		memcached_free(memc_sess->memc_sess);
+		pefree(rsrc->ptr, 1);
+		rsrc->ptr = NULL;
+	}
+}
 /* }}} */
 
 /* {{{ internal API functions */
@@ -3447,8 +3464,13 @@ zend_module_entry memcached_module_entry = {
 	NULL,
 	PHP_MINIT(memcached),
 	PHP_MSHUTDOWN(memcached),
+#if HAVE_MEMCACHED_SASL
 	PHP_RINIT(memcached),
 	PHP_RSHUTDOWN(memcached),
+#else
+	NULL,
+	NULL,
+#endif
 	PHP_MINFO(memcached),
 	PHP_MEMCACHED_VERSION,
 	STANDARD_MODULE_PROPERTIES
@@ -3619,26 +3641,30 @@ static void php_memc_register_constants(INIT_FUNC_ARGS)
 }
 /* }}} */
 
+#if HAVE_MEMCACHED_SASL
 PHP_RINIT_FUNCTION(memcached)
 {
-#if HAVE_MEMCACHED_SASL
 	if (MEMC_G(use_sasl)) {
 		if (sasl_client_init(NULL) != SASL_OK) {
 			php_error_docref(NULL TSRMLS_CC, E_ERROR, "Failed to initialize SASL library");
 		}
 	}
-#endif
 	return SUCCESS;
 }
 
 PHP_RSHUTDOWN_FUNCTION(memcached)
 {
-#if HAVE_MEMCACHED_SASL
 	if (MEMC_G(use_sasl)) {
 		sasl_done();
 	}
-#endif
+
 	return SUCCESS;
+}
+#endif
+
+int php_memc_sess_list_entry(void)
+{
+	return le_memc_sess;
 }
 
 /* {{{ PHP_MINIT_FUNCTION */
@@ -3650,6 +3676,7 @@ PHP_MINIT_FUNCTION(memcached)
 	memcached_object_handlers.clone_obj = NULL;
 
 	le_memc = zend_register_list_destructors_ex(NULL, php_memc_dtor, "Memcached persistent connection", module_number);
+	le_memc_sess = zend_register_list_destructors_ex(NULL, php_memc_sess_dtor, "Memcached  Sessions persistent connection", module_number);
 
 	INIT_CLASS_ENTRY(ce, "Memcached", memcached_class_methods);
 	memcached_ce = zend_register_internal_class(&ce TSRMLS_CC);

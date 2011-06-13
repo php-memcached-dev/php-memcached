@@ -98,15 +98,14 @@ PHP_MINFO_FUNCTION(memcached);
 #define MEMC_G(v) (php_memcached_globals.v)
 #endif
 
-static int le_memc;
+typedef struct {
+	memcached_st *memc_sess;
+	zend_bool is_persisent;
+} memcached_sess;
 
-static int php_memc_list_entry(void)
-{
-	return le_memc;
-}
+int php_memc_sess_list_entry(void);
 
 #endif /* PHP_MEMCACHED_H */
-
 
 /*
  * Local variables:
