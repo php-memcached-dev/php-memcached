@@ -17,6 +17,9 @@ PHP_ARG_ENABLE(memcached-igbinary, whether to enable memcached igbinary serializ
 PHP_ARG_ENABLE(memcached-json, whether to enable memcached json serializer support,
 [  --enable-memcached-json          Enable memcached json serializer support], no, no)
 
+PHP_ARG_ENABLE(memcached-sasl, whether to disable memcached sasl support,
+[  --disable-memcached-sasl          Disable memcached sasl support], no, no)
+
 if test -z "$PHP_ZLIB_DIR"; then
 PHP_ARG_WITH(zlib-dir, for ZLIB,
 [  --with-zlib-dir[=DIR]   Set the path to ZLIB install prefix.], no)
@@ -226,10 +229,12 @@ if test "$PHP_MEMCACHED" != "no"; then
       fi
     done
   fi
-  
-  AC_CHECK_HEADERS([sasl/sasl.h], [memcached_enable_sasl="yes"], [memcached_enable_sasl="no"])
-  AC_MSG_CHECKING([whether to enable sasl support])
-  AC_MSG_RESULT([$memcached_enable_sasl])
+
+  if test "$PHP_MEMCACHED_SASL" != "no"; then
+    AC_CHECK_HEADERS([sasl/sasl.h], [memcached_enable_sasl="yes"], [memcached_enable_sasl="no"])
+    AC_MSG_CHECKING([whether to enable sasl support])
+    AC_MSG_RESULT([$memcached_enable_sasl])
+  fi
 
   AC_MSG_CHECKING([for libmemcached location])
   if test "$PHP_LIBMEMCACHED_DIR" = "no"; then
