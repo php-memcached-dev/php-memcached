@@ -371,7 +371,7 @@ static PHP_METHOD(Memcached, __construct)
 	char *plist_key = NULL;
 	int plist_key_len = 0;
 
-	zend_fcall_info fci;
+	zend_fcall_info fci = {0};
 	zend_fcall_info_cache fci_cache;
 
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|s!f!s", &persistent_id, &persistent_id_len, &fci, &fci_cache, &conn_str, &conn_str_len) == FAILURE) {
