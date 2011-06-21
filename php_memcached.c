@@ -357,15 +357,15 @@ static int php_memc_list_entry(void)
 	return le_memc;
 }
 
-/* {{{ Memcached::__construct([string persistent_id[, callback on_new]]))
+/* {{{ Memcached::__construct([string persistent_id[, callback on_new[, string connection_str]]]))
    Creates a Memcached object, optionally using persistent memcache connection */
 static PHP_METHOD(Memcached, __construct)
 {
 	zval *object = getThis();
 	php_memc_t *i_obj;
 	struct memc_obj *m_obj = NULL;
-	char *persistent_id = NULL;
-	int persistent_id_len;
+	char *persistent_id = NULL, *conn_str = NULL;
+	int persistent_id_len, conn_str_len;
 	zend_bool is_persistent = 0;
 
 	char *plist_key = NULL;
@@ -374,8 +374,7 @@ static PHP_METHOD(Memcached, __construct)
 	zend_fcall_info fci;
 	zend_fcall_info_cache fci_cache;
 
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|s!f", &persistent_id,
-		&persistent_id_len, &fci, &fci_cache) == FAILURE) {
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|s!f!s", &persistent_id, &persistent_id_len, &fci, &fci_cache, &conn_str, &conn_str_len) == FAILURE) {
 		ZVAL_NULL(object);
 		return;
 	}
@@ -403,16 +402,36 @@ static PHP_METHOD(Memcached, __construct)
 	if (!m_obj) {
 		m_obj = pecalloc(1, sizeof(*m_obj), is_persistent);
 		if (m_obj == NULL) {
-			efree(plist_key);
+			if (plist_key) {
+				efree(plist_key);
+			}
 			php_error_docref(NULL TSRMLS_CC, E_ERROR, "out of memory: cannot allocate handle");
 			/* not reached */
 		}
 
-		m_obj->memc = memcached_create(NULL);
-		if (m_obj->memc == NULL) {
-			efree(plist_key);
-			php_error_docref(NULL TSRMLS_CC, E_ERROR, "could not allocate libmemcached structure");
-			/* not reached */
+		if (conn_str) {
+			m_obj->memc = memcached(conn_str, conn_str_len);
+			if (!m_obj->memc) {
+				char error_buffer[1024];
+				if (plist_key) {
+					efree(plist_key);
+				}
+				if (libmemcached_check_configuration(conn_str, conn_str_len, error_buffer, sizeof(error_buffer)) != MEMCACHED_SUCCESS) {
+					php_error_docref(NULL TSRMLS_CC, E_ERROR, "configuration error %s", error_buffer);
+				} else {
+					php_error_docref(NULL TSRMLS_CC, E_ERROR, "could not allocate libmemcached structure");
+				}
+				/* not reached */
+			}
+		} else {
+			m_obj->memc = memcached_create(NULL);
+			if (m_obj->memc == NULL) {
+				if (plist_key) {
+					efree(plist_key);
+				}
+				php_error_docref(NULL TSRMLS_CC, E_ERROR, "could not allocate libmemcached structure");
+				/* not reached */
+			}
 		}
 
 		m_obj->serializer = MEMC_G(serializer);
@@ -422,10 +441,10 @@ static PHP_METHOD(Memcached, __construct)
 		i_obj->obj = m_obj;
 		i_obj->is_pristine = 1;
 
-		if (ZEND_NUM_ARGS() >= 2) {
+		if (fci.size) { /* will be 0 when not available */
 			if (!php_memcached_on_new_callback(object, &fci, &fci_cache, persistent_id, persistent_id_len TSRMLS_CC) || EG(exception)) {
 				/* error calling or exception thrown from callback */
-				if (plist_key != NULL) {
+				if (plist_key) {
 					efree(plist_key);
 				}
 
@@ -445,14 +464,16 @@ static PHP_METHOD(Memcached, __construct)
 			le.ptr = m_obj;
 			if (zend_hash_update(&EG(persistent_list), (char *)plist_key,
 				plist_key_len, (void *)&le, sizeof(le), NULL) == FAILURE) {
-				efree(plist_key);
+				if (plist_key) {
+					efree(plist_key);
+				}
 				php_error_docref(NULL TSRMLS_CC, E_ERROR, "could not register persistent entry");
 				/* not reached */
 			}
 		}
 	}
 
-	if (plist_key != NULL) {
+	if (plist_key) {
 		efree(plist_key);
 	}
 }
@@ -1638,6 +1659,7 @@ static void php_memc_incdec_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key,
 	memcached_return status;
 	int n_args = ZEND_NUM_ARGS();
 	uint32_t retry = 0;
+
 	MEMC_METHOD_INIT_VARS;
 
 	if (!by_key) {
@@ -3541,6 +3563,8 @@ static void php_memc_register_constants(INIT_FUNC_ARGS)
 	REGISTER_MEMC_CLASS_CONST_LONG(DISTRIBUTION_MODULA, MEMCACHED_DISTRIBUTION_MODULA);
 	REGISTER_MEMC_CLASS_CONST_LONG(DISTRIBUTION_CONSISTENT, MEMCACHED_DISTRIBUTION_CONSISTENT);
 	REGISTER_MEMC_CLASS_CONST_LONG(OPT_LIBKETAMA_COMPATIBLE, MEMCACHED_BEHAVIOR_KETAMA_WEIGHTED);
+	REGISTER_MEMC_CLASS_CONST_LONG(OPT_LIBKETAMA_HASH, MEMCACHED_BEHAVIOR_KETAMA_HASH);
+	REGISTER_MEMC_CLASS_CONST_LONG(OPT_TCP_KEEPALIVE, MEMCACHED_BEHAVIOR_TCP_KEEPALIVE);
 	REGISTER_MEMC_CLASS_CONST_LONG(OPT_BUFFER_WRITES, MEMCACHED_BEHAVIOR_BUFFER_REQUESTS);
 	REGISTER_MEMC_CLASS_CONST_LONG(OPT_BINARY_PROTOCOL, MEMCACHED_BEHAVIOR_BINARY_PROTOCOL);
 	REGISTER_MEMC_CLASS_CONST_LONG(OPT_NO_BLOCK, MEMCACHED_BEHAVIOR_NO_BLOCK);
