@@ -5,6 +5,23 @@ Version *******
 	* Add OPT_REMOVE_FAILED_SERVERS option.
 	* Make it work with libmemcached up to 0.49.
 	* Fix a case where invalid session ID could lock the script.
+	* Session Support
+		- Added support for libmemcached config string
+		- Added persistence support via PERSISTENT=persistent_id prefix
+		  of the save_path
+		- Optimized code by removing unnecessary allocation
+	* Added 3rd parameter to the __construct() that allows specification
+	  of libmemcached configuration string
+	* Fixed a possible crash in __construct() when using persistent
+	  connections
+	* Added work-around a bug in libmemcached < 0.5 that causes truncation
+	  of last character of server key prefix
+	* When using multiple servers implement transparent fail-over
+	* Fixed php_memc_cas_impl() implementation when server_key is not being used
+	* Optimize set* operations for scalar values
+	* Added support for incrementByKey() and decrementByKey()
+	* When using binary protocol allow increment/decrement to initialize value
+	  when it is not available.
 
 Version 2.0.0b1
 ---------------
