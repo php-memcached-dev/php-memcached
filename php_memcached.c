@@ -1129,7 +1129,7 @@ PHP_METHOD(Memcached, setMultiByKey)
 /* }}} */
 
 #define PHP_MEMC_FAILOVER_RETRY	\
-	if (by_key && retry < 2) {	\
+	if (!by_key && retry < 2) {	\
 		switch (i_obj->rescode) {	\
 			case MEMCACHED_HOST_LOOKUP_FAILURE:	\
 			case MEMCACHED_CONNECTION_FAILURE:	\
