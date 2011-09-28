@@ -1212,12 +1212,12 @@ static void php_memc_setMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 			RETURN_FALSE;
 		}
 
-		if (!by_key) {
-			server_key     = str_key;
-			server_key_len = str_key_len-1;
-		}
 retry:
-		status = memcached_set_by_key(m_obj->memc, server_key, server_key_len, str_key, str_key_len-1, payload, payload_len, expiration, flags);
+		if (!by_key) {
+			status = memcached_set(m_obj->memc, str_key, str_key_len-1, payload, payload_len, expiration, flags);
+		} else {
+			status = memcached_set_by_key(m_obj->memc, server_key, server_key_len, str_key, str_key_len-1, payload, payload_len, expiration, flags);
+		}
 
 		if (php_memc_handle_error(i_obj, status TSRMLS_CC) < 0) {
 			PHP_MEMC_FAILOVER_RETRY
