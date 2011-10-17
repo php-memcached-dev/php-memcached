@@ -168,6 +168,8 @@ if test "$PHP_MEMCACHED" != "no"; then
       igbinary_inc_path="$abs_srcdir"
     elif test -f "$phpincludedir/ext/session/igbinary.h"; then
       igbinary_inc_path="$phpincludedir"
+    elif test -f "$phpincludedir/ext/igbinary/igbinary.h"; then
+      igbinary_inc_path="$phpincludedir"
     else
       for i in php php4 php5 php6; do
         if test -f "$prefix/include/$i/ext/igbinary/igbinary.h"; then
