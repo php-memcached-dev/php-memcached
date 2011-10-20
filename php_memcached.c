@@ -1938,6 +1938,40 @@ PHP_METHOD(Memcached, getServerByKey)
 }
 /* }}} */
 
+/* {{{ Memcached::resetServerList()
+   Reset the server list in use */
+PHP_METHOD(Memcached, resetServerList)
+{
+    MEMC_METHOD_INIT_VARS;
+
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "") == FAILURE) {
+		return;
+	}
+
+    MEMC_METHOD_FETCH_OBJECT;
+
+    memcached_servers_reset(m_obj->memc);
+    RETURN_TRUE;
+}
+/* }}} */
+
+/* {{{ Memcached::quit()
+   Close any open connections */
+PHP_METHOD(Memcached, quit)
+{
+    MEMC_METHOD_INIT_VARS;
+
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "") == FAILURE) {
+		return;
+	}
+
+    MEMC_METHOD_FETCH_OBJECT;
+
+    memcached_quit(m_obj->memc);
+    RETURN_TRUE;
+}
+/* }}} */
+
 /* {{{ Memcached::getStats()
    Returns statistics for the memcache servers */
 PHP_METHOD(Memcached, getStats)
@@ -3357,6 +3391,12 @@ ZEND_END_ARG_INFO()
 ZEND_BEGIN_ARG_INFO(arginfo_getServerList, 0)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO(arginfo_resetServerList, 0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO(arginfo_quit, 0)
+ZEND_END_ARG_INFO()
+
 ZEND_BEGIN_ARG_INFO(arginfo_getServerByKey, 0)
 	ZEND_ARG_INFO(0, server_key)
 ZEND_END_ARG_INFO()
@@ -3441,6 +3481,8 @@ static zend_function_entry memcached_class_methods[] = {
 	MEMC_ME(addServers,         arginfo_addServers)
 	MEMC_ME(getServerList,      arginfo_getServerList)
 	MEMC_ME(getServerByKey,     arginfo_getServerByKey)
+    MEMC_ME(resetServerList,    arginfo_resetServerList)
+    MEMC_ME(quit,               arginfo_quit)
 
 	MEMC_ME(getStats,           arginfo_getStats)
 	MEMC_ME(getVersion,         arginfo_getVersion)
