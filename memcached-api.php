@@ -201,6 +201,10 @@ class Memcached {
 
 	public function set( $key, $value, $expiration = 0 ) {}
 
+    public function touch( $key, $expiration = 0 ) {}
+
+    public function touchbyKey( $key, $expiration = 0 ) {}
+
 	public function setByKey( $server_key, $key, $value, $expiration = 0 ) {}
 
 	public function setMulti( array $items, $expiration = 0 ) {}
