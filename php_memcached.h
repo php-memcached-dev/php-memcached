@@ -61,6 +61,7 @@ enum memcached_serializer {
 ZEND_BEGIN_MODULE_GLOBALS(php_memcached)
 #ifdef HAVE_MEMCACHED_SESSION
 	zend_bool sess_locking_enabled;
+	zend_bool sess_binary_enabled;
 	long  sess_lock_wait;
 	char* sess_prefix;
 	zend_bool sess_locked;

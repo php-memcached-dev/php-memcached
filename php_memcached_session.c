@@ -188,6 +188,14 @@ success:
 				}
 				efree(plist_key);
 			}
+
+			if (MEMC_G(sess_binary_enabled)) {
+				if (memcached_behavior_set(memc_sess->memc_sess, MEMCACHED_BEHAVIOR_BINARY_PROTOCOL, (uint64_t) 1) == MEMCACHED_FAILURE) {
+					php_error_docref(NULL TSRMLS_CC, E_WARNING, "failed to set memcached session binary protocol");
+					return FAILURE;
+				}
+			}
+
 			return SUCCESS;
 		}
 	}
