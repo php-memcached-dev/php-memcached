@@ -78,6 +78,7 @@ ZEND_BEGIN_MODULE_GLOBALS(php_memcached)
 #if HAVE_MEMCACHED_SASL
 	bool use_sasl;
 #endif
+	zend_bool sess_binary_enabled;
 ZEND_END_MODULE_GLOBALS(php_memcached)
 
 PHP_MEMCACHED_API zend_class_entry *php_memc_get_ce(void);
