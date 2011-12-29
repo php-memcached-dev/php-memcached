@@ -48,7 +48,7 @@ static int php_memc_sess_lock(memcached_st *memc, const char *key TSRMLS_DC)
 {
 	char *lock_key = NULL;
 	int lock_key_len = 0;
-	long attempts;
+	unsigned long attempts;
 	long lock_maxwait;
 	long lock_wait = MEMC_G(sess_lock_wait);
 	time_t expiration;
@@ -63,7 +63,7 @@ static int php_memc_sess_lock(memcached_st *memc, const char *key TSRMLS_DC)
 		lock_wait = MEMC_SESS_DEFAULT_LOCK_WAIT;
 	}
 	expiration  = time(NULL) + lock_maxwait + 1;
-	attempts = lock_maxwait * 1000000 / lock_wait;
+	attempts = (unsigned long)((1000000.0 / lock_wait) * lock_maxwait);
 
 	lock_key_len = spprintf(&lock_key, 0, "lock.%s", key);
 	do {
@@ -121,7 +121,7 @@ error:
 		plist_key_len++;
 		if (zend_hash_find(&EG(persistent_list), plist_key, plist_key_len, (void *)&le) == SUCCESS) {
 			if (le->type == php_memc_sess_list_entry()) {
-				memc_sess = (struct memcached_sess *) le->ptr;
+				memc_sess = (memcached_sess *) le->ptr;
 				PS_SET_MOD_DATA(memc_sess);
 				return SUCCESS;
 			}
