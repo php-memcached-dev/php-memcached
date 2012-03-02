@@ -27,3 +27,4 @@ array(0) {
 NO SERVERS DEFINED
 array(0) {
 }
+3: CONNECTION FAILURE

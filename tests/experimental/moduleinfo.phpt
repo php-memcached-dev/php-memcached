@@ -23,7 +23,7 @@ memcached.compression_factor => %f => %f
 memcached.compression_threshold => %d => %d
 memcached.compression_type => %s => %s
 memcached.serializer => %s => %s
+memcached.sess_binary => %d => %d
 memcached.sess_lock_wait => %d => %d
 memcached.sess_locking => %d => %d
 memcached.sess_prefix => %s => %s
-memcached.use_sasl => %s => %s

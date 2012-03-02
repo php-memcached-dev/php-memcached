@@ -8,8 +8,8 @@ $m = new Memcached();
 $m->addServer('127.0.0.1', 11211, 1);
 
 $m_udp = new Memcached();
-$m_udp->setOption(Memcached::OPT_USE_UDP, true);
 $m_udp->addServer('127.0.0.1', 11211, 1);
+$m_udp->setOption(Memcached::OPT_USE_UDP, true);
 
 
 error_reporting(0);

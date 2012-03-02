@@ -13,8 +13,7 @@ $stats = $m->getVersion();
 var_dump($stats);
 
 --EXPECTF--
-array(0) {
-}
+bool(false)
 array(%d) {
   ["%s:%d"]=>
   string(%d) "%s"
