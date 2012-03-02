@@ -1,5 +1,13 @@
 memcached extension changelog
 
+Version 2.0.0
+-------------
+	* Add touch() and touchByKey() methods
+	* Add resetServerList() and quit() methods
+	* Support binary protocol in sessions
+	* Make it work with libmemcached up to 1.0.4
+	* Test against PHP 5.4.0
+
 Version 2.0.0b2
 ---------------
 	* Add OPT_REMOVE_FAILED_SERVERS option.
