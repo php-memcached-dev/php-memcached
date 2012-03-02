@@ -1114,6 +1114,7 @@ PHP_METHOD(Memcached, setByKey)
 }
 /* }}} */
 
+#if defined(LIBMEMCACHED_VERSION_HEX) && LIBMEMCACHED_VERSION_HEX >= 0x01000002
 /* {{{ Memcached::touch(string key, [, int expiration ])
    Sets a new expiration for the given key */
 PHP_METHOD(Memcached, touch)
@@ -1129,7 +1130,7 @@ PHP_METHOD(Memcached, touchByKey)
     php_memc_store_impl(INTERNAL_FUNCTION_PARAM_PASSTHRU, MEMC_OP_TOUCH, 1);
 }
 /* }}} */
-
+#endif
 
 
 /* {{{ Memcached::setMulti(array items [, int expiration ])
@@ -1398,15 +1399,17 @@ static void php_memc_store_impl(INTERNAL_FUNCTION_PARAMETERS, int op, zend_bool 
 		flags |= MEMC_VAL_COMPRESSED;
 	}
 
-	if (op == MEMC_OP_TOUCH && !memcached_behavior_get(m_obj->memc, MEMCACHED_BEHAVIOR_BINARY_PROTOCOL)) {
-		php_error_docref(NULL TSRMLS_CC, E_WARNING, "touch is only supported with binary protocol");
-		RETURN_FALSE;
-	}
-
-	payload = php_memc_zval_to_payload(value, &payload_len, &flags, m_obj->serializer, m_obj->compression_type TSRMLS_CC);
-	if (payload == NULL) {
-		i_obj->rescode = MEMC_RES_PAYLOAD_FAILURE;
-		RETURN_FALSE;
+	if (op == MEMC_OP_TOUCH) {
+		if (!memcached_behavior_get(m_obj->memc, MEMCACHED_BEHAVIOR_BINARY_PROTOCOL)) {
+			php_error_docref(NULL TSRMLS_CC, E_WARNING, "touch is only supported with binary protocol");
+			RETURN_FALSE;
+		}
+	} else {
+		payload = php_memc_zval_to_payload(value, &payload_len, &flags, m_obj->serializer, m_obj->compression_type TSRMLS_CC);
+		if (payload == NULL) {
+			i_obj->rescode = MEMC_RES_PAYLOAD_FAILURE;
+			RETURN_FALSE;
+		}
 	}
 retry:
 	switch (op) {
@@ -1477,7 +1480,10 @@ retry:
 	} else {
 		RETVAL_TRUE;
 	}
-	efree(payload);
+
+	if (op != MEMC_OP_TOUCH) {
+		efree(payload);
+	}
 }
 /* }}} */
 
@@ -2170,7 +2176,7 @@ static PHP_METHOD(Memcached, getOption)
 			char *result;
 
 			result = memcached_callback_get(m_obj->memc, MEMCACHED_CALLBACK_PREFIX_KEY, &retval);
-			if (retval == MEMCACHED_SUCCESS) {
+			if (retval == MEMCACHED_SUCCESS && result) {
 #if defined(LIBMEMCACHED_VERSION_HEX) && LIBMEMCACHED_VERSION_HEX < 0x00050000
 				RETURN_STRINGL(result, strlen(result) - 1,  1);
 #else
@@ -3511,8 +3517,10 @@ static zend_function_entry memcached_class_methods[] = {
 
 	MEMC_ME(set,                arginfo_set)
 	MEMC_ME(setByKey,           arginfo_setByKey)
+#if defined(LIBMEMCACHED_VERSION_HEX) && LIBMEMCACHED_VERSION_HEX >= 0x01000002
 	MEMC_ME(touch,              arginfo_touch)
 	MEMC_ME(touchByKey,         arginfo_touchByKey)
+#endif
 	MEMC_ME(setMulti,           arginfo_setMulti)
 	MEMC_ME(setMultiByKey,      arginfo_setMultiByKey)
 
