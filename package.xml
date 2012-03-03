@@ -15,10 +15,10 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <email>andrei@php.net</email>
   <active>yes</active>
  </lead>
- <date>2012-03-02</date>
+ <date>2012-03-03</date>
  <version>
-  <release>2.0.0</release>
-  <api>2.0.0</api>
+  <release>2.0.1</release>
+  <api>2.0.1</api>
  </version>
  <stability>
   <release>stable</release>
@@ -26,11 +26,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
  </stability>
  <license uri="http://www.php.net/license">PHP</license>
  <notes>
-- Add touch() and touchByKey() methods
-- Add resetServerList() and quit() methods
-- Support binary protocol in sessions
-- Make it work with libmemcached up to 1.0.4
-- Test against PHP 5.4.0
+- Fix embedded version number to be not -dev
  </notes>
  <contents>
   <dir name="/">
@@ -69,6 +65,15 @@ http://pear.php.net/dtd/package-2.0.xsd">
  <providesextension>memcached</providesextension>
  <extsrcrelease/>
  <changelog>
+   <release>
+   <stability><release>stable</release><api>stable</api></stability>
+   <version><release>2.0.1</release><api>2.0.1</api></version>
+   <date>2012-03-03</date>
+   <notes>
+- Fix embedded version number to be not -dev
+   </notes>
+  </release>
+
    <release>
    <stability><release>stable</release><api>stable</api></stability>
    <version><release>2.0.0</release><api>2.0.0</api></version>

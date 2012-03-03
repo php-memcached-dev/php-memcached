@@ -1,5 +1,9 @@
 memcached extension changelog
 
+Version 2.0.1
+-------------
+	* Fix embedded version number to be not -dev
+
 Version 2.0.0
 -------------
 	* Add touch() and touchByKey() methods
