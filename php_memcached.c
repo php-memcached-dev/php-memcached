@@ -172,6 +172,12 @@ typedef unsigned long int uint32_t;
 
 #define RETURN_FROM_GET RETURN_FALSE
 
+#if (PHP_MAJOR_VERSION == 5) && (PHP_MINOR_VERSION < 3)
+#define zend_parse_parameters_none()                                        \
+	    zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "")
+#endif
+
+
 /****************************************
   Structures and definitions
 ****************************************/
