@@ -2333,6 +2333,99 @@ static int php_memc_set_option(php_memc_t *i_obj, long option, zval *value TSRML
 	return 1;
 }
 
+/* {{{ Memcached::setBucket(array host_map, array forward_map, long buckets, long replicas)
+   Sets the memcached virtual buckets */
+
+PHP_METHOD(Memcached, setBucket)
+{
+	zval *host_map;
+	zval *forward_map;
+	long buckets;
+	long replicas;
+	
+	uint32_t *hm = NULL,*fm = NULL;
+	zend_bool ok = 1;
+	uint key_len;
+	char *key;
+	ulong key_index;
+	zval **value;
+	MEMC_METHOD_INIT_VARS;
+	
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "aa!ll", &host_map, &forward_map, &buckets, &replicas) == FAILURE) {
+		return;
+	}
+	
+	
+	hm = (uint32_t*)malloc(buckets * sizeof(uint32_t));
+	
+	int i = 0;
+	for (zend_hash_internal_pointer_reset(Z_ARRVAL_P(host_map));
+		zend_hash_get_current_data(Z_ARRVAL_P(host_map), (void *) &value) == SUCCESS;
+		zend_hash_move_forward(Z_ARRVAL_P(host_map))) {
+		
+		if (i < buckets) {
+			if (zend_hash_get_current_key_ex(Z_ARRVAL_P(host_map), &key, &key_len, &key_index, 0, NULL) == HASH_KEY_IS_LONG) {
+				zval copy = **value;
+				zval_copy_ctor(&copy);
+				INIT_PZVAL(&copy);
+				convert_to_long(&copy);
+				hm[i] = Z_LVAL_P(&copy);
+				++i;
+				zval_dtor(&copy);
+			} else {
+				php_error_docref(NULL TSRMLS_CC, E_WARNING, "invalid configuration option");
+				ok = 0;
+			}
+		} else {
+			php_error_docref(NULL TSRMLS_CC, E_WARNING, "array size mismatch");
+			ok = 0;
+			break;
+		}
+	}
+
+	if (i != buckets) {
+		php_error_docref(NULL TSRMLS_CC, E_WARNING, "array size mismatch");
+		ok = 0;
+	}
+
+	i = 0;
+	if (ok != 0 && forward_map != NULL) {
+		fm = (uint32_t*)malloc(buckets * sizeof(uint32_t));	
+		for (zend_hash_internal_pointer_reset(Z_ARRVAL_P(forward_map));
+			 zend_hash_get_current_data(Z_ARRVAL_P(forward_map), (void *) &value) == SUCCESS;
+			 zend_hash_move_forward(Z_ARRVAL_P(forward_map))) {
+
+			if (i < buckets) {
+				if (zend_hash_get_current_key_ex(Z_ARRVAL_P(forward_map), &key, &key_len, &key_index, 0, NULL) == HASH_KEY_IS_LONG) {
+					zval copy = **value;
+					zval_copy_ctor(&copy);
+					INIT_PZVAL(&copy);
+					
+					convert_to_long(&copy);
+					fm[i] = Z_LVAL_P(&copy);
+					++i;
+					zval_dtor(&copy);
+				} else {
+					php_error_docref(NULL TSRMLS_CC, E_WARNING, "invalid configuration option");
+					ok = 0;
+				}
+			} else {
+				php_error_docref(NULL TSRMLS_CC, E_WARNING, "array size mismatch");
+				ok = 0;
+			}
+		}
+	}
+	
+	MEMC_METHOD_FETCH_OBJECT;
+	
+	memcached_bucket_set(m_obj->memc, hm, fm, buckets, replicas);
+	free(hm);
+	free(fm);
+	RETURN_BOOL(ok);
+	
+}
+/* }}} */
+
 /* {{{ Memcached::setOptions(array options)
    Sets the value for the given option constant */
 static PHP_METHOD(Memcached, setOptions)
@@ -3482,6 +3575,13 @@ ZEND_BEGIN_ARG_INFO(arginfo_setOptions, 0)
 	ZEND_ARG_INFO(0, options)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO(arginfo_setBucket, 0)
+	ZEND_ARG_INFO(0, host_map)
+	ZEND_ARG_INFO(0, forward_map)
+	ZEND_ARG_INFO(0, buckets)
+	ZEND_ARG_INFO(0, replicas)
+ZEND_END_ARG_INFO()
+
 ZEND_BEGIN_ARG_INFO(arginfo_getStats, 0)
 ZEND_END_ARG_INFO()
 
@@ -3560,6 +3660,7 @@ static zend_function_entry memcached_class_methods[] = {
 	MEMC_ME(getOption,          arginfo_getOption)
 	MEMC_ME(setOption,          arginfo_setOption)
 	MEMC_ME(setOptions,         arginfo_setOptions)
+	MEMC_ME(setBucket, 			arginfo_setBucket)
 #ifdef HAVE_MEMCACHED_SASL
     MEMC_ME(setSaslAuthData,    arginfo_setSaslAuthData)
 #endif
@@ -3675,6 +3776,7 @@ static void php_memc_register_constants(INIT_FUNC_ARGS)
 	REGISTER_MEMC_CLASS_CONST_LONG(OPT_DISTRIBUTION, MEMCACHED_BEHAVIOR_DISTRIBUTION);
 	REGISTER_MEMC_CLASS_CONST_LONG(DISTRIBUTION_MODULA, MEMCACHED_DISTRIBUTION_MODULA);
 	REGISTER_MEMC_CLASS_CONST_LONG(DISTRIBUTION_CONSISTENT, MEMCACHED_DISTRIBUTION_CONSISTENT);
+	REGISTER_MEMC_CLASS_CONST_LONG(DISTRIBUTION_VIRTUAL_BUCKET, MEMCACHED_DISTRIBUTION_VIRTUAL_BUCKET);
 	REGISTER_MEMC_CLASS_CONST_LONG(OPT_LIBKETAMA_COMPATIBLE, MEMCACHED_BEHAVIOR_KETAMA_WEIGHTED);
 	REGISTER_MEMC_CLASS_CONST_LONG(OPT_LIBKETAMA_HASH, MEMCACHED_BEHAVIOR_KETAMA_HASH);
 	REGISTER_MEMC_CLASS_CONST_LONG(OPT_TCP_KEEPALIVE, MEMCACHED_BEHAVIOR_TCP_KEEPALIVE);
