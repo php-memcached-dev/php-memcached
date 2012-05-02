@@ -2522,7 +2522,7 @@ PS_WRITE_FUNC(memcached)
 	memcached_st *memc_sess = PS_GET_MOD_DATA();
 
 	sess_key_len = spprintf(&sess_key, 0, "memc.sess.key.%s", key);
-	sess_lifetime = zend_ini_long(ZEND_STRL("session.gc_maxlifetime"), 0);
+	sess_lifetime = zend_ini_long("session.gc_maxlifetime", sizeof("session.gc_maxlifetime"), 0);
 	if (sess_lifetime > 0) {
 		expiration = time(NULL) + sess_lifetime;
 	} else {
