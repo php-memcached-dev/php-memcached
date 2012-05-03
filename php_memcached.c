@@ -1986,12 +1986,6 @@ PHP_METHOD(Memcached, getServerByKey)
 	add_assoc_string(return_value, "host", server->hostname, 1);
 	add_assoc_long(return_value, "port", server->port);
 	add_assoc_long(return_value, "weight", server->weight);
-
-	/* memcached_server_add(3) states that the server instance is cloned. */
-	/* In actuality it is not, possibly a bug in libmemcached 0.40. */
-	/* remove server freeing */
-
-	/* memcached_server_free(server); */
 }
 /* }}} */
 
