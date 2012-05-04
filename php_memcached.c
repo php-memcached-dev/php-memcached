@@ -2418,7 +2418,11 @@ PHP_METHOD(Memcached, setBucket)
 	
 	MEMC_METHOD_FETCH_OBJECT;
 	
-	memcached_bucket_set(m_obj->memc, hm, fm, buckets, replicas);
+	if (memcached_bucket_set(m_obj->memc, hm, fm, buckets, replicas) != MEMCACHED_SUCCESS)
+	{
+		ok = 0;
+		php_error_docref(NULL TSRMLS_CC, E_WARNING,"memcached_bucket_set don't returned MEMCACHED_SUCCESS");
+	}
 	free(hm);
 	free(fm);
 	RETURN_BOOL(ok);
