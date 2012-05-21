@@ -172,6 +172,12 @@ typedef unsigned long int uint32_t;
 
 #define RETURN_FROM_GET RETURN_FALSE
 
+#if (PHP_MAJOR_VERSION == 5) && (PHP_MINOR_VERSION < 3)
+#define zend_parse_parameters_none()                                        \
+	    zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "")
+#endif
+
+
 /****************************************
   Structures and definitions
 ****************************************/
@@ -1980,12 +1986,6 @@ PHP_METHOD(Memcached, getServerByKey)
 	add_assoc_string(return_value, "host", server->hostname, 1);
 	add_assoc_long(return_value, "port", server->port);
 	add_assoc_long(return_value, "weight", server->weight);
-
-	/* memcached_server_add(3) states that the server instance is cloned. */
-	/* In actuality it is not, possibly a bug in libmemcached 0.40. */
-	/* remove server freeing */
-
-	/* memcached_server_free(server); */
 }
 /* }}} */
 
@@ -3780,7 +3780,9 @@ static void php_memc_register_constants(INIT_FUNC_ARGS)
 	REGISTER_MEMC_CLASS_CONST_LONG(OPT_DISTRIBUTION, MEMCACHED_BEHAVIOR_DISTRIBUTION);
 	REGISTER_MEMC_CLASS_CONST_LONG(DISTRIBUTION_MODULA, MEMCACHED_DISTRIBUTION_MODULA);
 	REGISTER_MEMC_CLASS_CONST_LONG(DISTRIBUTION_CONSISTENT, MEMCACHED_DISTRIBUTION_CONSISTENT);
+#if defined(LIBMEMCACHED_VERSION_HEX) && LIBMEMCACHED_VERSION_HEX >= 0x00049000
 	REGISTER_MEMC_CLASS_CONST_LONG(DISTRIBUTION_VIRTUAL_BUCKET, MEMCACHED_DISTRIBUTION_VIRTUAL_BUCKET);
+#endif
 	REGISTER_MEMC_CLASS_CONST_LONG(OPT_LIBKETAMA_COMPATIBLE, MEMCACHED_BEHAVIOR_KETAMA_WEIGHTED);
 	REGISTER_MEMC_CLASS_CONST_LONG(OPT_LIBKETAMA_HASH, MEMCACHED_BEHAVIOR_KETAMA_HASH);
 	REGISTER_MEMC_CLASS_CONST_LONG(OPT_TCP_KEEPALIVE, MEMCACHED_BEHAVIOR_TCP_KEEPALIVE);
