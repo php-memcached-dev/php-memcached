@@ -30,7 +30,6 @@
 #include <zend_exceptions.h>
 #include <ext/standard/php_smart_str.h>
 #include <ext/standard/php_var.h>
-#include <libmemcached/memcached.h>
 
 #include "php_memcached.h"
 #include "php_memcached_session.h"

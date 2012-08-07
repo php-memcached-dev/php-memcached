@@ -19,7 +19,7 @@
 #ifndef PHP_MEMCACHED_H
 #define PHP_MEMCACHED_H
 
-#include <libmemcached/memcached.h>
+#include "php_libmemcached_compat.h"
 
 #ifdef HAVE_CONFIG_H
 # include "config.h"
@@ -91,7 +91,7 @@ PHP_MINIT_FUNCTION(memcached);
 PHP_MSHUTDOWN_FUNCTION(memcached);
 PHP_MINFO_FUNCTION(memcached);
 
-#define PHP_MEMCACHED_VERSION "2.0.1"
+#define PHP_MEMCACHED_VERSION "2.1.0"
 
 #ifdef ZTS
 #define MEMC_G(v) TSRMG(php_memcached_globals_id, zend_php_memcached_globals *, v)

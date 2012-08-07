@@ -216,11 +216,16 @@ if test "$PHP_MEMCACHED" != "no"; then
     AC_MSG_RESULT([disabled])
   fi
 
+  if test "$PHP_MEMCACHED_SASL" != "no"; then
+    AC_CHECK_HEADERS([sasl/sasl.h], [memcached_enable_sasl="yes"], [memcached_enable_sasl="no"])
+    AC_MSG_CHECKING([whether to enable sasl support])
+    AC_MSG_RESULT([$memcached_enable_sasl])
+  fi
+
+  AC_MSG_CHECKING([for libmemcached location])
   if test "$PHP_LIBMEMCACHED_DIR" != "no" && test "$PHP_LIBMEMCACHED_DIR" != "yes"; then
-    if test -r "$PHP_LIBMEMCACHED_DIR/include/libmemcached/memcached.h"; then
-      PHP_LIBMEMCACHED_DIR="$PHP_LIBMEMCACHED_DIR"
-    else
-      AC_MSG_ERROR([Can't find libmemcached headers under "$PHP_LIBMEMCACHED_DIR"])
+    if ! test -r "$PHP_LIBMEMCACHED_DIR/include/libmemcached-1.0/memcached.h"; then
+      AC_MSG_ERROR([Can't find libmemcached 1.0.x headers under "$PHP_LIBMEMCACHED_DIR"])
     fi
   else
     PHP_LIBMEMCACHED_DIR="no"
@@ -232,17 +237,11 @@ if test "$PHP_MEMCACHED" != "no"; then
     done
   fi
 
-  if test "$PHP_MEMCACHED_SASL" != "no"; then
-    AC_CHECK_HEADERS([sasl/sasl.h], [memcached_enable_sasl="yes"], [memcached_enable_sasl="no"])
-    AC_MSG_CHECKING([whether to enable sasl support])
-    AC_MSG_RESULT([$memcached_enable_sasl])
-  fi
-
-  AC_MSG_CHECKING([for libmemcached location])
   if test "$PHP_LIBMEMCACHED_DIR" = "no"; then
-    AC_MSG_ERROR([memcached support requires libmemcached. Use --with-libmemcached-dir=<DIR> to specify the prefix where libmemcached headers and library are located])
+    AC_MSG_ERROR([memcached support requires libmemcached 1.0.x. Use --with-libmemcached-dir=<DIR> to specify the prefix where libmemcached headers and library are located])
   else
     AC_MSG_RESULT([$PHP_LIBMEMCACHED_DIR])
+
     PHP_LIBMEMCACHED_INCDIR="$PHP_LIBMEMCACHED_DIR/include"
     PHP_ADD_INCLUDE($PHP_LIBMEMCACHED_INCDIR)
     PHP_ADD_LIBRARY_WITH_PATH(memcached, $PHP_LIBMEMCACHED_DIR/$PHP_LIBDIR, MEMCACHED_SHARED_LIBADD)

@@ -43,9 +43,7 @@
 #include <ext/standard/php_smart_str.h>
 #include <ext/standard/php_var.h>
 #include <ext/standard/basic_functions.h>
-#include <libmemcached/memcached.h>
 
-#include "php_libmemcached_compat.h"
 #include "php_memcached.h"
 #include "g_fmt.h"
 
@@ -2582,9 +2580,12 @@ static memcached_return php_memc_do_serverlist_callback(const memcached_st *ptr,
 
 	MAKE_STD_ZVAL(array);
 	array_init(array);
-	add_assoc_string(array, "host", instance->hostname, 1);
-	add_assoc_long(array, "port", instance->port);
+	add_assoc_string(array, "host", memcached_server_name(instance), 1);
+	add_assoc_long(array, "port", memcached_server_port(instance));
+	/*
+	 * API does not allow to get at this field.
 	add_assoc_long(array, "weight", instance->weight);
+	 */
 	add_next_index_zval(context->return_value, array);
 	return MEMCACHED_SUCCESS;
 }
@@ -2595,7 +2596,7 @@ static memcached_return php_memc_do_stats_callback(const memcached_st *ptr, memc
 	int hostport_len;
 	struct callbackContext* context = (struct callbackContext*) in_context;
 	zval *entry;
-	hostport_len = spprintf(&hostport, 0, "%s:%d", instance->hostname, instance->port);
+	hostport_len = spprintf(&hostport, 0, "%s:%d", memcached_server_name(instance), memcached_server_port(instance));
 
 	MAKE_STD_ZVAL(entry);
 	array_init(entry);
@@ -2640,10 +2641,11 @@ static memcached_return php_memc_do_version_callback(const memcached_st *ptr, me
 	int hostport_len, version_len;
 	struct callbackContext* context = (struct callbackContext*) in_context;
 
-	hostport_len = spprintf(&hostport, 0, "%s:%d", instance->hostname, instance->port);
+	hostport_len = spprintf(&hostport, 0, "%s:%d", memcached_server_name(instance), memcached_server_port(instance));
 	version_len = snprintf(version, sizeof(version), "%d.%d.%d",
-				instance->major_version, instance->minor_version,
-				instance->micro_version);
+				memcached_server_major_version(instance),
+				memcached_server_minor_version(instance),
+				memcached_server_micro_version(instance));
 
 	add_assoc_stringl_ex(context->return_value, hostport, hostport_len+1, version, version_len, 1);
 	efree(hostport);
