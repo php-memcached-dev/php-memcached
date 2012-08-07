@@ -15,10 +15,10 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <email>andrei@php.net</email>
   <active>yes</active>
  </lead>
- <date>2012-03-03</date>
+ <date>2012-08-06</date>
  <version>
-  <release>2.0.1</release>
-  <api>2.0.1</api>
+  <release>2.1.0</release>
+  <api>2.1.0</api>
  </version>
  <stability>
   <release>stable</release>
@@ -26,7 +26,9 @@ http://pear.php.net/dtd/package-2.0.xsd">
  </stability>
  <license uri="http://www.php.net/license">PHP</license>
  <notes>
-- Fix embedded version number to be not -dev
+- Drop support for libmemcached 0.x series, now 1.0.x is required
+- Add support for virtual bucket distribution
+- Fix compilation against PHP 5.2
  </notes>
  <contents>
   <dir name="/">
@@ -65,6 +67,17 @@ http://pear.php.net/dtd/package-2.0.xsd">
  <providesextension>memcached</providesextension>
  <extsrcrelease/>
  <changelog>
+   <release>
+   <stability><release>stable</release><api>stable</api></stability>
+   <version><release>2.1.0</release><api>2.1.0</api></version>
+   <date>2012-08-06</date>
+   <notes>
+- Drop support for libmemcached 0.x series, now 1.0.x is required
+- Add support for virtual bucket distribution
+- Fix compilation against PHP 5.2
+   </notes>
+  </release>
+
    <release>
    <stability><release>stable</release><api>stable</api></stability>
    <version><release>2.0.1</release><api>2.0.1</api></version>
