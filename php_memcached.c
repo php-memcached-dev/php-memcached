@@ -2643,9 +2643,15 @@ static memcached_return php_memc_do_version_callback(const memcached_st *ptr, me
 
 	hostport_len = spprintf(&hostport, 0, "%s:%d", memcached_server_name(instance), memcached_server_port(instance));
 	version_len = snprintf(version, sizeof(version), "%d.%d.%d",
+#ifdef HAVE_MEMCACHED_SERVER_VERSION
 				memcached_server_major_version(instance),
 				memcached_server_minor_version(instance),
 				memcached_server_micro_version(instance));
+#else
+				instance->major_version,
+				instance->minor_version,
+				instance->micro_version);
+#endif
 
 	add_assoc_stringl_ex(context->return_value, hostport, hostport_len+1, version, version_len, 1);
 	efree(hostport);
