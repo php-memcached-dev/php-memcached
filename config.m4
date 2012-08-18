@@ -250,6 +250,8 @@ if test "$PHP_MEMCACHED" != "no"; then
     
     PHP_MEMCACHED_FILES="php_memcached.c fastlz/fastlz.c g_fmt.c"
 
+    AC_CHECK_LIB(memcached, memcached_server_major_version, AC_DEFINE(HAVE_MEMCACHED_SERVER_VERSION, 1, [Whether libmemcached have memcached_server_xxx_version functions]))
+
     if test "$PHP_MEMCACHED_SESSION" != "no"; then
       PHP_MEMCACHED_FILES="${PHP_MEMCACHED_FILES} php_memcached_session.c"
     fi
