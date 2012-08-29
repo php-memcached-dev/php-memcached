@@ -195,6 +195,17 @@ success:
 				}
 			}
 
+			if (MEMC_G(sess_number_of_replicas) > 0) {
+				if (memcached_behavior_set(memc_sess->memc_sess, MEMCACHED_BEHAVIOR_NUMBER_OF_REPLICAS, (uint64_t) MEMC_G(sess_number_of_replicas)) == MEMCACHED_FAILURE) {
+					php_error_docref(NULL TSRMLS_CC, E_WARNING, "failed to set memcached session number of replicas");
+					return FAILURE;
+				}
+				if (memcached_behavior_set(memc_sess->memc_sess, MEMCACHED_BEHAVIOR_RANDOMIZE_REPLICA_READ, (uint64_t) MEMC_G(sess_randomize_replica_read)) == MEMCACHED_FAILURE) {
+					php_error_docref(NULL TSRMLS_CC, E_WARNING, "failed to set memcached session randomize replica read");
+					return FAILURE;
+				}
+			}
+
 			return SUCCESS;
 		}
 	}
