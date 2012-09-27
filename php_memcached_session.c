@@ -142,13 +142,13 @@ error:
 				status = memcached_server_push(memc_sess->memc_sess, servers);
 				memcached_server_list_free(servers);
 
-				if (memcached_callback_set(memc_sess->memc_sess, MEMCACHED_CALLBACK_PREFIX_KEY, MEMC_G(sess_prefix)) != MEMCACHED_SUCCESS) {
+				if (memcached_callback_set(memc_sess->memc_sess, MEMCACHED_CALLBACK_PREFIX_KEY, (strlen(MEMC_G(sess_prefix)) ? MEMC_G(sess_prefix) : NULL)) != MEMCACHED_SUCCESS) {
 					PS_SET_MOD_DATA(NULL);
 					if (plist_key) {
 						efree(plist_key);
 					}
 					memcached_free(memc_sess->memc_sess);
-					php_error_docref(NULL TSRMLS_CC, E_WARNING, "bad memcached key prefix in memcached.sess_prefix");
+					php_error_docref(NULL TSRMLS_CC, E_WARNING, "bad memcached key prefix (%s) in memcached.sess_prefix", MEMC_G(sess_prefix));
 					return FAILURE;
 				}
 
