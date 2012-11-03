@@ -139,6 +139,18 @@ error:
 		if (servers) {
 			memc_sess->memc_sess = memcached_create(NULL);
 			if (memc_sess->memc_sess) {
+				if (MEMC_G(sess_consistent_hash_enabled)) {
+					if (memcached_behavior_set(memc_sess->memc_sess, MEMCACHED_BEHAVIOR_KETAMA_WEIGHTED, (uint64_t) 1) == MEMCACHED_FAILURE) {
+						PS_SET_MOD_DATA(NULL);
+						if (plist_key) {
+							efree(plist_key);
+						}
+						memcached_free(memc_sess->memc_sess);
+						php_error_docref(NULL TSRMLS_CC, E_WARNING, "failed to enable memcached consistent hashing");
+						return FAILURE;
+					}
+				}
+
 				status = memcached_server_push(memc_sess->memc_sess, servers);
 				memcached_server_list_free(servers);
 

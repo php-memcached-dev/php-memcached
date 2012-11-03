@@ -80,6 +80,7 @@ ZEND_BEGIN_MODULE_GLOBALS(php_memcached)
 #if HAVE_MEMCACHED_SASL
 	bool use_sasl;
 #endif
+	zend_bool sess_consistent_hash_enabled;
 	zend_bool sess_binary_enabled;
 ZEND_END_MODULE_GLOBALS(php_memcached)
 
