@@ -1173,6 +1173,7 @@ PHP_METHOD(Memcached, setMultiByKey)
 			case MEMCACHED_SERVER_MARKED_DEAD:	\
 				if (memcached_server_count(m_obj->memc) > 0) {	\
 					retry++;	\
+					i_obj->rescode = 0;	\
 					goto retry;	\
 				}	\
 				break;	\
