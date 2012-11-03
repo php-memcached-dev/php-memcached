@@ -66,6 +66,8 @@ ZEND_BEGIN_MODULE_GLOBALS(php_memcached)
 	zend_bool sess_locked;
 	char* sess_lock_key;
 	int   sess_lock_key_len;
+	int   sess_number_of_replicas;
+	zend_bool sess_randomize_replica_read;
 #endif
 	char *serializer_name;
 	enum memcached_serializer serializer;
