@@ -142,7 +142,7 @@ error:
 				status = memcached_server_push(memc_sess->memc_sess, servers);
 				memcached_server_list_free(servers);
 
-				if (memcached_callback_set(memc_sess->memc_sess, MEMCACHED_CALLBACK_PREFIX_KEY, MEMC_G(sess_prefix)) != MEMCACHED_SUCCESS) {
+				if (MEMC_G(sess_prefix) && MEMC_G(sess_prefix)[0] != 0 && memcached_callback_set(memc_sess->memc_sess, MEMCACHED_CALLBACK_PREFIX_KEY, MEMC_G(sess_prefix)) != MEMCACHED_SUCCESS) {
 					PS_SET_MOD_DATA(NULL);
 					if (plist_key) {
 						efree(plist_key);
