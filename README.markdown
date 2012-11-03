@@ -11,4 +11,4 @@ Resources
 ---------
  * [libmemcached](http://tangent.org/552/libmemcached.html)
  * [memcached](http://www.danga.com/memcached/)
- * [igbinary](http://opensource.dynamoid.com/)
+ * [igbinary](https://github.com/phadej/igbinary/)
