@@ -1965,7 +1965,7 @@ PHP_METHOD(Memcached, getServerByKey)
 {
 	char *server_key;
 	int   server_key_len;
-	memcached_server_st *server;
+	memcached_server_instance_st *server_instance;
 	memcached_return error;
 	MEMC_METHOD_INIT_VARS;
 
@@ -1981,16 +1981,16 @@ PHP_METHOD(Memcached, getServerByKey)
 		RETURN_FALSE;
 	}
 
-	server = memcached_server_by_key(m_obj->memc, server_key, server_key_len, &error);
-	if (server == NULL) {
+	server_instance = memcached_server_by_key(m_obj->memc, server_key, server_key_len, &error);
+	if (server_instance == NULL) {
 		php_memc_handle_error(i_obj, error TSRMLS_CC);
 		RETURN_FALSE;
 	}
 
 	array_init(return_value);
-	add_assoc_string(return_value, "host", server->hostname, 1);
-	add_assoc_long(return_value, "port", server->port);
-	add_assoc_long(return_value, "weight", server->weight);
+	add_assoc_string(return_value, "host", (char*) memcached_server_name(server_instance), 1);
+	add_assoc_long(return_value, "port", memcached_server_port(server_instance));
+	add_assoc_long(return_value, "weight", 0);
 }
 /* }}} */
 
@@ -2587,7 +2587,7 @@ static memcached_return php_memc_do_serverlist_callback(const memcached_st *ptr,
 
 	MAKE_STD_ZVAL(array);
 	array_init(array);
-	add_assoc_string(array, "host", memcached_server_name(instance), 1);
+	add_assoc_string(array, "host", (char*) memcached_server_name(instance), 1);
 	add_assoc_long(array, "port", memcached_server_port(instance));
 	/*
 	 * API does not allow to get at this field.
