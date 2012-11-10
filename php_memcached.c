@@ -2179,7 +2179,7 @@ static PHP_METHOD(Memcached, getOption)
 
 			result = memcached_callback_get(m_obj->memc, MEMCACHED_CALLBACK_PREFIX_KEY, &retval);
 			if (retval == MEMCACHED_SUCCESS && result) {
-#if defined(LIBMEMCACHED_VERSION_HEX) && LIBMEMCACHED_VERSION_HEX < 0x00050000
+#if defined(LIBMEMCACHED_VERSION_HEX) && LIBMEMCACHED_VERSION_HEX == 0x00049000
 				RETURN_STRINGL(result, strlen(result) - 1,  1);
 #else
 				RETURN_STRING(result, 1);
@@ -2236,7 +2236,7 @@ static int php_memc_set_option(php_memc_t *i_obj, long option, zval *value TSRML
 		case MEMC_OPT_PREFIX_KEY:
 		{
 			char *key;
-#if defined(LIBMEMCACHED_VERSION_HEX) && LIBMEMCACHED_VERSION_HEX < 0x00050000
+#if defined(LIBMEMCACHED_VERSION_HEX) && LIBMEMCACHED_VERSION_HEX == 0x00049000
 			char tmp[MEMCACHED_PREFIX_KEY_MAX_SIZE - 1];
 #endif
 			convert_to_string(value);
@@ -2244,10 +2244,10 @@ static int php_memc_set_option(php_memc_t *i_obj, long option, zval *value TSRML
 				key = NULL;
 			} else {
 				/*
-				   work-around a bug in libmemcached prior to version 0.50 that truncates the trailing
+				   work-around a bug in libmemcached in version 0.49 that truncates the trailing
 				   character of the key prefix, to avoid the issue we pad it with a '0'
 				*/
-#if defined(LIBMEMCACHED_VERSION_HEX) && LIBMEMCACHED_VERSION_HEX < 0x00050000
+#if defined(LIBMEMCACHED_VERSION_HEX) && LIBMEMCACHED_VERSION_HEX == 0x00049000
 				snprintf(tmp, sizeof(tmp), "%s0", Z_STRVAL_P(value));
 				key = tmp;
 #else
