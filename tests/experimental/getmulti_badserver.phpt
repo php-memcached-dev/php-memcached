@@ -21,10 +21,10 @@ switch ($m->getResultCode()) {
 		echo $m->getResultMessage(), "\n";
 }
 
---EXPECT--
+--EXPECTF--
 array(0) {
 }
 NO SERVERS DEFINED
 array(0) {
 }
-3: CONNECTION FAILURE
+%d: %s

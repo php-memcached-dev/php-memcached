@@ -48,6 +48,7 @@ static int php_memc_sess_lock(memcached_st *memc, const char *key TSRMLS_DC)
 	char *lock_key = NULL;
 	int lock_key_len = 0;
 	unsigned long attempts;
+	long write_retry_attempts = 0;
 	long lock_maxwait;
 	long lock_wait = MEMC_G(sess_lock_wait);
 	time_t expiration;
@@ -64,6 +65,11 @@ static int php_memc_sess_lock(memcached_st *memc, const char *key TSRMLS_DC)
 	expiration  = time(NULL) + lock_maxwait + 1;
 	attempts = (unsigned long)((1000000.0 / lock_wait) * lock_maxwait);
 
+	/* Set the number of write retry attempts to the number of replicas times the number of attempts to remove a server */
+	if (MEMC_G(sess_remove_failed_enabled)) {
+		write_retry_attempts = MEMC_G(sess_number_of_replicas) * ( memcached_behavior_get(memc, MEMCACHED_BEHAVIOR_SERVER_FAILURE_LIMIT) + 1);
+	}
+
 	lock_key_len = spprintf(&lock_key, 0, "lock.%s", key);
 	do {
 		status = memcached_add(memc, lock_key, lock_key_len, "1", sizeof("1")-1, expiration, 0);
@@ -73,6 +79,11 @@ static int php_memc_sess_lock(memcached_st *memc, const char *key TSRMLS_DC)
 			MEMC_G(sess_lock_key_len) = lock_key_len;
 			return 0;
 		} else if (status != MEMCACHED_NOTSTORED && status != MEMCACHED_DATA_EXISTS) {
+			if (write_retry_attempts > 0) {
+				write_retry_attempts--;
+				continue;
+			}
+			php_error_docref(NULL TSRMLS_CC, E_WARNING, "Write of lock failed");
 			break;
 		}
 
@@ -214,6 +225,20 @@ success:
 				}
 				if (memcached_behavior_set(memc_sess->memc_sess, MEMCACHED_BEHAVIOR_RANDOMIZE_REPLICA_READ, (uint64_t) MEMC_G(sess_randomize_replica_read)) == MEMCACHED_FAILURE) {
 					php_error_docref(NULL TSRMLS_CC, E_WARNING, "failed to set memcached session randomize replica read");
+				}
+			}
+
+			if (MEMC_G(sess_consistent_hashing_enabled)) {
+				if (memcached_behavior_set(memc_sess->memc_sess, MEMCACHED_BEHAVIOR_KETAMA, (uint64_t) 1) == MEMCACHED_FAILURE) {
+					php_error_docref(NULL TSRMLS_CC, E_WARNING, "failed to set memcached consistent hashing");
+					return FAILURE;
+				}
+			}
+
+			/* Allow libmemcached remove failed servers */
+			if (MEMC_G(sess_remove_failed_enabled)) {
+				if (memcached_behavior_set(memc_sess->memc_sess, MEMCACHED_BEHAVIOR_REMOVE_FAILED_SERVERS, (uint64_t) 1) == MEMCACHED_FAILURE) {
+					php_error_docref(NULL TSRMLS_CC, E_WARNING, "failed to set: remove failed servers");
 					return FAILURE;
 				}
 			}
@@ -266,6 +291,7 @@ PS_READ_FUNC(memcached)
 
 	if (MEMC_G(sess_locking_enabled)) {
 		if (php_memc_sess_lock(memc_sess->memc_sess, key TSRMLS_CC) < 0) {
+			php_error_docref(NULL TSRMLS_CC, E_WARNING, "Unable to clear session lock record");
 			return FAILURE;
 		}
 	}
@@ -286,6 +312,7 @@ PS_WRITE_FUNC(memcached)
 {
 	int key_len = strlen(key);
 	time_t expiration = 0;
+	long write_try_attempts = 1;
 	memcached_return status;
 	memcached_sess *memc_sess = PS_GET_MOD_DATA();
 	size_t key_length;
@@ -300,13 +327,22 @@ PS_WRITE_FUNC(memcached)
 	if (PS(gc_maxlifetime) > 0) {
 		expiration = PS(gc_maxlifetime);
 	}
-	status = memcached_set(memc_sess->memc_sess, key, key_len, val, vallen, expiration, 0);
 
-	if (status == MEMCACHED_SUCCESS) {
-		return SUCCESS;
-	} else {
-		return FAILURE;
+	/* Set the number of write retry attempts to the number of replicas times the number of attempts to remove a server plus the initial write */
+	if (MEMC_G(sess_remove_failed_enabled)) {
+		write_try_attempts = 1 + MEMC_G(sess_number_of_replicas) * ( memcached_behavior_get(memc_sess->memc_sess, MEMCACHED_BEHAVIOR_SERVER_FAILURE_LIMIT) + 1);
 	}
+
+	do {
+		status = memcached_set(memc_sess->memc_sess, key, key_len, val, vallen, expiration, 0);
+		if (status == MEMCACHED_SUCCESS) {
+			return SUCCESS;
+		} else {
+			write_try_attempts--;
+		}
+	} while (write_try_attempts > 0);
+
+	return FAILURE;
 }
 
 PS_DESTROY_FUNC(memcached)
