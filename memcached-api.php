@@ -257,6 +257,14 @@ class Memcached {
 
 	public function getServerByKey( $server_key ) {}
 
+	public function getLastErrorMessage( ) {}
+
+	public function getLastErrorCode( ) {}
+
+	public function getLastErrorErrno( ) {}
+
+	public function getLastDisconnectedServer( ) {}
+
 	public function flush( $delay = 0 ) {}
 
 	public function getStats( ) {}

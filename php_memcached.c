@@ -2028,6 +2028,81 @@ PHP_METHOD(Memcached, quit)
 }
 /* }}} */
 
+#if defined(LIBMEMCACHED_VERSION_HEX) && LIBMEMCACHED_VERSION_HEX >= 0x00049000
+/* {{{ Memcached::getLastErrorMessage()
+   Returns the last error message that occurred */
+PHP_METHOD(Memcached, getLastErrorMessage)
+{
+	MEMC_METHOD_INIT_VARS;
+
+	if (zend_parse_parameters_none() == FAILURE) {
+		return;
+	}
+
+	MEMC_METHOD_FETCH_OBJECT;
+
+	RETURN_STRING(memcached_last_error_message(m_obj->memc), 1);
+}
+/* }}} */
+
+/* {{{ Memcached::getLastErrorCode()
+   Returns the last error code that occurred */
+PHP_METHOD(Memcached, getLastErrorCode)
+{
+	MEMC_METHOD_INIT_VARS;
+
+	if (zend_parse_parameters_none() == FAILURE) {
+		return;
+	}
+
+	MEMC_METHOD_FETCH_OBJECT;
+
+	RETURN_LONG(memcached_last_error(m_obj->memc));
+}
+/* }}} */
+
+/* {{{ Memcached::getLastErrorErrno()
+   Returns the last error errno that occurred */
+PHP_METHOD(Memcached, getLastErrorErrno)
+{
+	MEMC_METHOD_INIT_VARS;
+
+	if (zend_parse_parameters_none() == FAILURE) {
+		return;
+	}
+
+	MEMC_METHOD_FETCH_OBJECT;
+
+	RETURN_LONG(memcached_last_error_errno(m_obj->memc));
+}
+/* }}} */
+#endif
+
+/* {{{ Memcached::getLastDisconnectedServer()
+   Returns the last disconnected server
+   Was added in 0.34 according to libmemcached's Changelog */
+PHP_METHOD(Memcached, getLastDisconnectedServer)
+{
+	memcached_server_instance_st *server_instance;
+	MEMC_METHOD_INIT_VARS;
+
+	if (zend_parse_parameters_none() == FAILURE) {
+		return;
+	}
+
+	MEMC_METHOD_FETCH_OBJECT;
+
+	server_instance = memcached_server_get_last_disconnect(m_obj->memc);
+	if (server_instance == NULL) {
+		RETURN_FALSE;
+	}
+
+	array_init(return_value);
+	add_assoc_string(return_value, "host", (char*) memcached_server_name(server_instance), 1);
+	add_assoc_long(return_value, "port", memcached_server_port(server_instance));
+}
+/* }}} */
+
 /* {{{ Memcached::getStats()
    Returns statistics for the memcache servers */
 PHP_METHOD(Memcached, getStats)
@@ -3486,6 +3561,18 @@ ZEND_BEGIN_ARG_INFO(arginfo_getServerByKey, 0)
 	ZEND_ARG_INFO(0, server_key)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO(arginfo_getLastErrorMessage, 0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO(arginfo_getLastErrorCode, 0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO(arginfo_getLastErrorErrno, 0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO(arginfo_getLastDisconnectedServer, 0)
+ZEND_END_ARG_INFO()
+
 ZEND_BEGIN_ARG_INFO(arginfo_getOption, 0)
 	ZEND_ARG_INFO(0, option)
 ZEND_END_ARG_INFO()
@@ -3572,6 +3659,13 @@ static zend_function_entry memcached_class_methods[] = {
 	MEMC_ME(getServerByKey,     arginfo_getServerByKey)
     MEMC_ME(resetServerList,    arginfo_resetServerList)
     MEMC_ME(quit,               arginfo_quit)
+
+#if defined(LIBMEMCACHED_VERSION_HEX) && LIBMEMCACHED_VERSION_HEX >= 0x00049000
+	MEMC_ME(getLastErrorMessage,		arginfo_getLastErrorMessage)
+	MEMC_ME(getLastErrorCode,		arginfo_getLastErrorCode)
+	MEMC_ME(getLastErrorErrno,		arginfo_getLastErrorErrno)
+#endif
+	MEMC_ME(getLastDisconnectedServer,	arginfo_getLastDisconnectedServer)
 
 	MEMC_ME(getStats,           arginfo_getStats)
 	MEMC_ME(getVersion,         arginfo_getVersion)
