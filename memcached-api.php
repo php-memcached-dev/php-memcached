@@ -53,6 +53,8 @@ class Memcached {
 
 	const OPT_RETRY_TIMEOUT;
 
+	const OPT_DEAD_TIMEOUT;
+
 	const OPT_SND_TIMEOUT;
 
 	const OPT_RCV_TIMEOUT;
