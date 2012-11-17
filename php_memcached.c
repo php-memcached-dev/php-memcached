@@ -3890,6 +3890,12 @@ PHP_MINFO_FUNCTION(memcached)
 	php_info_print_table_row(2, "Version", PHP_MEMCACHED_VERSION);
 	php_info_print_table_row(2, "libmemcached version", memcached_lib_version());
 
+#if HAVE_MEMCACHED_SASL
+	php_info_print_table_row(2, "SASL support", "yes");
+#else
+	php_info_print_table_row(2, "SASL support", "no");
+#endif
+
 #ifdef HAVE_MEMCACHED_SESSION
 	php_info_print_table_row(2, "Session support", "yes");
 #else
