@@ -2413,6 +2413,11 @@ static PHP_METHOD(Memcached, setSaslAuthData)
 		return;
 	}
 
+	if (!MEMC_G(use_sasl)) {
+		php_error_docref(NULL TSRMLS_CC, E_WARNING, "SASL support (memcached.use_sasl) isn't enabled in php.ini");
+		RETURN_FALSE;
+	}
+
 	MEMC_METHOD_FETCH_OBJECT;
 
 	if (!memcached_behavior_get(m_obj->memc, MEMCACHED_BEHAVIOR_BINARY_PROTOCOL)) {
