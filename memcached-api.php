@@ -271,6 +271,8 @@ class Memcached {
 
 	public function isPristine( ) {}
 
+  public function setSaslAuthData( $username, $password ) {}
+
 }
 
 class MemcachedException extends Exception {
