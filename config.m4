@@ -17,6 +17,9 @@ PHP_ARG_ENABLE(memcached-igbinary, whether to enable memcached igbinary serializ
 PHP_ARG_ENABLE(memcached-json, whether to enable memcached json serializer support,
 [  --enable-memcached-json          Enable memcached json serializer support], no, no)
 
+PHP_ARG_ENABLE(memcached-msgpack, whether to enable memcached msgpack serializer support,
+[  --enable-memcached-msgpack          Enable memcached msgpack serializer support], no, no)
+
 PHP_ARG_ENABLE(memcached-sasl, whether to disable memcached sasl support,
 [  --disable-memcached-sasl          Disable memcached sasl support], no, no)
 
@@ -188,6 +191,33 @@ if test "$PHP_MEMCACHED" != "no"; then
     fi
   fi
 
+  if test "$PHP_MEMCACHED_MSGPACK" != "no"; then
+    AC_MSG_CHECKING([for msgpack includes])
+    msgpack_inc_path=""
+
+    if test -f "$abs_srcdir/include/php/ext/msgpack/php_msgpack.h"; then
+      msgpack_inc_path="$abs_srcdir/include/php"
+    elif test -f "$abs_srcdir/ext/msgpack/php_msgpack.h"; then
+      msgpack_inc_path="$abs_srcdir"
+    elif test -f "$phpincludedir/ext/session/php_msgpack.h"; then
+      msgpack_inc_path="$phpincludedir"
+    elif test -f "$phpincludedir/ext/msgpack/php_msgpack.h"; then
+      msgpack_inc_path="$phpincludedir"
+    else
+      for i in php php4 php5 php6; do
+        if test -f "$prefix/include/$i/ext/msgpack/php_msgpack.h"; then
+          msgpack_inc_path="$prefix/include/$i"
+        fi
+      done
+    fi
+
+    if test "$msgpack_inc_path" = ""; then
+      AC_MSG_ERROR([Cannot find php_msgpack.h])
+    else
+      AC_MSG_RESULT([$msgpack_inc_path])
+    fi
+  fi 
+
   AC_MSG_CHECKING([for memcached session support])
   if test "$PHP_MEMCACHED_SESSION" != "no"; then
     AC_MSG_RESULT([enabled])
@@ -215,6 +245,21 @@ if test "$PHP_MEMCACHED" != "no"; then
     IGBINARY_INCLUDES=""
     AC_MSG_RESULT([disabled])
   fi
+
+  AC_MSG_CHECKING([for memcached msgpack support])
+  if test "$PHP_MEMCACHED_MSGPACK" != "no"; then
+    AC_MSG_RESULT([enabled])
+    AC_DEFINE(HAVE_MEMCACHED_MSGPACK,1,[Whether memcache msgpack serializer is enabled])
+    MSGPACK_INCLUDES="-I$msgpack_inc_path"
+    ifdef([PHP_ADD_EXTENSION_DEP],
+    [
+      PHP_ADD_EXTENSION_DEP(memcached, msgpack)
+    ])
+  else
+    MSGPACK_INCLUDES=""
+    AC_MSG_RESULT([disabled])
+  fi
+
 
   if test "$PHP_MEMCACHED_SASL" != "no"; then
     AC_CHECK_HEADERS([sasl/sasl.h], [memcached_enable_sasl="yes"], [memcached_enable_sasl="no"])
@@ -254,7 +299,7 @@ if test "$PHP_MEMCACHED" != "no"; then
       PHP_MEMCACHED_FILES="${PHP_MEMCACHED_FILES} php_memcached_session.c"
     fi
 
-    PHP_NEW_EXTENSION(memcached, $PHP_MEMCACHED_FILES, $ext_shared,,$SESSION_INCLUDES $IGBINARY_INCLUDES)
+    PHP_NEW_EXTENSION(memcached, $PHP_MEMCACHED_FILES, $ext_shared,,$SESSION_INCLUDES $IGBINARY_INCLUDES $MSGPACK_INCLUDES)
     PHP_ADD_BUILD_DIR($ext_builddir/fastlz, 1)
  
     ifdef([PHP_ADD_EXTENSION_DEP],
