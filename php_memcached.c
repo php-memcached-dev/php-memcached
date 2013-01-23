@@ -1174,6 +1174,7 @@ PHP_METHOD(Memcached, setMultiByKey)
 			case MEMCACHED_TIMEOUT:	\
 			case MEMCACHED_FAIL_UNIX_SOCKET:	\
 			case MEMCACHED_SERVER_MARKED_DEAD:	\
+			case MEMCACHED_SERVER_TEMPORARILY_DISABLED:	\
 				if (memcached_server_count(m_obj->memc) > 0) {	\
 					retry++;	\
 					i_obj->rescode = 0;	\
