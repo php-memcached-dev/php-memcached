@@ -2413,6 +2413,11 @@ static PHP_METHOD(Memcached, setSaslAuthData)
 		return;
 	}
 
+	if (!MEMC_G(use_sasl)) {
+		php_error_docref(NULL TSRMLS_CC, E_WARNING, "SASL support (memcached.use_sasl) isn't enabled in php.ini");
+		RETURN_FALSE;
+	}
+
 	MEMC_METHOD_FETCH_OBJECT;
 
 	if (!memcached_behavior_get(m_obj->memc, MEMCACHED_BEHAVIOR_BINARY_PROTOCOL)) {
@@ -3889,6 +3894,12 @@ PHP_MINFO_FUNCTION(memcached)
 	php_info_print_table_header(2, "memcached support", "enabled");
 	php_info_print_table_row(2, "Version", PHP_MEMCACHED_VERSION);
 	php_info_print_table_row(2, "libmemcached version", memcached_lib_version());
+
+#if HAVE_MEMCACHED_SASL
+	php_info_print_table_row(2, "SASL support", "yes");
+#else
+	php_info_print_table_row(2, "SASL support", "no");
+#endif
 
 #ifdef HAVE_MEMCACHED_SESSION
 	php_info_print_table_row(2, "Session support", "yes");

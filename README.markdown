@@ -1,3 +1,8 @@
+2012 Holidays
+-------------
+Committers' wishlists, if you feel like kicking in towards a gift:
+ * [Andrei's](http://given.to/profile/andreiz/wishlist/1411)
+
 Description
 -----------
 This extension uses libmemcached library to provide API for communicating with
