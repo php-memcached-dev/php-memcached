@@ -70,7 +70,8 @@ ZEND_BEGIN_MODULE_GLOBALS(php_memcached)
 	int   sess_number_of_replicas;
 	zend_bool sess_randomize_replica_read;
 	zend_bool sess_remove_failed_enabled;
-	zend_bool sess_consistent_hashing_enabled;
+	zend_bool sess_consistent_hash_enabled;
+	zend_bool sess_binary_enabled;
 #endif
 	char *serializer_name;
 	enum memcached_serializer serializer;
@@ -83,8 +84,6 @@ ZEND_BEGIN_MODULE_GLOBALS(php_memcached)
 #if HAVE_MEMCACHED_SASL
 	bool use_sasl;
 #endif
-	zend_bool sess_consistent_hash_enabled;
-	zend_bool sess_binary_enabled;
 ZEND_END_MODULE_GLOBALS(php_memcached)
 
 PHP_MEMCACHED_API zend_class_entry *php_memc_get_ce(void);
