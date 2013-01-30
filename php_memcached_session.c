@@ -228,13 +228,6 @@ success:
 				}
 			}
 
-			if (MEMC_G(sess_consistent_hashing_enabled)) {
-				if (memcached_behavior_set(memc_sess->memc_sess, MEMCACHED_BEHAVIOR_KETAMA, (uint64_t) 1) == MEMCACHED_FAILURE) {
-					php_error_docref(NULL TSRMLS_CC, E_WARNING, "failed to set memcached consistent hashing");
-					return FAILURE;
-				}
-			}
-
 			/* Allow libmemcached remove failed servers */
 			if (MEMC_G(sess_remove_failed_enabled)) {
 				if (memcached_behavior_set(memc_sess->memc_sess, MEMCACHED_BEHAVIOR_REMOVE_FAILED_SERVERS, (uint64_t) 1) == MEMCACHED_FAILURE) {
