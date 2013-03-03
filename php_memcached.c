@@ -264,7 +264,7 @@ static PHP_INI_MH(OnUpdateSerializer)
 		MEMC_G(serializer) = SERIALIZER_DEFAULT;
 	} else if (!strcmp(new_value, "php")) {
 		MEMC_G(serializer) = SERIALIZER_PHP;
-#ifdef HAVE_MEMCACHE_IGBINARY
+#ifdef HAVE_MEMCACHED_IGBINARY
 	} else if (!strcmp(new_value, "igbinary")) {
 		MEMC_G(serializer) = SERIALIZER_IGBINARY;
 #endif // IGBINARY
