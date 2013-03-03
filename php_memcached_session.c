@@ -234,6 +234,11 @@ success:
 					return FAILURE;
 				}
 			}
+			
+                        if (memcached_behavior_set(memc_sess->memc_sess, MEMCACHED_BEHAVIOR_CONNECT_TIMEOUT, (uint64_t) MEMC_G(sess_connect_timeout)) == MEMCACHED_FAILURE) {
+                                php_error_docref(NULL TSRMLS_CC, E_WARNING, "failed to set memcached connection timeout");
+                                return FAILURE;
+                        }
 
 			/* Allow libmemcached remove failed servers */
 			if (MEMC_G(sess_remove_failed_enabled)) {
