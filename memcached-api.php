@@ -53,6 +53,8 @@ class Memcached {
 
 	const OPT_RETRY_TIMEOUT;
 
+	const OPT_DEAD_TIMEOUT;
+
 	const OPT_SND_TIMEOUT;
 
 	const OPT_RCV_TIMEOUT;
@@ -256,6 +258,14 @@ class Memcached {
 	public function getServerList( ) {}
 
 	public function getServerByKey( $server_key ) {}
+
+	public function getLastErrorMessage( ) {}
+
+	public function getLastErrorCode( ) {}
+
+	public function getLastErrorErrno( ) {}
+
+	public function getLastDisconnectedServer( ) {}
 
 	public function flush( $delay = 0 ) {}
 
