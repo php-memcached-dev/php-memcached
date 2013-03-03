@@ -71,6 +71,7 @@ ZEND_BEGIN_MODULE_GLOBALS(php_memcached)
 	zend_bool sess_randomize_replica_read;
 	zend_bool sess_remove_failed_enabled;
 	zend_bool sess_consistent_hashing_enabled;
+	long  sess_connect_timeout;
 #endif
 	char *serializer_name;
 	enum memcached_serializer serializer;
