@@ -2730,7 +2730,7 @@ static memcached_return php_memc_do_version_callback(const memcached_st *ptr, me
 	struct callbackContext* context = (struct callbackContext*) in_context;
 
 	hostport_len = spprintf(&hostport, 0, "%s:%d", memcached_server_name(instance), memcached_server_port(instance));
-#if defined(LIBMEMCACHED_VERSION_HEX) && LIBMEMCACHED_VERSION_HEX >= 0x01000008
+#if defined(LIBMEMCACHED_VERSION_HEX) && LIBMEMCACHED_VERSION_HEX >= 0x01000009
 	version_len = snprintf(version, sizeof(version), "%d.%d.%d",
 				memcached_server_major_version(instance),
 				memcached_server_minor_version(instance),
