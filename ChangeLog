@@ -41,8 +41,6 @@ Version 2.0.0b2
 
 Version 2.0.0b1
 ---------------
-	* Change the return value for non-existing keys to be NULL rather than
-	  'false', affects simple get only
 	* Add fastlz library that provides better/faster payload compression
 	* Add configure switch to enable/disable JSON serialization support
 	* Add getAllKeys() method
