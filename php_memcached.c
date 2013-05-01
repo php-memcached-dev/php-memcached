@@ -550,120 +550,76 @@ static void php_memc_get_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 	keys[0] = key;
 	key_lens[0] = key_len;
 
-	if (cas_token) {
-		uint64_t orig_cas_flag;
+	uint64_t orig_cas_flag;
+	orig_cas_flag = memcached_behavior_get(m_obj->memc, MEMCACHED_BEHAVIOR_SUPPORT_CAS);
 
-		/*
-		 * Enable CAS support, but only if it is currently disabled.
-		 */
-		orig_cas_flag = memcached_behavior_get(m_obj->memc, MEMCACHED_BEHAVIOR_SUPPORT_CAS);
-		if (orig_cas_flag == 0) {
-			memcached_behavior_set(m_obj->memc, MEMCACHED_BEHAVIOR_SUPPORT_CAS, 1);
-		}
+	/*
+		* Enable CAS support, but only if it is currently disabled.
+		*/
+	if (cas_token && orig_cas_flag == 0) {
+		memcached_behavior_set(m_obj->memc, MEMCACHED_BEHAVIOR_SUPPORT_CAS, 1);
+	}
 
-		status = memcached_mget_by_key(m_obj->memc, server_key, server_key_len, keys, key_lens, 1);
+	status = memcached_mget_by_key(m_obj->memc, server_key, server_key_len, keys, key_lens, 1);
 
-		if (orig_cas_flag == 0) {
-			memcached_behavior_set(m_obj->memc, MEMCACHED_BEHAVIOR_SUPPORT_CAS, orig_cas_flag);
-		}
+	if (cas_token && orig_cas_flag == 0) {
+		memcached_behavior_set(m_obj->memc, MEMCACHED_BEHAVIOR_SUPPORT_CAS, orig_cas_flag);
+	}
 
-		if (php_memc_handle_error(i_obj, status TSRMLS_CC) < 0) {
-			RETURN_FROM_GET;
-		}
+	if (php_memc_handle_error(i_obj, status TSRMLS_CC) < 0) {
+		RETURN_FROM_GET;
+	}
 
-		status = MEMCACHED_SUCCESS;
-		memcached_result_create(m_obj->memc, &result);
+	status = MEMCACHED_SUCCESS;
+	memcached_result_create(m_obj->memc, &result);
 
-		if (memcached_fetch_result(m_obj->memc, &result, &status) == NULL) {
-			/* This is for historical reasons */
-			if (status == MEMCACHED_END)
-				status = MEMCACHED_NOTFOUND;
-
-			/*
-			 * If the result wasn't found, and we have the read-through callback, invoke
-			 * it to get the value. The CAS token will be 0, because we cannot generate it
-			 * ourselves.
-			 */
-			if (status == MEMCACHED_NOTFOUND && fci.size != 0) {
-				status = php_memc_do_cache_callback(getThis(), &fci, &fcc, key, key_len,
-													return_value TSRMLS_CC);
-				ZVAL_DOUBLE(cas_token, 0);
-			}
-
-			if (php_memc_handle_error(i_obj, status TSRMLS_CC) < 0) {
-				memcached_result_free(&result);
-				RETURN_FROM_GET;
-			}
-
-			/* if we have a callback, all processing is done */
-			if (fci.size != 0) {
-				memcached_result_free(&result);
-				return;
-			}
-		}
-
-		payload     = memcached_result_value(&result);
-		payload_len = memcached_result_length(&result);
-		flags       = memcached_result_flags(&result);
-		cas         = memcached_result_cas(&result);
-
-		if (php_memc_zval_from_payload(return_value, payload, payload_len, flags, m_obj->serializer TSRMLS_CC) < 0) {
-			memcached_result_free(&result);
-			i_obj->rescode = MEMC_RES_PAYLOAD_FAILURE;
-			RETURN_FROM_GET;
-		}
-
-		zval_dtor(cas_token);
-		ZVAL_DOUBLE(cas_token, (double)cas);
-
-		memcached_result_free(&result);
-
-	} else {
-		int rc;
-		zend_bool return_value_set = 0;
-
-		status = memcached_mget_by_key(m_obj->memc, server_key, server_key_len, keys, key_lens, 1);
-		payload = memcached_fetch(m_obj->memc, NULL, NULL, &payload_len, &flags, &status);
-
+	if (memcached_fetch_result(m_obj->memc, &result, &status) == NULL) {
 		/* This is for historical reasons */
 		if (status == MEMCACHED_END)
 			status = MEMCACHED_NOTFOUND;
 
 		/*
-		 * If payload wasn't found and we have a read-through callback, invoke it to get
-		 * the value. The callback will take care of storing the value back into memcache.
-		 * The callback will set the return value.
-		 */
-		if (payload == NULL && status == MEMCACHED_NOTFOUND && fci.size != 0) {
-			size_t dummy_length;
-			uint32_t dummy_flags;
-			memcached_return dummy_status;
-
+			* If the result wasn't found, and we have the read-through callback, invoke
+			* it to get the value. The CAS token will be 0, because we cannot generate it
+			* ourselves.
+			*/
+		if (cas_token && status == MEMCACHED_NOTFOUND && fci.size != 0) {
 			status = php_memc_do_cache_callback(getThis(), &fci, &fcc, key, key_len,
 												return_value TSRMLS_CC);
-			return_value_set = 1;
-
-			(void)memcached_fetch(m_obj->memc, NULL, NULL, &dummy_length, &dummy_flags, &dummy_status);
+			ZVAL_DOUBLE(cas_token, 0);
 		}
 
 		if (php_memc_handle_error(i_obj, status TSRMLS_CC) < 0) {
-			if (payload) {
-				free(payload);
-			}
+			memcached_result_free(&result);
 			RETURN_FROM_GET;
 		}
 
-		/* if memcached gave a value and there was no callback, payload may be NULL */
-		if (!return_value_set) {
-			rc = php_memc_zval_from_payload(return_value, payload, payload_len, flags, m_obj->serializer TSRMLS_CC);
-			free(payload);
-			if (rc < 0) {
-				i_obj->rescode = MEMC_RES_PAYLOAD_FAILURE;
-				RETURN_FROM_GET;
-			}
+		/* if we have a callback, all processing is done */
+		if (fci.size != 0) {
+			memcached_result_free(&result);
+			return;
 		}
-
 	}
+
+	payload     = memcached_result_value(&result);
+	payload_len = memcached_result_length(&result);
+	flags       = memcached_result_flags(&result);
+	if (cas_token) {
+		cas     = memcached_result_cas(&result);
+	}
+
+	if (php_memc_zval_from_payload(return_value, payload, payload_len, flags, m_obj->serializer TSRMLS_CC) < 0) {
+		memcached_result_free(&result);
+		i_obj->rescode = MEMC_RES_PAYLOAD_FAILURE;
+		RETURN_FROM_GET;
+	}
+
+	if (cas_token) {
+		zval_dtor(cas_token);
+		ZVAL_DOUBLE(cas_token, (double)cas);
+	}
+
+	memcached_result_free(&result);
 }
 /* }}} */
 
