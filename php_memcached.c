@@ -600,6 +600,13 @@ static void php_memc_get_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 			return;
 		}
 	}
+	
+	/* Fetch all remaining results */
+	memcached_result_st dummy_result;
+	memcached_return dummy_status = MEMCACHED_SUCCESS;
+	memcached_result_create(m_obj->memc, &dummy_result);
+	while (memcached_fetch_result(m_obj->memc, &dummy_result, &dummy_status) != NULL) {}
+	memcached_result_free(&dummy_result);
 
 	payload     = memcached_result_value(&result);
 	payload_len = memcached_result_length(&result);
