@@ -1990,7 +1990,6 @@ PHP_METHOD(Memcached, getServerByKey)
 	array_init(return_value);
 	add_assoc_string(return_value, "host", (char*) memcached_server_name(server_instance), 1);
 	add_assoc_long(return_value, "port", memcached_server_port(server_instance));
-	add_assoc_long(return_value, "weight", 0);
 }
 /* }}} */
 
