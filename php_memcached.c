@@ -1862,7 +1862,7 @@ PHP_METHOD(Memcached, addServers)
 	zval **z_host, **z_port, **z_weight = NULL;
 	uint32_t weight = 0;
 	int   entry_size, i = 0;
-	memcached_server_st *list = NULL;
+	memcached_server_list_st list = NULL;
 	memcached_return status;
 	MEMC_METHOD_INIT_VARS;
 
