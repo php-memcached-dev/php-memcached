@@ -321,9 +321,15 @@ static void php_memc_deleteMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by
 static void php_memc_getDelayed_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key);
 static memcached_return php_memc_do_cache_callback(zval *memc_obj, zend_fcall_info *fci, zend_fcall_info_cache *fcc, char *key, size_t key_len, zval *value TSRMLS_DC);
 static int php_memc_do_result_callback(zval *memc_obj, zend_fcall_info *fci, zend_fcall_info_cache *fcc, memcached_result_st *result TSRMLS_DC);
+#if defined(LIBMEMCACHED_VERSION_HEX) && LIBMEMCACHED_VERSION_HEX >= 0x01000009
+static memcached_return php_memc_do_serverlist_callback(const memcached_st *ptr, const memcached_instance_st *instance, void *in_context);
+static memcached_return php_memc_do_stats_callback(const memcached_st *ptr, const memcached_instance_st *instance, void *in_context);
+static memcached_return php_memc_do_version_callback(const memcached_st *ptr, const memcached_instance_st *instance, void *in_context);
+#else
 static memcached_return php_memc_do_serverlist_callback(const memcached_st *ptr, memcached_server_instance_st instance, void *in_context);
 static memcached_return php_memc_do_stats_callback(const memcached_st *ptr, memcached_server_instance_st instance, void *in_context);
 static memcached_return php_memc_do_version_callback(const memcached_st *ptr, memcached_server_instance_st instance, void *in_context);
+#endif
 static void php_memc_destroy(struct memc_obj *m_obj, zend_bool persistent TSRMLS_DC);
 
 /****************************************
@@ -1965,7 +1971,11 @@ PHP_METHOD(Memcached, getServerByKey)
 {
 	char *server_key;
 	int   server_key_len;
+#if defined(LIBMEMCACHED_VERSION_HEX) && LIBMEMCACHED_VERSION_HEX >= 0x01000009
+	memcached_instance_st *server_instance;
+#else
 	memcached_server_instance_st *server_instance;
+#endif
 	memcached_return error;
 	MEMC_METHOD_INIT_VARS;
 
@@ -2082,7 +2092,11 @@ PHP_METHOD(Memcached, getLastErrorErrno)
    Was added in 0.34 according to libmemcached's Changelog */
 PHP_METHOD(Memcached, getLastDisconnectedServer)
 {
+#if defined(LIBMEMCACHED_VERSION_HEX) && LIBMEMCACHED_VERSION_HEX >= 0x01000009
+	memcached_instance_st *server_instance;
+#else
 	memcached_server_instance_st *server_instance;
+#endif
 	MEMC_METHOD_INIT_VARS;
 
 	if (zend_parse_parameters_none() == FAILURE) {
@@ -2659,7 +2673,11 @@ ZEND_RSRC_DTOR_FUNC(php_memc_sess_dtor)
 /* }}} */
 
 /* {{{ internal API functions */
+#if defined(LIBMEMCACHED_VERSION_HEX) && LIBMEMCACHED_VERSION_HEX >= 0x01000009
+static memcached_return php_memc_do_serverlist_callback(const memcached_st *ptr, const memcached_instance_st *instance, void *in_context)
+#else
 static memcached_return php_memc_do_serverlist_callback(const memcached_st *ptr, memcached_server_instance_st instance, void *in_context)
+#endif
 {
 	struct callbackContext* context = (struct callbackContext*) in_context;
 	zval *array;
@@ -2677,7 +2695,11 @@ static memcached_return php_memc_do_serverlist_callback(const memcached_st *ptr,
 	return MEMCACHED_SUCCESS;
 }
 
+#if defined(LIBMEMCACHED_VERSION_HEX) && LIBMEMCACHED_VERSION_HEX >= 0x01000009
+static memcached_return php_memc_do_stats_callback(const memcached_st *ptr, const memcached_instance_st *instance, void *in_context)
+#else
 static memcached_return php_memc_do_stats_callback(const memcached_st *ptr, memcached_server_instance_st instance, void *in_context)
+#endif
 {
 	char *hostport = NULL;
 	int hostport_len;
@@ -2721,7 +2743,11 @@ static memcached_return php_memc_do_stats_callback(const memcached_st *ptr, memc
 	return MEMCACHED_SUCCESS;
 }
 
+#if defined(LIBMEMCACHED_VERSION_HEX) && LIBMEMCACHED_VERSION_HEX >= 0x01000009
+static memcached_return php_memc_do_version_callback(const memcached_st *ptr, const memcached_instance_st *instance, void *in_context)
+#else
 static memcached_return php_memc_do_version_callback(const memcached_st *ptr, memcached_server_instance_st instance, void *in_context)
+#endif
 {
 	char *hostport = NULL;
 	char version[16];
