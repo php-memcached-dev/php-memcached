@@ -2962,6 +2962,7 @@ static int php_memc_zval_from_payload(zval *value, char *payload, size_t payload
 	char *buffer = NULL;
 
 	if (payload == NULL && payload_len > 0) {
+		ZVAL_FALSE(value);
 		php_error_docref(NULL TSRMLS_CC, E_WARNING,
 			"Could not handle non-existing value of length %zu", payload_len);
 		return -1;
@@ -3013,6 +3014,7 @@ static int php_memc_zval_from_payload(zval *value, char *payload, size_t payload
 		}
 
 		if (!decompress_status) {
+			ZVAL_FALSE(value);
 			php_error_docref(NULL TSRMLS_CC, E_WARNING, "could not decompress value");
 			efree(buffer);
 			return -1;
@@ -3081,6 +3083,7 @@ static int php_memc_zval_from_payload(zval *value, char *payload, size_t payload
 				goto my_error;
 			}
 #else
+			ZVAL_FALSE(value);
 			php_error_docref(NULL TSRMLS_CC, E_WARNING, "could not unserialize value, no igbinary support");
 			goto my_error;
 #endif
@@ -3094,12 +3097,14 @@ static int php_memc_zval_from_payload(zval *value, char *payload, size_t payload
 			php_json_decode(value, payload, payload_len, (serializer == SERIALIZER_JSON_ARRAY), JSON_PARSER_DEFAULT_DEPTH TSRMLS_CC);
 # endif
 #else
+			ZVAL_FALSE(value);
 			php_error_docref(NULL TSRMLS_CC, E_WARNING, "could not unserialize value, no json support");
 			goto my_error;
 #endif
 			break;
 
 		default:
+			ZVAL_FALSE(value);
 			php_error_docref(NULL TSRMLS_CC, E_WARNING, "unknown payload type");
 			goto my_error;
 	}
