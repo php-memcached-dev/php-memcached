@@ -5,3 +5,4 @@
 #include <libmemcached-1.0/memcached.h>
 
 #endif
+typedef const struct memcached_instance_st *memcached_server_instance_st;
