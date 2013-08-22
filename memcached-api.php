@@ -53,6 +53,8 @@ class Memcached {
 
 	const OPT_RETRY_TIMEOUT;
 
+	const OPT_DEAD_TIMEOUT;
+
 	const OPT_SND_TIMEOUT;
 
 	const OPT_RCV_TIMEOUT;
@@ -257,6 +259,14 @@ class Memcached {
 
 	public function getServerByKey( $server_key ) {}
 
+	public function getLastErrorMessage( ) {}
+
+	public function getLastErrorCode( ) {}
+
+	public function getLastErrorErrno( ) {}
+
+	public function getLastDisconnectedServer( ) {}
+
 	public function flush( $delay = 0 ) {}
 
 	public function getStats( ) {}
@@ -270,6 +280,8 @@ class Memcached {
 	public function isPersistent( ) {}
 
 	public function isPristine( ) {}
+
+  public function setSaslAuthData( $username, $password ) {}
 
 }
 

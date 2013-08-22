@@ -264,7 +264,7 @@ static PHP_INI_MH(OnUpdateSerializer)
 		MEMC_G(serializer) = SERIALIZER_DEFAULT;
 	} else if (!strcmp(new_value, "php")) {
 		MEMC_G(serializer) = SERIALIZER_PHP;
-#ifdef HAVE_MEMCACHE_IGBINARY
+#ifdef HAVE_MEMCACHED_IGBINARY
 	} else if (!strcmp(new_value, "igbinary")) {
 		MEMC_G(serializer) = SERIALIZER_IGBINARY;
 #endif // IGBINARY
@@ -292,8 +292,8 @@ PHP_INI_BEGIN()
 
 	STD_PHP_INI_ENTRY("memcached.sess_number_of_replicas",	"0",	PHP_INI_ALL, OnUpdateLongGEZero,	sess_number_of_replicas,	zend_php_memcached_globals,	php_memcached_globals)
 	STD_PHP_INI_ENTRY("memcached.sess_randomize_replica_read",	"0",	PHP_INI_ALL, OnUpdateBool,	sess_randomize_replica_read,	zend_php_memcached_globals,	php_memcached_globals)
-	STD_PHP_INI_ENTRY("memcached.sess_consistent_hashing",	"0",		PHP_INI_ALL, OnUpdateBool,              sess_consistent_hashing_enabled,	zend_php_memcached_globals,     php_memcached_globals)
 	STD_PHP_INI_ENTRY("memcached.sess_remove_failed",	"0",		PHP_INI_ALL, OnUpdateBool,              sess_remove_failed_enabled,	zend_php_memcached_globals,     php_memcached_globals)
+	STD_PHP_INI_ENTRY("memcached.sess_connect_timeout",     "1000",         PHP_INI_ALL, OnUpdateLong, 		sess_connect_timeout,           zend_php_memcached_globals,     php_memcached_globals)
 #endif
 	STD_PHP_INI_ENTRY("memcached.compression_type",		"fastlz",	PHP_INI_ALL, OnUpdateCompressionType, compression_type,		zend_php_memcached_globals,	php_memcached_globals)
 	STD_PHP_INI_ENTRY("memcached.compression_factor",	"1.3",		PHP_INI_ALL, OnUpdateReal, compression_factor,		zend_php_memcached_globals,	php_memcached_globals)
@@ -2029,6 +2029,81 @@ PHP_METHOD(Memcached, quit)
 }
 /* }}} */
 
+#if defined(LIBMEMCACHED_VERSION_HEX) && LIBMEMCACHED_VERSION_HEX >= 0x00049000
+/* {{{ Memcached::getLastErrorMessage()
+   Returns the last error message that occurred */
+PHP_METHOD(Memcached, getLastErrorMessage)
+{
+	MEMC_METHOD_INIT_VARS;
+
+	if (zend_parse_parameters_none() == FAILURE) {
+		return;
+	}
+
+	MEMC_METHOD_FETCH_OBJECT;
+
+	RETURN_STRING(memcached_last_error_message(m_obj->memc), 1);
+}
+/* }}} */
+
+/* {{{ Memcached::getLastErrorCode()
+   Returns the last error code that occurred */
+PHP_METHOD(Memcached, getLastErrorCode)
+{
+	MEMC_METHOD_INIT_VARS;
+
+	if (zend_parse_parameters_none() == FAILURE) {
+		return;
+	}
+
+	MEMC_METHOD_FETCH_OBJECT;
+
+	RETURN_LONG(memcached_last_error(m_obj->memc));
+}
+/* }}} */
+
+/* {{{ Memcached::getLastErrorErrno()
+   Returns the last error errno that occurred */
+PHP_METHOD(Memcached, getLastErrorErrno)
+{
+	MEMC_METHOD_INIT_VARS;
+
+	if (zend_parse_parameters_none() == FAILURE) {
+		return;
+	}
+
+	MEMC_METHOD_FETCH_OBJECT;
+
+	RETURN_LONG(memcached_last_error_errno(m_obj->memc));
+}
+/* }}} */
+#endif
+
+/* {{{ Memcached::getLastDisconnectedServer()
+   Returns the last disconnected server
+   Was added in 0.34 according to libmemcached's Changelog */
+PHP_METHOD(Memcached, getLastDisconnectedServer)
+{
+	memcached_server_instance_st *server_instance;
+	MEMC_METHOD_INIT_VARS;
+
+	if (zend_parse_parameters_none() == FAILURE) {
+		return;
+	}
+
+	MEMC_METHOD_FETCH_OBJECT;
+
+	server_instance = memcached_server_get_last_disconnect(m_obj->memc);
+	if (server_instance == NULL) {
+		RETURN_FALSE;
+	}
+
+	array_init(return_value);
+	add_assoc_string(return_value, "host", (char*) memcached_server_name(server_instance), 1);
+	add_assoc_long(return_value, "port", memcached_server_port(server_instance));
+}
+/* }}} */
+
 /* {{{ Memcached::getStats()
    Returns statistics for the memcache servers */
 PHP_METHOD(Memcached, getStats)
@@ -2414,6 +2489,11 @@ static PHP_METHOD(Memcached, setSaslAuthData)
 		return;
 	}
 
+	if (!MEMC_G(use_sasl)) {
+		php_error_docref(NULL TSRMLS_CC, E_WARNING, "SASL support (memcached.use_sasl) isn't enabled in php.ini");
+		RETURN_FALSE;
+	}
+
 	MEMC_METHOD_FETCH_OBJECT;
 
 	if (!memcached_behavior_get(m_obj->memc, MEMCACHED_BEHAVIOR_BINARY_PROTOCOL)) {
@@ -2588,7 +2668,7 @@ static memcached_return php_memc_do_serverlist_callback(const memcached_st *ptr,
 
 	MAKE_STD_ZVAL(array);
 	array_init(array);
-	add_assoc_string(array, "host", memcached_server_name(instance), 1);
+	add_assoc_string(array, "host", (char*) memcached_server_name(instance), 1);
 	add_assoc_long(array, "port", memcached_server_port(instance));
 	/*
 	 * API does not allow to get at this field.
@@ -2651,7 +2731,7 @@ static memcached_return php_memc_do_version_callback(const memcached_st *ptr, me
 	struct callbackContext* context = (struct callbackContext*) in_context;
 
 	hostport_len = spprintf(&hostport, 0, "%s:%d", memcached_server_name(instance), memcached_server_port(instance));
-#if defined(LIBMEMCACHED_VERSION_HEX) && LIBMEMCACHED_VERSION_HEX >= 0x01000008
+#if defined(LIBMEMCACHED_VERSION_HEX) && LIBMEMCACHED_VERSION_HEX >= 0x01000009
 	version_len = snprintf(version, sizeof(version), "%d.%d.%d",
 				memcached_server_major_version(instance),
 				memcached_server_minor_version(instance),
@@ -3043,7 +3123,7 @@ static void php_memc_init_globals(zend_php_memcached_globals *php_memcached_glob
 #ifdef HAVE_MEMCACHED_SESSION
 	MEMC_G(sess_locking_enabled) = 1;
 	MEMC_G(sess_binary_enabled) = 1;
-	MEMC_G(sess_consistent_hashing_enabled) = 0;
+	MEMC_G(sess_consistent_hash_enabled) = 0;
 	MEMC_G(sess_number_of_replicas) = 0;
 	MEMC_G(sess_remove_failed_enabled) = 0;
 	MEMC_G(sess_prefix) = NULL;
@@ -3051,8 +3131,8 @@ static void php_memc_init_globals(zend_php_memcached_globals *php_memcached_glob
 	MEMC_G(sess_locked) = 0;
 	MEMC_G(sess_lock_key) = NULL;
 	MEMC_G(sess_lock_key_len) = 0;
-	MEMC_G(sess_number_of_replicas) = 0;
 	MEMC_G(sess_randomize_replica_read) = 0;
+	MEMC_G(sess_connect_timeout) = 1000;
 #endif
 	MEMC_G(serializer_name) = NULL;
 	MEMC_G(serializer) = SERIALIZER_DEFAULT;
@@ -3487,6 +3567,18 @@ ZEND_BEGIN_ARG_INFO(arginfo_getServerByKey, 0)
 	ZEND_ARG_INFO(0, server_key)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO(arginfo_getLastErrorMessage, 0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO(arginfo_getLastErrorCode, 0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO(arginfo_getLastErrorErrno, 0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO(arginfo_getLastDisconnectedServer, 0)
+ZEND_END_ARG_INFO()
+
 ZEND_BEGIN_ARG_INFO(arginfo_getOption, 0)
 	ZEND_ARG_INFO(0, option)
 ZEND_END_ARG_INFO()
@@ -3573,6 +3665,13 @@ static zend_function_entry memcached_class_methods[] = {
 	MEMC_ME(getServerByKey,     arginfo_getServerByKey)
     MEMC_ME(resetServerList,    arginfo_resetServerList)
     MEMC_ME(quit,               arginfo_quit)
+
+#if defined(LIBMEMCACHED_VERSION_HEX) && LIBMEMCACHED_VERSION_HEX >= 0x00049000
+	MEMC_ME(getLastErrorMessage,		arginfo_getLastErrorMessage)
+	MEMC_ME(getLastErrorCode,		arginfo_getLastErrorCode)
+	MEMC_ME(getLastErrorErrno,		arginfo_getLastErrorErrno)
+#endif
+	MEMC_ME(getLastDisconnectedServer,	arginfo_getLastDisconnectedServer)
 
 	MEMC_ME(getStats,           arginfo_getStats)
 	MEMC_ME(getVersion,         arginfo_getVersion)
@@ -3712,6 +3811,9 @@ static void php_memc_register_constants(INIT_FUNC_ARGS)
 	REGISTER_MEMC_CLASS_CONST_LONG(OPT_SOCKET_RECV_SIZE, MEMCACHED_BEHAVIOR_SOCKET_RECV_SIZE);
 	REGISTER_MEMC_CLASS_CONST_LONG(OPT_CONNECT_TIMEOUT, MEMCACHED_BEHAVIOR_CONNECT_TIMEOUT);
 	REGISTER_MEMC_CLASS_CONST_LONG(OPT_RETRY_TIMEOUT, MEMCACHED_BEHAVIOR_RETRY_TIMEOUT);
+#if defined(LIBMEMCACHED_VERSION_HEX) && LIBMEMCACHED_VERSION_HEX >= 0x01000003
+	REGISTER_MEMC_CLASS_CONST_LONG(OPT_DEAD_TIMEOUT, MEMCACHED_BEHAVIOR_DEAD_TIMEOUT);
+#endif
 	REGISTER_MEMC_CLASS_CONST_LONG(OPT_SEND_TIMEOUT, MEMCACHED_BEHAVIOR_SND_TIMEOUT);
 	REGISTER_MEMC_CLASS_CONST_LONG(OPT_RECV_TIMEOUT, MEMCACHED_BEHAVIOR_RCV_TIMEOUT);
 	REGISTER_MEMC_CLASS_CONST_LONG(OPT_POLL_TIMEOUT, MEMCACHED_BEHAVIOR_POLL_TIMEOUT);
@@ -3890,6 +3992,12 @@ PHP_MINFO_FUNCTION(memcached)
 	php_info_print_table_header(2, "memcached support", "enabled");
 	php_info_print_table_row(2, "Version", PHP_MEMCACHED_VERSION);
 	php_info_print_table_row(2, "libmemcached version", memcached_lib_version());
+
+#if HAVE_MEMCACHED_SASL
+	php_info_print_table_row(2, "SASL support", "yes");
+#else
+	php_info_print_table_row(2, "SASL support", "no");
+#endif
 
 #ifdef HAVE_MEMCACHED_SESSION
 	php_info_print_table_row(2, "Session support", "yes");
