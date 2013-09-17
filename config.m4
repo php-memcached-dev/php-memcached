@@ -18,7 +18,7 @@ PHP_ARG_ENABLE(memcached-json, whether to enable memcached json serializer suppo
 [  --enable-memcached-json          Enable memcached json serializer support], no, no)
 
 PHP_ARG_ENABLE(memcached-sasl, whether to disable memcached sasl support,
-[  --disable-memcached-sasl          Disable memcached sasl support], no, no)
+[  --disable-memcached-sasl          Disable memcached sasl support], yes, no)
 
 if test -z "$PHP_ZLIB_DIR"; then
 PHP_ARG_WITH(zlib-dir, for ZLIB,
