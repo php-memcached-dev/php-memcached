@@ -2980,11 +2980,11 @@ static int php_memc_zval_from_payload(zval *value, const char *payload, size_t p
 	pl_len = payload_len;
 
 
-	if (payload == NULL && payload_len > 0) {
+	if (pl == NULL && pl_len > 0) {
 		php_error_docref(NULL TSRMLS_CC, E_WARNING,
-			"Could not handle non-existing value of length %zu", payload_len);
+			"Could not handle non-existing value of length %zu", pl_len);
 		return -1;
-	} else if (payload == NULL) {
+	} else if (pl == NULL) {
 		if (MEMC_VAL_GET_TYPE(flags) == MEMC_VAL_IS_BOOL) {
 			ZVAL_FALSE(value);
 		} else {
