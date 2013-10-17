@@ -32,7 +32,7 @@ $data = array(
 	'array' => array(1,2,3,"foo"),
 
 	'object_array_empty' => (object)array(),
-	'object_array' => (object)array(1,2,3),
+	'object_array' => (object)array('a' => 1, 'b' => 2, 'c' => 3),
 	'object_dummy' => new testclass(),
 );
 
