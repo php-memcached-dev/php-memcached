@@ -3961,16 +3961,16 @@ PHP_MINIT_FUNCTION(memcached)
 /* {{{ PHP_MSHUTDOWN_FUNCTION */
 PHP_MSHUTDOWN_FUNCTION(memcached)
 {
-#ifdef ZTS
-	ts_free_id(php_memcached_globals_id);
-#else
-	php_memc_destroy_globals(&php_memcached_globals TSRMLS_CC);
-#endif
-
 #if HAVE_MEMCACHED_SASL
 	if (MEMC_G(use_sasl)) {
 		sasl_done();
 	}
+#endif
+
+#ifdef ZTS
+	ts_free_id(php_memcached_globals_id);
+#else
+	php_memc_destroy_globals(&php_memcached_globals TSRMLS_CC);
 #endif
 
 	UNREGISTER_INI_ENTRIES();
