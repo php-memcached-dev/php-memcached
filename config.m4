@@ -246,6 +246,25 @@ if test "$PHP_MEMCACHED" != "no"; then
     PHP_ADD_INCLUDE($PHP_LIBMEMCACHED_INCDIR)
     PHP_ADD_LIBRARY_WITH_PATH(memcached, $PHP_LIBMEMCACHED_DIR/$PHP_LIBDIR, MEMCACHED_SHARED_LIBADD)
 
+    ORIG_CFLAGS="$CFLAGS"
+    CFLAGS="-I$PHP_LIBMEMCACHED_INCDIR"
+
+    AC_CACHE_CHECK([whether memcached_instance_st is defined], ac_cv_have_memcached_instance_st, [
+      AC_TRY_COMPILE(
+        [ #include <libmemcached/memcached.h> ],
+        [ const memcached_instance_st *instance = NULL; ],
+        [ ac_cv_have_memcached_instance_st="yes" ],
+        [ ac_cv_have_memcached_instance_st="no" ]
+      )
+    ])
+    
+    CFLAGS="$ORIG_CFLAGS"
+
+    if test "$ac_cv_have_memcached_instance_st" = "yes"; then
+       AC_DEFINE(HAVE_MEMCACHED_INSTANCE_ST, [1], [Whether memcached_instance_st is defined])
+    fi
+
+
     PHP_SUBST(MEMCACHED_SHARED_LIBADD)
     
     PHP_MEMCACHED_FILES="php_memcached.c fastlz/fastlz.c g_fmt.c"

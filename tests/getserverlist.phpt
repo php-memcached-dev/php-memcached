@@ -20,43 +20,35 @@ array(0) {
 }
 array(1) {
   [0]=>
-  array(3) {
+  array(2) {
     ["host"]=>
     string(9) "localhost"
     ["port"]=>
     int(11211)
-    ["weight"]=>
-    int(3)
   }
 }
 array(2) {
   [0]=>
-  array(3) {
+  array(2) {
     ["host"]=>
     string(9) "localhost"
     ["port"]=>
     int(11211)
-    ["weight"]=>
-    int(3)
   }
   [1]=>
-  array(3) {
+  array(2) {
     ["host"]=>
     string(9) "localhost"
     ["port"]=>
     int(11211)
-    ["weight"]=>
-    int(3)
   }
 }
 array(1) {
   [0]=>
-  array(3) {
+  array(2) {
     ["host"]=>
     string(9) "127.0.0.1"
     ["port"]=>
     int(11211)
-    ["weight"]=>
-    int(%r[01]%r)
   }
 }
