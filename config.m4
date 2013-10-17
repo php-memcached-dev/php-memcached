@@ -257,7 +257,7 @@ if test "$PHP_MEMCACHED" != "no"; then
         [ ac_cv_have_memcached_instance_st="no" ]
       )
     ])
-    
+
     CFLAGS="$ORIG_CFLAGS"
 
     if test "$ac_cv_have_memcached_instance_st" = "yes"; then
