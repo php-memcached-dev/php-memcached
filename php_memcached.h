@@ -73,6 +73,9 @@ ZEND_BEGIN_MODULE_GLOBALS(php_memcached)
 	long  sess_connect_timeout;
 	zend_bool sess_consistent_hash_enabled;
 	zend_bool sess_binary_enabled;
+
+	char *sess_sasl_username;
+	char *sess_sasl_password;
 #endif
 	char *serializer_name;
 	enum memcached_serializer serializer;

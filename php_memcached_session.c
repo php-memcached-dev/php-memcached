@@ -217,7 +217,27 @@ success:
 					return FAILURE;
 				}
 			}
+#ifdef HAVE_MEMCACHED_SASL
+			if (MEMC_G(use_sasl)) {
+				/*
+				* Enable SASL support if username and password are set
+				*
+				*/
+				if (MEMC_G(sess_sasl_username) && MEMC_G(sess_sasl_password)) {
+					/* Force binary protocol */
+					if (memcached_behavior_set(memc_sess->memc_sess, MEMCACHED_BEHAVIOR_BINARY_PROTOCOL, (uint64_t) 1) == MEMCACHED_FAILURE) {
+						php_error_docref(NULL TSRMLS_CC, E_WARNING, "failed to set memcached session binary protocol");
+						return FAILURE;
+					}
+					if (memcached_set_sasl_auth_data(memc_sess->memc_sess, MEMC_G(sess_sasl_username), MEMC_G(sess_sasl_password)) == MEMCACHED_FAILURE) {
+						php_error_docref(NULL TSRMLS_CC, E_WARNING, "failed to set memcached session sasl credentials");
+						return FAILURE;
+					}
+				}
+			}
 
+
+#endif
 			if (MEMC_G(sess_number_of_replicas) > 0) {
 				if (memcached_behavior_set(memc_sess->memc_sess, MEMCACHED_BEHAVIOR_NUMBER_OF_REPLICAS, (uint64_t) MEMC_G(sess_number_of_replicas)) == MEMCACHED_FAILURE) {
 					php_error_docref(NULL TSRMLS_CC, E_WARNING, "failed to set memcached session number of replicas");
