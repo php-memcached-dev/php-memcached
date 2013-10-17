@@ -2006,6 +2006,22 @@ PHP_METHOD(Memcached, quit)
 }
 /* }}} */
 
+/* {{{ Memcached::flushBuffers()
+   Flush and senf buffered commands */
+PHP_METHOD(Memcached, flushBuffers)
+{
+	memcached_return rc;
+    MEMC_METHOD_INIT_VARS;
+
+	if (zend_parse_parameters_none() == FAILURE) {
+		return;
+	}
+
+    MEMC_METHOD_FETCH_OBJECT;
+	RETURN_BOOL(memcached_flush_buffers(m_obj->memc) == MEMCACHED_SUCCESS);
+}
+/* }}} */
+
 #if defined(LIBMEMCACHED_VERSION_HEX) && LIBMEMCACHED_VERSION_HEX >= 0x00049000
 /* {{{ Memcached::getLastErrorMessage()
    Returns the last error message that occurred */
@@ -3547,6 +3563,9 @@ ZEND_END_ARG_INFO()
 ZEND_BEGIN_ARG_INFO(arginfo_quit, 0)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO(arginfo_flushBuffers, 0)
+ZEND_END_ARG_INFO()
+
 ZEND_BEGIN_ARG_INFO(arginfo_getServerByKey, 0)
 	ZEND_ARG_INFO(0, server_key)
 ZEND_END_ARG_INFO()
@@ -3649,6 +3668,8 @@ static zend_function_entry memcached_class_methods[] = {
 	MEMC_ME(getServerByKey,     arginfo_getServerByKey)
     MEMC_ME(resetServerList,    arginfo_resetServerList)
     MEMC_ME(quit,               arginfo_quit)
+    MEMC_ME(flushBuffers,       arginfo_flushBuffers)
+
 
 #if defined(LIBMEMCACHED_VERSION_HEX) && LIBMEMCACHED_VERSION_HEX >= 0x00049000
 	MEMC_ME(getLastErrorMessage,		arginfo_getLastErrorMessage)
