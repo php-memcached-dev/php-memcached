@@ -1,4 +1,6 @@
-2012 Holidays
+[![Build Status](https://travis-ci.org/php-memcached-dev/php-memcached.png?branch=master)](https://travis-ci.org/php-memcached-dev/php-memcached)
+
+2013 Holidays
 -------------
 Committers' wishlists, if you feel like kicking in towards a gift:
  * [Andrei's](http://given.to/profile/andreiz/wishlist/1411)
