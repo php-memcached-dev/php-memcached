@@ -1,5 +1,7 @@
 --TEST--
 Memcached store, fetch & touch expired key
+--XFAIL--
+libmemcached ignores expiration with binary proto
 --SKIPIF--
 <?php if (!extension_loaded("memcached")) print "skip"; ?>
 --FILE--
