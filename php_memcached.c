@@ -302,8 +302,8 @@ PHP_INI_BEGIN()
 	STD_PHP_INI_ENTRY("memcached.sess_remove_failed",	"0",		PHP_INI_ALL, OnUpdateBool,              sess_remove_failed_enabled,	zend_php_memcached_globals,     php_memcached_globals)
 	STD_PHP_INI_ENTRY("memcached.sess_connect_timeout",     "1000",         PHP_INI_ALL, OnUpdateLong, 		sess_connect_timeout,           zend_php_memcached_globals,     php_memcached_globals)
 
-	STD_PHP_INI_ENTRY("memcached.sess_sasl_username",		NULL,	PHP_INI_ALL, OnUpdateString, sess_sasl_username,		zend_php_memcached_globals,	php_memcached_globals)
-	STD_PHP_INI_ENTRY("memcached.sess_sasl_password",		NULL,	PHP_INI_ALL, OnUpdateString, sess_sasl_password,		zend_php_memcached_globals,	php_memcached_globals)
+	STD_PHP_INI_ENTRY("memcached.sess_sasl_username",		"",	PHP_INI_ALL, OnUpdateString, sess_sasl_username,		zend_php_memcached_globals,	php_memcached_globals)
+	STD_PHP_INI_ENTRY("memcached.sess_sasl_password",		"",	PHP_INI_ALL, OnUpdateString, sess_sasl_password,		zend_php_memcached_globals,	php_memcached_globals)
 #endif
 	STD_PHP_INI_ENTRY("memcached.compression_type",		"fastlz",	PHP_INI_ALL, OnUpdateCompressionType, compression_type,		zend_php_memcached_globals,	php_memcached_globals)
 	STD_PHP_INI_ENTRY("memcached.compression_factor",	"1.3",		PHP_INI_ALL, OnUpdateReal, compression_factor,		zend_php_memcached_globals,	php_memcached_globals)
