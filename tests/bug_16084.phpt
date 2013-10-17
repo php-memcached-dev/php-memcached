@@ -13,10 +13,12 @@ var_dump($m->getServerList());
 bool(true)
 array(1) {
   [0]=>
-  array(2) {
+  array(3) {
     ["host"]=>
     string(9) "localhost"
     ["port"]=>
     int(11211)
+    ["weight"]=>
+    int(3)
   }
 }
