@@ -19,11 +19,13 @@ echo "OK\n";
 --EXPECTF--
 array(1) {
   [0]=>
-  array(2) {
+  array(3) {
     ["host"]=>
     string(9) "127.0.0.1"
     ["port"]=>
     int(11211)
+    ["weight"]=>
+    int(%r[01]%r)
   }
 }
 OK
