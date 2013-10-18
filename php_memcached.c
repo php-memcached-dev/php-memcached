@@ -2984,7 +2984,7 @@ char *s_handle_decompressed (const char *payload, size_t *payload_len, uint32_t 
 			length = (unsigned long)*payload_len * (1 << factor++);
 			buffer = erealloc(buffer, length + 1);
 			memset(buffer, 0, length + 1);
-			status = uncompress((Bytef *)buffer, (uLongf *)&length, (const Bytef *)payload, payload_len);
+			status = uncompress((Bytef *)buffer, (uLongf *)&length, (const Bytef *)payload, *payload_len);
 		} while ((status==Z_BUF_ERROR) && (factor < maxfactor));
 
 		if (status == Z_OK) {
@@ -3160,6 +3160,9 @@ static void php_memc_init_globals(zend_php_memcached_globals *php_memcached_glob
 	MEMC_G(sess_connect_timeout) = 1000;
 	MEMC_G(sess_sasl_username) = NULL;
 	MEMC_G(sess_sasl_password) = NULL;
+#if HAVE_MEMCACHED_SASL
+	MEMC_G(sess_sasl_data) = 0;
+#endif
 #endif
 	MEMC_G(serializer_name) = NULL;
 	MEMC_G(serializer) = SERIALIZER_DEFAULT;

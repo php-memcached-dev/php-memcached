@@ -233,6 +233,7 @@ success:
 						php_error_docref(NULL TSRMLS_CC, E_WARNING, "failed to set memcached session sasl credentials");
 						return FAILURE;
 					}
+					MEMC_G(sess_sasl_data) = 1;
 				}
 			}
 
@@ -281,6 +282,9 @@ PS_CLOSE_FUNC(memcached)
 	}
 	if (memc_sess->memc_sess) {
 		if (!memc_sess->is_persisent) {
+			if (MEMC_G(sess_sasl_data)) {
+				memcached_destroy_sasl_auth_data(memc_sess->memc_sess);
+			}
 			memcached_free(memc_sess->memc_sess);
 			efree(memc_sess);
 		}
