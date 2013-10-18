@@ -1150,6 +1150,7 @@ PHP_METHOD(Memcached, setMultiByKey)
 			case MEMCACHED_TIMEOUT:	\
 			case MEMCACHED_FAIL_UNIX_SOCKET:	\
 			case MEMCACHED_SERVER_MARKED_DEAD:	\
+			case MEMCACHED_SERVER_TEMPORARILY_DISABLED:	\
 				if (memcached_server_count(m_obj->memc) > 0) {	\
 					retry++;	\
 					i_obj->rescode = 0;	\
@@ -1741,6 +1742,10 @@ retry:
 			}
 		}
 	} else {
+		if (!memcached_behavior_get(m_obj->memc, MEMCACHED_BEHAVIOR_BINARY_PROTOCOL)) {
+			php_error_docref(NULL TSRMLS_CC, E_WARNING, "*_with_initial() only supported with binary protocol");
+			RETURN_FALSE;
+		}
 		if (by_key) {
 			if (incr) {
 				status = memcached_increment_with_initial_by_key(m_obj->memc, server_key, server_key_len, key, key_len, (unsigned int)offset, initial, expiry, &value);
