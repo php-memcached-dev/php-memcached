@@ -65,7 +65,9 @@ http://pear.php.net/dtd/package-2.0.xsd">
   </required>
  </dependencies>
  <providesextension>memcached</providesextension>
- <extsrcrelease/>
+ <extsrcrelease>
+  <configureoption name="with-libmemcached-dir" default="no" prompt="libmemcached directory"/>
+ </extsrcrelease>
  <changelog>
    <release>
    <stability><release>stable</release><api>stable</api></stability>
