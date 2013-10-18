@@ -26,6 +26,6 @@ Building
 
 Resources
 ---------
- * [libmemcached](http://tangent.org/552/libmemcached.html)
+ * [libmemcached](http://libmemcached.org/libMemcached.html)
  * [memcached](http://www.danga.com/memcached/)
  * [igbinary](https://github.com/phadej/igbinary/)
