@@ -16,10 +16,11 @@ by alleviating database load.
 
 Building
 --------
-$ phpize
-$ ./configure
-$ make
-$ make test
+
+    $ phpize
+    $ ./configure
+    $ make
+    $ make test
 
 Resources
 ---------
