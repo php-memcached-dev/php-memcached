@@ -1,3 +1,5 @@
+Build Status
+------------
 [![Build Status](https://travis-ci.org/php-memcached-dev/php-memcached.png?branch=master)](https://travis-ci.org/php-memcached-dev/php-memcached)
 
 2013 Holidays
