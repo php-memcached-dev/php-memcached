@@ -2294,6 +2294,7 @@ static PHP_METHOD(Memcached, getOption)
 
 static int php_memc_set_option(php_memc_t *i_obj, long option, zval *value TSRMLS_DC)
 {
+	memcached_return rc;
 	memcached_behavior flag;
 	struct memc_obj *m_obj = i_obj->obj;
 
@@ -2346,8 +2347,8 @@ static int php_memc_set_option(php_memc_t *i_obj, long option, zval *value TSRML
 			flag = (memcached_behavior) option;
 
 			convert_to_long(value);
-			if (memcached_behavior_set(m_obj->memc, flag, (uint64_t)Z_LVAL_P(value)) == MEMCACHED_FAILURE) {
-				php_error_docref(NULL TSRMLS_CC, E_WARNING, "error setting memcached option");
+			if ((rc = memcached_behavior_set(m_obj->memc, flag, (uint64_t)Z_LVAL_P(value))) != MEMCACHED_SUCCESS) {
+				php_error_docref(NULL TSRMLS_CC, E_WARNING, "error setting memcached option: %s", memcached_strerror (m_obj->memc, rc));
 				return 0;
 			}
 
@@ -2401,18 +2402,12 @@ static int php_memc_set_option(php_memc_t *i_obj, long option, zval *value TSRML
 			 */
 			flag = (memcached_behavior) option;
 			convert_to_long(value);
-			if (
-/* MEMCACHED_BEHAVIOR_MAX was added in somewhere around 0.36 or 0.37 */
-#if defined(LIBMEMCACHED_VERSION_HEX) && LIBMEMCACHED_VERSION_HEX >= 0x00037000
-				flag >= MEMCACHED_BEHAVIOR_MAX ||
-#endif
-				memcached_behavior_set(m_obj->memc, flag, (uint64_t)Z_LVAL_P(value)) != MEMCACHED_SUCCESS) {
-				php_error_docref(NULL TSRMLS_CC, E_WARNING, "error setting memcached option");
+			if (flag >= MEMCACHED_BEHAVIOR_MAX || (rc = memcached_behavior_set(m_obj->memc, flag, (uint64_t)Z_LVAL_P(value))) != MEMCACHED_SUCCESS) {
+				php_error_docref(NULL TSRMLS_CC, E_WARNING, "error setting memcached option: %s", memcached_strerror (m_obj->memc, rc));
 				return 0;
 			}
 			break;
 	}
-
 	return 1;
 }
 
