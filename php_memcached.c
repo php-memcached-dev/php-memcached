@@ -1815,6 +1815,7 @@ PHP_METHOD(Memcached, addServer)
 	MEMC_METHOD_FETCH_OBJECT;
 	i_obj->rescode = MEMCACHED_SUCCESS;
 
+#if defined(LIBMEMCACHED_VERSION_HEX) && LIBMEMCACHED_VERSION_HEX >= 0x01000002
 	if (host[0] == '/') { /* unix domain socket */
 		status = memcached_server_add_unix_socket_with_weight(m_obj->memc, host, weight);
 	} else if (memcached_behavior_get(m_obj->memc, MEMCACHED_BEHAVIOR_USE_UDP)) {
@@ -1822,6 +1823,9 @@ PHP_METHOD(Memcached, addServer)
 	} else {
 		status = memcached_server_add_with_weight(m_obj->memc, host, port, weight);
 	}
+#else
+	status = memcached_server_add_with_weight(m_obj->memc, host, port, weight);
+#endif
 
 	if (php_memc_handle_error(i_obj, status TSRMLS_CC) < 0) {
 		RETURN_FALSE;
