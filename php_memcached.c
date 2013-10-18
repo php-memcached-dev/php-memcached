@@ -432,17 +432,21 @@ static PHP_METHOD(Memcached, __construct)
 		}
 
 		if (conn_str) {
-			m_obj->memc = memcached(conn_str, conn_str_len);
+			m_obj->memc = php_memc_create_str(conn_str, conn_str_len);
 			if (!m_obj->memc) {
 				char error_buffer[1024];
 				if (plist_key) {
 					efree(plist_key);
 				}
+#if HAVE_LIBMEMCACHED_CHECK_CONFIGURATION
 				if (libmemcached_check_configuration(conn_str, conn_str_len, error_buffer, sizeof(error_buffer)) != MEMCACHED_SUCCESS) {
 					php_error_docref(NULL TSRMLS_CC, E_ERROR, "configuration error %s", error_buffer);
 				} else {
 					php_error_docref(NULL TSRMLS_CC, E_ERROR, "could not allocate libmemcached structure");
 				}
+#else
+				php_error_docref(NULL TSRMLS_CC, E_ERROR, "could not allocate libmemcached structure");
+#endif
 				/* not reached */
 			}
 		} else {
@@ -1411,7 +1415,7 @@ retry:
 										  key_len, payload, payload_len, expiration, flags);
 			}
 			break;
-
+#ifdef HAVE_LIBMEMCACHED_TOUCH
 		case MEMC_OP_TOUCH:
 			if (!server_key) {
 				status = memcached_touch(m_obj->memc, key, key_len, expiration);
@@ -1420,8 +1424,7 @@ retry:
 										  key_len, expiration);
 			}
 			break;
-
-
+#endif
 		case MEMC_OP_ADD:
 			if (!server_key) {
 				status = memcached_add(m_obj->memc, key, key_len, payload, payload_len, expiration, flags);
@@ -3665,7 +3668,7 @@ static zend_function_entry memcached_class_methods[] = {
 
 	MEMC_ME(set,                arginfo_set)
 	MEMC_ME(setByKey,           arginfo_setByKey)
-#if defined(LIBMEMCACHED_VERSION_HEX) && LIBMEMCACHED_VERSION_HEX >= 0x01000002
+#if HAVE_LIBMEMCACHED_TOUCH
 	MEMC_ME(touch,              arginfo_touch)
 	MEMC_ME(touchByKey,         arginfo_touchByKey)
 #endif
@@ -3859,7 +3862,7 @@ static void php_memc_register_constants(INIT_FUNC_ARGS)
 	REGISTER_MEMC_CLASS_CONST_LONG(OPT_NUMBER_OF_REPLICAS, MEMCACHED_BEHAVIOR_NUMBER_OF_REPLICAS);
 	REGISTER_MEMC_CLASS_CONST_LONG(OPT_RANDOMIZE_REPLICA_READ, MEMCACHED_BEHAVIOR_RANDOMIZE_REPLICA_READ);
 #endif
-#if defined(LIBMEMCACHED_VERSION_HEX) && LIBMEMCACHED_VERSION_HEX >= 0x00049000
+#if defined(HAVE_LIBMEMCACHED_REMOVE_FAILED_SERVERS) && HAVE_LIBMEMCACHED_REMOVE_FAILED_SERVERS
 	REGISTER_MEMC_CLASS_CONST_LONG(OPT_REMOVE_FAILED_SERVERS, MEMCACHED_BEHAVIOR_REMOVE_FAILED_SERVERS);
 #endif
 

@@ -14,20 +14,37 @@
   +----------------------------------------------------------------------+
 */
 
-#ifndef PHP_LIBMEMCACHED_COMPAT
-#define PHP_LIBMEMCACHED_COMPAT
+#include "php_libmemcached_compat.h"
 
-/* this is the version(s) we support */
-#include <libmemcached/memcached.h>
+memcached_st *php_memc_create_str (const char *str, size_t str_len)
+{
+#if HAVE_LIBMEMCACHED_MEMCACHED
+	return memcached (str, str_len);
+#else
+	memcached_return rc;
+	memcached_st *memc;
+	memcached_server_st *servers;
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
+	memc = memcached_create(NULL);
+
+	if (!memc) {
+		return NULL;
+	}
+
+	servers = memcached_servers_parse (str);
+
+	if (!servers) {
+		memcached_free (memc);
+		return NULL;
+	}
+
+	rc = memcached_server_push (memc, servers);
+	memcached_server_free (servers);
+
+	if (rc != MEMCACHED_SUCCESS) {
+		memcached_free (memc);
+		return NULL;
+	}
+	return memc;
 #endif
-
-memcached_st *php_memc_create_str (const char *str, size_t str_len);
-
-#ifndef HAVE_LIBMEMCACHED_SERVER_TEMPORARILY_MARKER_DISABLED
-#  define MEMCACHED_SERVER_TEMPORARILY_DISABLED (1024 << 2)
-#endif
-
-#endif
+}

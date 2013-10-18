@@ -186,14 +186,19 @@ error:
 			php_error_docref(NULL TSRMLS_CC, E_WARNING, "failed to parse session.save_path");
 		}
 	} else {
-		memc_sess->memc_sess = memcached(p, strlen(p));
+		memc_sess->memc_sess = php_memc_create_str(p, strlen(p));
 		if (!memc_sess->memc_sess) {
+#if HAVE_LIBMEMCACHED_CHECK_CONFIGURATION
 			char error_buffer[1024];
 			if (libmemcached_check_configuration(p, strlen(p), error_buffer, sizeof(error_buffer)) != MEMCACHED_SUCCESS) {
 				php_error_docref(NULL TSRMLS_CC, E_WARNING, "session.save_path configuration error %s", error_buffer);
 			} else {
 				php_error_docref(NULL TSRMLS_CC, E_WARNING, "failed to initialize memcached session storage");
 			}
+#else
+			php_error_docref(NULL TSRMLS_CC, E_WARNING, "failed to initialize memcached session storage");
+#endif
+
 		} else {
 success:
 			PS_SET_MOD_DATA(memc_sess);
@@ -253,7 +258,7 @@ success:
 				php_error_docref(NULL TSRMLS_CC, E_WARNING, "failed to set memcached connection timeout");
 				return FAILURE;
 			}
-
+#if HAVE_LIBMEMCACHED_REMOVE_FAILED_SERVERS
 			/* Allow libmemcached remove failed servers */
 			if (MEMC_G(sess_remove_failed_enabled)) {
 				if (memcached_behavior_set(memc_sess->memc_sess, MEMCACHED_BEHAVIOR_REMOVE_FAILED_SERVERS, (uint64_t) 1) == MEMCACHED_FAILURE) {
@@ -261,7 +266,7 @@ success:
 					return FAILURE;
 				}
 			}
-
+#endif
 			return SUCCESS;
 		}
 	}

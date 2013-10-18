@@ -1,10 +1,11 @@
 --TEST--
-Memcached multi store & multi fetch type and value correctness
+Wrong return values for binary protocol
 --SKIPIF--
 <?php if (!extension_loaded("memcached")) print "skip"; ?>
 --FILE--
 <?php
-$client = new Memcached('pool', null, '--SERVER=127.0.0.1:11211');
+$client = new Memcached();
+$client->addServer ('127.0.0.1', 11211);
 $client->setOption(Memcached::OPT_BINARY_PROTOCOL, true);
 
 $client->set('key1', 'value1');
