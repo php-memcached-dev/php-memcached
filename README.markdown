@@ -2,11 +2,6 @@ Build Status
 ------------
 [![Build Status](https://travis-ci.org/php-memcached-dev/php-memcached.png?branch=master)](https://travis-ci.org/php-memcached-dev/php-memcached)
 
-2013 Holidays
--------------
-Committers' wishlists, if you feel like kicking in towards a gift:
- * [Andrei's](http://given.to/profile/andreiz/wishlist/1411)
-
 Description
 -----------
 This extension uses libmemcached library to provide API for communicating with
@@ -27,5 +22,5 @@ Building
 Resources
 ---------
  * [libmemcached](http://libmemcached.org/libMemcached.html)
- * [memcached](http://www.danga.com/memcached/)
+ * [memcached](http://memcached.org/)
  * [igbinary](https://github.com/phadej/igbinary/)
