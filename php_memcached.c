@@ -1743,7 +1743,7 @@ retry:
 		}
 	} else {
 		if (!memcached_behavior_get(m_obj->memc, MEMCACHED_BEHAVIOR_BINARY_PROTOCOL)) {
-			php_error_docref(NULL TSRMLS_CC, E_WARNING, "*_with_initial() only supported with binary protocol");
+			php_error_docref(NULL TSRMLS_CC, E_WARNING, "Initial value is only supported with binary protocol");
 			RETURN_FALSE;
 		}
 		if (by_key) {
