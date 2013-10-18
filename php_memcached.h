@@ -113,7 +113,7 @@ PHP_MINFO_FUNCTION(memcached);
 
 typedef struct {
 	memcached_st *memc_sess;
-	zend_bool is_persisent;
+	zend_bool is_persistent;
 } memcached_sess;
 
 int php_memc_sess_list_entry(void);

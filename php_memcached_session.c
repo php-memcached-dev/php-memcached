@@ -138,11 +138,11 @@ error:
 		}
 		p = e + 1;
 		memc_sess = pecalloc(sizeof(*memc_sess), 1, 1);
-		memc_sess->is_persisent = 1;
+		memc_sess->is_persistent = 1;
 	} else {
 		p = (char *)save_path;
 		memc_sess = ecalloc(sizeof(*memc_sess), 1);
-		memc_sess->is_persisent = 0;
+		memc_sess->is_persistent = 0;
 	}
 
 	if (!strstr(p, "--SERVER")) {
@@ -281,10 +281,12 @@ PS_CLOSE_FUNC(memcached)
 		php_memc_sess_unlock(memc_sess->memc_sess TSRMLS_CC);
 	}
 	if (memc_sess->memc_sess) {
-		if (!memc_sess->is_persisent) {
+		if (!memc_sess->is_persistent) {
+#ifdef HAVE_MEMCACHED_SASL
 			if (MEMC_G(sess_sasl_data)) {
 				memcached_destroy_sasl_auth_data(memc_sess->memc_sess);
 			}
+#endif
 			memcached_free(memc_sess->memc_sess);
 			efree(memc_sess);
 		}
