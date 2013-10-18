@@ -2502,6 +2502,7 @@ static PHP_METHOD(Memcached, setSaslAuthData)
 		php_error_docref(NULL TSRMLS_CC, E_WARNING, "SASL is only supported with binary protocol");
 		RETURN_FALSE;
 	}
+	m_obj->has_sasl_data = 1;
 	RETURN_BOOL(memcached_set_sasl_auth_data(m_obj->memc, user, pass));
 }
 /* }}} */
