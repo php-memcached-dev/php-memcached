@@ -53,6 +53,9 @@ status_print ('touch', $mem, Memcached::RES_SUCCESS);
 $mem->get($key);
 status_print ('get', $mem, Memcached::RES_SUCCESS);
 
+$mem->get($key);
+status_print ('get', $mem, Memcached::RES_SUCCESS);
+
 echo "OK\n";
 
 ?>
@@ -61,5 +64,6 @@ get status code as expected
 set status code as expected
 get status code as expected
 touch status code as expected
+get status code as expected
 get status code as expected
 OK
