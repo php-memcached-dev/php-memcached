@@ -2,8 +2,7 @@
 Test for Github issue #77
 --SKIPIF--
 <?php if (!extension_loaded("memcached")) print "skip";
-	  	if (!in_array ('touch', get_class_methods ('memcached')))
-		die ('skip too old libmemcached');
+      if (!in_array ('touch', get_class_methods ('memcached'))) die ('skip too old libmemcached');
 ?>
 --FILE--
 <?php
