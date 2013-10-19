@@ -1392,9 +1392,9 @@ static void php_memc_store_impl(INTERNAL_FUNCTION_PARAMETERS, int op, zend_bool 
 	}
 
 	if (op == MEMC_OP_TOUCH) {
-#if defined(LIBMEMCACHED_VERSION_HEX) && LIBMEMCACHED_VERSION_HEX < 0x01000015
+#if defined(LIBMEMCACHED_VERSION_HEX) && LIBMEMCACHED_VERSION_HEX < 0x01000016
 		if (memcached_behavior_get(m_obj->memc, MEMCACHED_BEHAVIOR_BINARY_PROTOCOL)) {
-			php_error_docref(NULL TSRMLS_CC, E_WARNING, "using touch command with binary protocol is not recommended with libmemcached versions below 1.0.15");
+			php_error_docref(NULL TSRMLS_CC, E_WARNING, "using touch command with binary protocol is not recommended with libmemcached versions below 1.0.16");
 		}
 #endif
 	} else {
