@@ -250,7 +250,11 @@ if test "$PHP_MEMCACHED" != "no"; then
     ORIG_LIBS="$LIBS"
 
     CFLAGS="$CFLAGS -I$PHP_LIBMEMCACHED_INCDIR"
-    LIBS="$LIBS -lmemcached -L$PHP_LIBMEMCACHED_DIR/$PHP_LIBDIR"
+
+    #
+    # Added -lpthread here because AC_TRY_LINK tests on CentOS 6 seem to fail with undefined reference to pthread_once
+    #
+    LIBS="$LIBS -lpthread -lmemcached -L$PHP_LIBMEMCACHED_DIR/$PHP_LIBDIR"
 
     AC_CACHE_CHECK([whether memcached_instance_st is defined], ac_cv_have_memcached_instance_st, [
       AC_TRY_COMPILE(
