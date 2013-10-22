@@ -62,6 +62,8 @@ ZEND_BEGIN_MODULE_GLOBALS(php_memcached)
 #ifdef HAVE_MEMCACHED_SESSION
 	zend_bool sess_locking_enabled;
 	long  sess_lock_wait;
+	long  sess_lock_max_wait;
+	long  sess_lock_expire;
 	char* sess_prefix;
 	zend_bool sess_locked;
 	char* sess_lock_key;
