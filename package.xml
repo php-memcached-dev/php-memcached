@@ -15,6 +15,12 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <email>andrei@php.net</email>
   <active>yes</active>
  </lead>
+ <lead>
+  <name>Mikko Koppanen</name>
+  <user>mkoppanen</user>
+  <email>mkoppanen@php.net</email>
+  <active>yes</active>
+ </lead>
  <date>2012-08-06</date>
  <version>
   <release>2.1.0</release>
