@@ -49,20 +49,25 @@ static int php_memc_sess_lock(memcached_st *memc, const char *key TSRMLS_DC)
 	int lock_key_len = 0;
 	unsigned long attempts;
 	long write_retry_attempts = 0;
-	long lock_maxwait;
+	long lock_maxwait = MEMC_G(sess_lock_max_wait);
 	long lock_wait = MEMC_G(sess_lock_wait);
+	long lock_expire = MEMC_G(sess_lock_expire);
 	time_t expiration;
 	memcached_return status;
 	/* set max timeout for session_start = max_execution_time.  (c) Andrei Darashenka, Richter & Poweleit GmbH */
-
-	lock_maxwait = zend_ini_long(ZEND_STRS("max_execution_time"), 0);
 	if (lock_maxwait <= 0) {
-		lock_maxwait = MEMC_SESS_LOCK_EXPIRATION;
+		lock_maxwait = zend_ini_long(ZEND_STRS("max_execution_time"), 0);
+		if (lock_maxwait <= 0) {
+			lock_maxwait = MEMC_SESS_LOCK_EXPIRATION;
+		}
 	}
 	if (lock_wait == 0) {
 		lock_wait = MEMC_SESS_DEFAULT_LOCK_WAIT;
 	}
-	expiration  = time(NULL) + lock_maxwait + 1;
+	if (lock_expire <= 0) {
+		lock_expire = lock_maxwait;
+	}
+	expiration  = time(NULL) + lock_expire + 1;
 	attempts = (unsigned long)((1000000.0 / lock_wait) * lock_maxwait);
 
 	/* Set the number of write retry attempts to the number of replicas times the number of attempts to remove a server */
