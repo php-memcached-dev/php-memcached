@@ -39,6 +39,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
 - Fixed PHP bug #65334: (Segfault if uncompress value failed)
 - Fixes GH #14: get with cas token fails to fetch all results
 - Fixes GH #69: compiling on CentOS 6.4 with libmemcached 1.0.17
+- Merged PR #91: More granular session locking support
  </notes>
  <contents>
   <dir name="/">
