@@ -60,7 +60,55 @@ http://pear.php.net/dtd/package-2.0.xsd">
    <file role='src' name='g_fmt.h'/>
    <file role='src' name='fastlz/fastlz.c'/>
    <file role='src' name='fastlz/fastlz.h'/>
-  </dir> <!-- / -->
+   <dir name="tests">
+    <file role='test' name='001.phpt'/>
+    <file role='test' name='bug_16084.phpt'/>
+    <file role='test' name='bug_16959.phpt'/>
+    <file role='test' name='bug_17137.phpt'/>
+    <file role='test' name='bug_18639.phpt'/>
+    <file role='test' name='callback_exception.phpt'/>
+    <file role='test' name='callback_exception_2.phpt'/>
+    <file role='test' name='cas.phpt'/>
+    <file role='test' name='cas_multi.phpt'/>
+    <file role='test' name='check_if_persistent.phpt'/>
+    <file role='test' name='check_if_pristine.phpt'/>
+    <file role='test' name='clone.phpt'/>
+    <file role='test' name='compression_types.phpt'/>
+    <file role='test' name='conf_persist.phpt'/>
+    <file role='test' name='construct.phpt'/>
+    <file role='test' name='construct_persistent.phpt'/>
+    <file role='test' name='deleted.phpt'/>
+    <file role='test' name='deletemulti.phpt'/>
+    <file role='test' name='deletemultitypes.phpt'/>
+    <file role='test' name='expire.phpt'/>
+    <file role='test' name='flush_buffers.phpt'/>
+    <file role='test' name='getdelayed.phpt'/>
+    <file role='test' name='getserverlist.phpt'/>
+    <file role='test' name='gh_21.phpt'/>
+    <file role='test' name='gh_77.phpt'/>
+    <file role='test' name='gh_90.phpt'/>
+    <file role='test' name='invoke_callback.phpt'/>
+    <file role='test' name='invoke_callback_2.phpt'/>
+    <file role='test' name='invoke_callback_twice.phpt'/>
+    <file role='test' name='localserver.phpt'/>
+    <file role='test' name='multi_order.phpt'/>
+    <file role='test' name='no-not-found.phpt'/>
+    <file role='test' name='options.phpt'/>
+    <file role='test' name='pr_75.phpt'/>
+    <file role='test' name='rescode.phpt'/>
+    <file role='test' name='session_badconf_emptyprefix.phpt'/>
+    <file role='test' name='session_badconf_locktime.phpt'/>
+    <file role='test' name='session_badconf_prefix.phpt'/>
+    <file role='test' name='session_badconf_servers.phpt'/>
+    <file role='test' name='session_basic.phpt'/>
+    <file role='test' name='set_large.phpt'/>
+    <file role='test' name='setoptions.phpt'/>
+    <file role='test' name='touch_binary.phpt'/>
+    <file role='test' name='types.phpt'/>
+    <file role='test' name='types_multi.phpt'/>
+    <file role='test' name='undefined_set.phpt'/>
+  </dir>
+ </dir>
  </contents>
  <dependencies>
   <required>
