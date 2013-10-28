@@ -21,20 +21,24 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <email>mkoppanen@php.net</email>
   <active>yes</active>
  </lead>
- <date>2012-08-06</date>
+ <date>2013-10-28</date>
  <version>
-  <release>2.1.0</release>
-  <api>2.1.0</api>
+  <release>2.2.0b1</release>
+  <api>2.2.0</api>
  </version>
  <stability>
-  <release>stable</release>
+  <release>beta</release>
   <api>stable</api>
  </stability>
  <license uri="http://www.php.net/license">PHP</license>
  <notes>
-- Drop support for libmemcached 0.x series, now 1.0.x is required
-- Add support for virtual bucket distribution
-- Fix compilation against PHP 5.2
+- Reinstate support for libememcached 0.x series
+- Added SASL support to session handler
+- Added Memcached::flushBuffers as per GH #78
+- Fixes GH #54: Fixed UDP server adding with newer libmemcached
+- Fixed PHP bug #65334: (Segfault if uncompress value failed)
+- Fixes GH #14: get with cas token fails to fetch all results
+- Fixes GH #69: compiling on CentOS 6.4 with libmemcached 1.0.17
  </notes>
  <contents>
   <dir name="/">
@@ -75,6 +79,20 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <configureoption name="with-libmemcached-dir" default="no" prompt="libmemcached directory"/>
  </extsrcrelease>
  <changelog>
+   <release>
+   <stability><release>beta</release><api>stable</api></stability>
+   <version><release>2.2.0b1</release><api>2.2.0</api></version>
+   <date>2013-10-28</date>
+   <notes>
+- Reinstate support for libememcached 0.x series
+- Added SASL support to session handler
+- Added Memcached::flushBuffers as per GH #78
+- Fixes GH #54: Fixed UDP server adding with newer libmemcached
+- Fixed PHP bug #65334: (Segfault if uncompress value failed)
+- Fixes GH #14: get with cas token fails to fetch all results
+- Fixes GH #69: compiling on CentOS 6.4 with libmemcached 1.0.17
+   </notes>
+  </release>
    <release>
    <stability><release>stable</release><api>stable</api></stability>
    <version><release>2.1.0</release><api>2.1.0</api></version>
