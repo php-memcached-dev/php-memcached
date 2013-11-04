@@ -24,6 +24,11 @@ before_script:
 
 
 script:
+    - export PHP_MEMCACHED_VERSION=$(php -r '$sxe = simplexml_load_file ("package.xml"); echo (string) $sxe->version->release;')
+    - pear package
+    - mkdir /tmp/php-memcached-build
+    - tar xfz "memcached-${PHP_MEMCACHED_VERSION}.tgz" -C /tmp/php-memcached-build
+    - cd /tmp/php-memcached-build/memcached-${PHP_MEMCACHED_VERSION}
     - phpize
     - ./configure --with-libmemcached-dir="${HOME}/libmemcached-${LIBMEMCACHED_VERSION}"
     - make
