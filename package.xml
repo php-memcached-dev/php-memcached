@@ -114,6 +114,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
     <file role='test' name='types.phpt'/>
     <file role='test' name='types_multi.phpt'/>
     <file role='test' name='undefined_set.phpt'/>
+    <file role='test' name='testdata.res'/>
   </dir>
  </dir>
  </contents>
