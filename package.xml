@@ -62,6 +62,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
    <file role='src' name='php_memcached_session.c'/>
    <file role='src' name='php_memcached_session.h'/>
    <file role='src' name='php_libmemcached_compat.h'/>
+   <file role='src' name='php_libmemcached_compat.c'/>
    <file role='src' name='g_fmt.c'/>
    <file role='src' name='g_fmt.h'/>
    <file role='src' name='fastlz/fastlz.c'/>
