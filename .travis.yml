@@ -14,6 +14,7 @@ env:
     - LIBMEMCACHED_VERSION=0.44
 
 before_script:
+    - for file in tests/*.phpt; do grep $(basename $file) package.xml >/dev/null || (echo "Missing $file from package.xml" ; exit 1); done
     - wget "https://launchpad.net/libmemcached/1.0/${LIBMEMCACHED_VERSION}/+download/libmemcached-${LIBMEMCACHED_VERSION}.tar.gz"
     - tar xvfz libmemcached-${LIBMEMCACHED_VERSION}.tar.gz
     - cd libmemcached-${LIBMEMCACHED_VERSION}
