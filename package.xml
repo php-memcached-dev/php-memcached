@@ -69,6 +69,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
    <file role='src' name='fastlz/fastlz.h'/>
    <dir name="tests">
     <file role='test' name='001.phpt'/>
+    <file role='test' name='version.phpt'/>
     <file role='test' name='bug_16084.phpt'/>
     <file role='test' name='bug_16959.phpt'/>
     <file role='test' name='bug_17137.phpt'/>
