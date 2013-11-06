@@ -133,7 +133,7 @@ typedef unsigned long int uint32_t;
   User-defined flags
 ****************************************/
 #define MEMC_UDF_MASK     0xf0
-#define MEMC_UDF_GET(flags)              ((long)(((flags) & MEMC_UDF_MASK)>>8))
+#define MEMC_UDF_GET(flags)              ((long)(flags & MEMC_UDF_MASK)>>8)
 #define MEMC_UDF_SET(flags, udf_flags)   ((flags) |= ((udf_flags<<8) & MEMC_VAL_TYPE_MASK))
 
 /****************************************
@@ -624,7 +624,7 @@ static void php_memc_get_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 		zval_dtor(cas_token);
 		ZVAL_DOUBLE(cas_token, (double)cas);
 
-		if (udf_flags) (
+		if (udf_flags) {
 			ZVAL_DOUBLE(udf_flags, MEMC_UDF_GET(flags));
 		}
 
@@ -675,7 +675,7 @@ static void php_memc_get_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 			}
 		}
 
-		if (udf_flags) (
+		if (udf_flags) {
 			ZVAL_DOUBLE(udf_flags, MEMC_UDF_GET(flags));
 		}
 	}
@@ -1072,7 +1072,7 @@ PHP_METHOD(Memcached, fetch)
 		/* XXX: also check against ULLONG_MAX or memc_behavior */
 		add_assoc_double_ex(return_value, ZEND_STRS("cas"), (double)cas);
 	}
-	if (flags & MEMC_UDF_MASK != 0) {
+	if ((flags & MEMC_UDF_MASK) != 0) {
 		add_assoc_long_ex(return_value, ZEND_STRS("flags"), MEMC_UDF_GET(flags));
 	}
 
@@ -1131,7 +1131,7 @@ PHP_METHOD(Memcached, fetchAll)
 			/* XXX: also check against ULLONG_MAX or memc_behavior */
 			add_assoc_double_ex(entry, ZEND_STRS("cas"), (double)cas);
 		}
-		if (flags & MEMC_UDF_MASK != 0) {
+		if ((flags & MEMC_UDF_MASK) != 0) {
 			add_assoc_long_ex(entry, ZEND_STRS("flags"), MEMC_UDF_GET(flags));
 		}
 		add_next_index_zval(return_value, entry);
@@ -3386,7 +3386,7 @@ static int php_memc_do_result_callback(zval *zmemc_obj, zend_fcall_info *fci,
 	if (cas != 0) {
 		add_assoc_double_ex(z_result, ZEND_STRS("cas"), (double)cas);
 	}
-	if (flags & MEMC_UDF_MASK != 0) {
+	if ((flags & MEMC_UDF_MASK) != 0) {
 		add_assoc_long_ex(z_result, ZEND_STRS("flags"), MEMC_UDF_GET(flags));
 	}
 
