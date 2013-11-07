@@ -49,20 +49,25 @@ static int php_memc_sess_lock(memcached_st *memc, const char *key TSRMLS_DC)
 	int lock_key_len = 0;
 	unsigned long attempts;
 	long write_retry_attempts = 0;
-	long lock_maxwait;
+	long lock_maxwait = MEMC_G(sess_lock_max_wait);
 	long lock_wait = MEMC_G(sess_lock_wait);
+	long lock_expire = MEMC_G(sess_lock_expire);
 	time_t expiration;
 	memcached_return status;
 	/* set max timeout for session_start = max_execution_time.  (c) Andrei Darashenka, Richter & Poweleit GmbH */
-
-	lock_maxwait = zend_ini_long(ZEND_STRS("max_execution_time"), 0);
 	if (lock_maxwait <= 0) {
-		lock_maxwait = MEMC_SESS_LOCK_EXPIRATION;
+		lock_maxwait = zend_ini_long(ZEND_STRS("max_execution_time"), 0);
+		if (lock_maxwait <= 0) {
+			lock_maxwait = MEMC_SESS_LOCK_EXPIRATION;
+		}
 	}
 	if (lock_wait == 0) {
 		lock_wait = MEMC_SESS_DEFAULT_LOCK_WAIT;
 	}
-	expiration  = time(NULL) + lock_maxwait + 1;
+	if (lock_expire <= 0) {
+		lock_expire = lock_maxwait;
+	}
+	expiration  = time(NULL) + lock_expire + 1;
 	attempts = (unsigned long)((1000000.0 / lock_wait) * lock_maxwait);
 
 	/* Set the number of write retry attempts to the number of replicas times the number of attempts to remove a server */
@@ -138,11 +143,11 @@ error:
 		}
 		p = e + 1;
 		memc_sess = pecalloc(sizeof(*memc_sess), 1, 1);
-		memc_sess->is_persisent = 1;
+		memc_sess->is_persistent = 1;
 	} else {
 		p = (char *)save_path;
 		memc_sess = ecalloc(sizeof(*memc_sess), 1);
-		memc_sess->is_persisent = 0;
+		memc_sess->is_persistent = 0;
 	}
 
 	if (!strstr(p, "--SERVER")) {
@@ -186,14 +191,19 @@ error:
 			php_error_docref(NULL TSRMLS_CC, E_WARNING, "failed to parse session.save_path");
 		}
 	} else {
-		memc_sess->memc_sess = memcached(p, strlen(p));
+		memc_sess->memc_sess = php_memc_create_str(p, strlen(p));
 		if (!memc_sess->memc_sess) {
+#if HAVE_LIBMEMCACHED_CHECK_CONFIGURATION
 			char error_buffer[1024];
 			if (libmemcached_check_configuration(p, strlen(p), error_buffer, sizeof(error_buffer)) != MEMCACHED_SUCCESS) {
 				php_error_docref(NULL TSRMLS_CC, E_WARNING, "session.save_path configuration error %s", error_buffer);
 			} else {
 				php_error_docref(NULL TSRMLS_CC, E_WARNING, "failed to initialize memcached session storage");
 			}
+#else
+			php_error_docref(NULL TSRMLS_CC, E_WARNING, "failed to initialize memcached session storage");
+#endif
+
 		} else {
 success:
 			PS_SET_MOD_DATA(memc_sess);
@@ -217,7 +227,28 @@ success:
 					return FAILURE;
 				}
 			}
+#ifdef HAVE_MEMCACHED_SASL
+			if (MEMC_G(use_sasl)) {
+				/*
+				* Enable SASL support if username and password are set
+				*
+				*/
+				if (MEMC_G(sess_sasl_username) && MEMC_G(sess_sasl_password)) {
+					/* Force binary protocol */
+					if (memcached_behavior_set(memc_sess->memc_sess, MEMCACHED_BEHAVIOR_BINARY_PROTOCOL, (uint64_t) 1) == MEMCACHED_FAILURE) {
+						php_error_docref(NULL TSRMLS_CC, E_WARNING, "failed to set memcached session binary protocol");
+						return FAILURE;
+					}
+					if (memcached_set_sasl_auth_data(memc_sess->memc_sess, MEMC_G(sess_sasl_username), MEMC_G(sess_sasl_password)) == MEMCACHED_FAILURE) {
+						php_error_docref(NULL TSRMLS_CC, E_WARNING, "failed to set memcached session sasl credentials");
+						return FAILURE;
+					}
+					MEMC_G(sess_sasl_data) = 1;
+				}
+			}
 
+
+#endif
 			if (MEMC_G(sess_number_of_replicas) > 0) {
 				if (memcached_behavior_set(memc_sess->memc_sess, MEMCACHED_BEHAVIOR_NUMBER_OF_REPLICAS, (uint64_t) MEMC_G(sess_number_of_replicas)) == MEMCACHED_FAILURE) {
 					php_error_docref(NULL TSRMLS_CC, E_WARNING, "failed to set memcached session number of replicas");
@@ -228,13 +259,11 @@ success:
 				}
 			}
 
-			if (MEMC_G(sess_consistent_hashing_enabled)) {
-				if (memcached_behavior_set(memc_sess->memc_sess, MEMCACHED_BEHAVIOR_KETAMA, (uint64_t) 1) == MEMCACHED_FAILURE) {
-					php_error_docref(NULL TSRMLS_CC, E_WARNING, "failed to set memcached consistent hashing");
-					return FAILURE;
-				}
+			if (memcached_behavior_set(memc_sess->memc_sess, MEMCACHED_BEHAVIOR_CONNECT_TIMEOUT, (uint64_t) MEMC_G(sess_connect_timeout)) == MEMCACHED_FAILURE) {
+				php_error_docref(NULL TSRMLS_CC, E_WARNING, "failed to set memcached connection timeout");
+				return FAILURE;
 			}
-
+#if HAVE_LIBMEMCACHED_REMOVE_FAILED_SERVERS
 			/* Allow libmemcached remove failed servers */
 			if (MEMC_G(sess_remove_failed_enabled)) {
 				if (memcached_behavior_set(memc_sess->memc_sess, MEMCACHED_BEHAVIOR_REMOVE_FAILED_SERVERS, (uint64_t) 1) == MEMCACHED_FAILURE) {
@@ -242,7 +271,7 @@ success:
 					return FAILURE;
 				}
 			}
-
+#endif
 			return SUCCESS;
 		}
 	}
@@ -262,7 +291,12 @@ PS_CLOSE_FUNC(memcached)
 		php_memc_sess_unlock(memc_sess->memc_sess TSRMLS_CC);
 	}
 	if (memc_sess->memc_sess) {
-		if (!memc_sess->is_persisent) {
+		if (!memc_sess->is_persistent) {
+#ifdef HAVE_MEMCACHED_SASL
+			if (MEMC_G(sess_sasl_data)) {
+				memcached_destroy_sasl_auth_data(memc_sess->memc_sess);
+			}
+#endif
 			memcached_free(memc_sess->memc_sess);
 			efree(memc_sess);
 		}

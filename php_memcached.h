@@ -62,6 +62,8 @@ ZEND_BEGIN_MODULE_GLOBALS(php_memcached)
 #ifdef HAVE_MEMCACHED_SESSION
 	zend_bool sess_locking_enabled;
 	long  sess_lock_wait;
+	long  sess_lock_max_wait;
+	long  sess_lock_expire;
 	char* sess_prefix;
 	zend_bool sess_locked;
 	char* sess_lock_key;
@@ -70,7 +72,15 @@ ZEND_BEGIN_MODULE_GLOBALS(php_memcached)
 	int   sess_number_of_replicas;
 	zend_bool sess_randomize_replica_read;
 	zend_bool sess_remove_failed_enabled;
-	zend_bool sess_consistent_hashing_enabled;
+	long  sess_connect_timeout;
+	zend_bool sess_consistent_hash_enabled;
+	zend_bool sess_binary_enabled;
+
+	char *sess_sasl_username;
+	char *sess_sasl_password;
+#if HAVE_MEMCACHED_SASL
+	zend_bool sess_sasl_data;
+#endif
 #endif
 	char *serializer_name;
 	enum memcached_serializer serializer;
@@ -83,8 +93,6 @@ ZEND_BEGIN_MODULE_GLOBALS(php_memcached)
 #if HAVE_MEMCACHED_SASL
 	bool use_sasl;
 #endif
-	zend_bool sess_consistent_hash_enabled;
-	zend_bool sess_binary_enabled;
 ZEND_END_MODULE_GLOBALS(php_memcached)
 
 PHP_MEMCACHED_API zend_class_entry *php_memc_get_ce(void);
@@ -107,7 +115,7 @@ PHP_MINFO_FUNCTION(memcached);
 
 typedef struct {
 	memcached_st *memc_sess;
-	zend_bool is_persisent;
+	zend_bool is_persistent;
 } memcached_sess;
 
 int php_memc_sess_list_entry(void);

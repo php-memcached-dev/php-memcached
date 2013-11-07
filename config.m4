@@ -18,7 +18,7 @@ PHP_ARG_ENABLE(memcached-json, whether to enable memcached json serializer suppo
 [  --enable-memcached-json          Enable memcached json serializer support], no, no)
 
 PHP_ARG_ENABLE(memcached-sasl, whether to disable memcached sasl support,
-[  --disable-memcached-sasl          Disable memcached sasl support], no, no)
+[  --disable-memcached-sasl          Disable memcached sasl support], yes, no)
 
 if test -z "$PHP_ZLIB_DIR"; then
 PHP_ARG_WITH(zlib-dir, for ZLIB,
@@ -224,8 +224,8 @@ if test "$PHP_MEMCACHED" != "no"; then
 
   AC_MSG_CHECKING([for libmemcached location])
   if test "$PHP_LIBMEMCACHED_DIR" != "no" && test "$PHP_LIBMEMCACHED_DIR" != "yes"; then
-    if ! test -r "$PHP_LIBMEMCACHED_DIR/include/libmemcached-1.0/memcached.h"; then
-      AC_MSG_ERROR([Can't find libmemcached 1.0.x headers under "$PHP_LIBMEMCACHED_DIR"])
+    if ! test -r "$PHP_LIBMEMCACHED_DIR/include/libmemcached/memcached.h"; then
+      AC_MSG_ERROR([Can't find libmemcached headers under "$PHP_LIBMEMCACHED_DIR"])
     fi
   else
     PHP_LIBMEMCACHED_DIR="no"
@@ -238,7 +238,7 @@ if test "$PHP_MEMCACHED" != "no"; then
   fi
 
   if test "$PHP_LIBMEMCACHED_DIR" = "no"; then
-    AC_MSG_ERROR([memcached support requires libmemcached 1.0.x. Use --with-libmemcached-dir=<DIR> to specify the prefix where libmemcached headers and library are located])
+    AC_MSG_ERROR([memcached support requires libmemcached. Use --with-libmemcached-dir=<DIR> to specify the prefix where libmemcached headers and library are located])
   else
     AC_MSG_RESULT([$PHP_LIBMEMCACHED_DIR])
 
@@ -246,9 +246,100 @@ if test "$PHP_MEMCACHED" != "no"; then
     PHP_ADD_INCLUDE($PHP_LIBMEMCACHED_INCDIR)
     PHP_ADD_LIBRARY_WITH_PATH(memcached, $PHP_LIBMEMCACHED_DIR/$PHP_LIBDIR, MEMCACHED_SHARED_LIBADD)
 
+    ORIG_CFLAGS="$CFLAGS"
+    ORIG_LIBS="$LIBS"
+
+    CFLAGS="$CFLAGS -I$PHP_LIBMEMCACHED_INCDIR"
+
+    #
+    # Added -lpthread here because AC_TRY_LINK tests on CentOS 6 seem to fail with undefined reference to pthread_once
+    #
+    LIBS="$LIBS -lpthread -lmemcached -L$PHP_LIBMEMCACHED_DIR/$PHP_LIBDIR"
+
+    AC_CACHE_CHECK([whether memcached_instance_st is defined], ac_cv_have_memcached_instance_st, [
+      AC_TRY_COMPILE(
+        [ #include <libmemcached/memcached.h> ],
+        [ const memcached_instance_st *instance = NULL; ],
+        [ ac_cv_have_memcached_instance_st="yes" ],
+        [ ac_cv_have_memcached_instance_st="no" ]
+      )
+    ])
+
+    AC_CACHE_CHECK([whether MEMCACHED_BEHAVIOR_REMOVE_FAILED_SERVERS is defined], ac_cv_have_libmemcached_remove_failed_servers, [
+      AC_TRY_COMPILE(
+        [ #include <libmemcached/memcached.h> ],
+        [ MEMCACHED_BEHAVIOR_REMOVE_FAILED_SERVERS; ],
+        [ ac_cv_have_libmemcached_remove_failed_servers="yes" ],
+        [ ac_cv_have_libmemcached_remove_failed_servers="no" ]
+      )
+    ])
+
+    AC_CACHE_CHECK([whether MEMCACHED_SERVER_TEMPORARILY_DISABLED is defined], ac_cv_have_libmemcached_server_temporarily_disabled, [
+      AC_TRY_COMPILE(
+        [ #include <libmemcached/memcached.h> ],
+        [ MEMCACHED_SERVER_TEMPORARILY_DISABLED; ],
+        [ ac_cv_have_libmemcached_server_temporarily_disabled="yes" ],
+        [ ac_cv_have_libmemcached_server_temporarily_disabled="no" ]
+      )
+    ])
+
+    AC_CACHE_CHECK([whether memcached function exists], ac_cv_have_libmemcached_memcached, [
+      AC_TRY_LINK(
+        [ #include <libmemcached/memcached.h> ],
+        [ memcached("t", sizeof ("t")); ],
+        [ ac_cv_have_libmemcached_memcached="yes" ],
+        [ ac_cv_have_libmemcached_memcached="no" ]
+      )
+    ])
+
+    AC_CACHE_CHECK([whether libmemcached_check_configuration function exists], ac_cv_have_libmemcached_check_configuration, [
+      AC_TRY_LINK(
+        [ #include <libmemcached/memcached.h> ],
+        [ libmemcached_check_configuration("", 1, "", 1); ],
+        [ ac_cv_have_libmemcached_check_configuration="yes" ],
+        [ ac_cv_have_libmemcached_check_configuration="no" ]
+      )
+    ])
+
+    AC_CACHE_CHECK([whether memcached_touch function exists], ac_cv_have_libmemcached_touch, [
+      AC_TRY_LINK(
+        [ #include <libmemcached/memcached.h> ],
+        [ memcached_touch (NULL, NULL, 0, 0); ],
+        [ ac_cv_have_libmemcached_touch="yes" ],
+        [ ac_cv_have_libmemcached_touch="no" ]
+      )
+    ])
+
+    CFLAGS="$ORIG_CFLAGS"
+    LIBS="$ORIG_LIBS"
+
+    if test "$ac_cv_have_memcached_instance_st" = "yes"; then
+       AC_DEFINE(HAVE_MEMCACHED_INSTANCE_ST, [1], [Whether memcached_instance_st is defined])
+    fi
+
+    if test "$ac_cv_have_libmemcached_remove_failed_servers" = "yes"; then
+       AC_DEFINE(HAVE_LIBMEMCACHED_REMOVE_FAILED_SERVERS, [1], [Whether MEMCACHED_BEHAVIOR_REMOVE_FAILED_SERVERS is defined])
+    fi
+
+    if test "$ac_cv_have_libmemcached_server_temporarily_disabled" = "yes"; then
+       AC_DEFINE(HAVE_LIBMEMCACHED_SERVER_TEMPORARILY_MARKER_DISABLED, [1], [Whether MEMCACHED_SERVER_TEMPORARILY_DISABLED is defined])
+    fi
+
+    if test "$ac_cv_have_libmemcached_memcached" = "yes"; then
+       AC_DEFINE(HAVE_LIBMEMCACHED_MEMCACHED, [1], [Whether memcached is defined])
+    fi
+
+    if test "$ac_cv_have_libmemcached_check_configuration" = "yes"; then
+       AC_DEFINE(HAVE_LIBMEMCACHED_CHECK_CONFIGURATION, [1], [Whether libmemcached_check_configuration is defined])
+    fi
+
+    if test "$ac_cv_have_libmemcached_touch" = "yes"; then
+       AC_DEFINE(HAVE_LIBMEMCACHED_TOUCH, [1], [Whether memcached_touch is defined])
+    fi
+
     PHP_SUBST(MEMCACHED_SHARED_LIBADD)
     
-    PHP_MEMCACHED_FILES="php_memcached.c fastlz/fastlz.c g_fmt.c"
+    PHP_MEMCACHED_FILES="php_memcached.c php_libmemcached_compat.c fastlz/fastlz.c g_fmt.c"
 
     if test "$PHP_MEMCACHED_SESSION" != "no"; then
       PHP_MEMCACHED_FILES="${PHP_MEMCACHED_FILES} php_memcached_session.c"

@@ -24,11 +24,12 @@ memcached.compression_threshold => %d => %d
 memcached.compression_type => %s => %s
 memcached.serializer => %s => %s
 memcached.sess_binary => %d => %d
+memcached.sess_connect_timeout => %d => %d
 memcached.sess_consistent_hash => %d => %d
-memcached.sess_consistent_hashing => %d => %d
 memcached.sess_lock_wait => %d => %d
 memcached.sess_locking => %d => %d
 memcached.sess_number_of_replicas => %d => %d
 memcached.sess_prefix => %s => %s
 memcached.sess_randomize_replica_read => %d => %d
 memcached.sess_remove_failed => %d => %d
+memcached.use_sasl => %d => %d

@@ -1,5 +1,22 @@
 memcached extension changelog
 
+Version 2.2.0b1
+---------------
+	* Reinstate support for libememcached 0.x series
+	* Added SASL support to session handler
+	* Added Memcached::flushBuffers as per GH #78
+	* Fixes GH #54: Fixed UDP server adding with newer libmemcached
+	* Fixed PHP bug #65334: (Segfault if uncompress value failed)
+	* Fixes GH #14: get with cas token fails to fetch all results
+	* Fixes GH #68: memcached 2.1.0 requires libmemcached 1.0.10
+	* Fixes GH #69: compiling on CentOS 6.4 with libmemcached 1.0.17
+	* Merged PR #91: memcached.sess_lock_wait and memcached.sess_lock_max_wait
+	*  Added session handler settings:
+		- memcached.sess_number_of_replicas
+		- memcached.sess_randomize_replica_read
+		- memcached.sess_remove_failed
+		- memcached.sess_connect_timeout
+
 Version 2.1.0
 -------------
 	* Drop support for libmemcached 0.x series, now 1.0.x is required
@@ -41,8 +58,6 @@ Version 2.0.0b2
 
 Version 2.0.0b1
 ---------------
-	* Change the return value for non-existing keys to be NULL rather than
-	  'false', affects simple get only
 	* Add fastlz library that provides better/faster payload compression
 	* Add configure switch to enable/disable JSON serialization support
 	* Add getAllKeys() method

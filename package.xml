@@ -15,20 +15,37 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <email>andrei@php.net</email>
   <active>yes</active>
  </lead>
- <date>2012-08-06</date>
+ <lead>
+  <name>Mikko Koppanen</name>
+  <user>mkoppanen</user>
+  <email>mkoppanen@php.net</email>
+  <active>yes</active>
+ </lead>
+ <date>2013-10-28</date>
  <version>
-  <release>2.1.0</release>
-  <api>2.1.0</api>
+  <release>2.2.0b1</release>
+  <api>2.2.0</api>
  </version>
  <stability>
-  <release>stable</release>
+  <release>beta</release>
   <api>stable</api>
  </stability>
  <license uri="http://www.php.net/license">PHP</license>
  <notes>
-- Drop support for libmemcached 0.x series, now 1.0.x is required
-- Add support for virtual bucket distribution
-- Fix compilation against PHP 5.2
+- Reinstate support for libememcached 0.x series
+- Added SASL support to session handler
+- Added Memcached::flushBuffers as per GH #78
+- Fixes GH #54: Fixed UDP server adding with newer libmemcached
+- Fixed PHP bug #65334: (Segfault if uncompress value failed)
+- Fixes GH #14: get with cas token fails to fetch all results
+- Fixes GH #68: memcached 2.1.0 requires libmemcached 1.0.10
+- Fixes GH #69: compiling on CentOS 6.4 with libmemcached 1.0.17
+- Merged PR #91: More granular session locking support
+- Added session handler settings:
+  * memcached.sess_number_of_replicas
+  * memcached.sess_randomize_replica_read
+  * memcached.sess_remove_failed
+  * memcached.sess_connect_timeout
  </notes>
  <contents>
   <dir name="/">
@@ -46,11 +63,62 @@ http://pear.php.net/dtd/package-2.0.xsd">
    <file role='src' name='php_memcached_session.c'/>
    <file role='src' name='php_memcached_session.h'/>
    <file role='src' name='php_libmemcached_compat.h'/>
+   <file role='src' name='php_libmemcached_compat.c'/>
    <file role='src' name='g_fmt.c'/>
    <file role='src' name='g_fmt.h'/>
    <file role='src' name='fastlz/fastlz.c'/>
    <file role='src' name='fastlz/fastlz.h'/>
-  </dir> <!-- / -->
+   <dir name="tests">
+    <file role='test' name='001.phpt'/>
+    <file role='test' name='version.phpt'/>
+    <file role='test' name='bug_16084.phpt'/>
+    <file role='test' name='bug_16959.phpt'/>
+    <file role='test' name='bug_17137.phpt'/>
+    <file role='test' name='bug_18639.phpt'/>
+    <file role='test' name='callback_exception.phpt'/>
+    <file role='test' name='callback_exception_2.phpt'/>
+    <file role='test' name='cas.phpt'/>
+    <file role='test' name='cas_multi.phpt'/>
+    <file role='test' name='check_if_persistent.phpt'/>
+    <file role='test' name='check_if_pristine.phpt'/>
+    <file role='test' name='clone.phpt'/>
+    <file role='test' name='compression_types.phpt'/>
+    <file role='test' name='conf_persist.phpt'/>
+    <file role='test' name='construct.phpt'/>
+    <file role='test' name='construct_persistent.phpt'/>
+    <file role='test' name='deleted.phpt'/>
+    <file role='test' name='deletemulti.phpt'/>
+    <file role='test' name='deletemultitypes.phpt'/>
+    <file role='test' name='expire.phpt'/>
+    <file role='test' name='flush_buffers.phpt'/>
+    <file role='test' name='getdelayed.phpt'/>
+    <file role='test' name='getserverlist.phpt'/>
+    <file role='test' name='gh_21.phpt'/>
+    <file role='test' name='gh_77.phpt'/>
+    <file role='test' name='gh_90.phpt'/>
+    <file role='test' name='invoke_callback.phpt'/>
+    <file role='test' name='invoke_callback_2.phpt'/>
+    <file role='test' name='invoke_callback_twice.phpt'/>
+    <file role='test' name='localserver.phpt'/>
+    <file role='test' name='multi_order.phpt'/>
+    <file role='test' name='no-not-found.phpt'/>
+    <file role='test' name='options.phpt'/>
+    <file role='test' name='pr_75.phpt'/>
+    <file role='test' name='rescode.phpt'/>
+    <file role='test' name='session_badconf_emptyprefix.phpt'/>
+    <file role='test' name='session_badconf_locktime.phpt'/>
+    <file role='test' name='session_badconf_prefix.phpt'/>
+    <file role='test' name='session_badconf_servers.phpt'/>
+    <file role='test' name='session_basic.phpt'/>
+    <file role='test' name='set_large.phpt'/>
+    <file role='test' name='setoptions.phpt'/>
+    <file role='test' name='touch_binary.phpt'/>
+    <file role='test' name='types.phpt'/>
+    <file role='test' name='types_multi.phpt'/>
+    <file role='test' name='undefined_set.phpt'/>
+    <file role='test' name='testdata.res'/>
+  </dir>
+ </dir>
  </contents>
  <dependencies>
   <required>
@@ -65,8 +133,24 @@ http://pear.php.net/dtd/package-2.0.xsd">
   </required>
  </dependencies>
  <providesextension>memcached</providesextension>
- <extsrcrelease/>
+ <extsrcrelease>
+  <configureoption name="with-libmemcached-dir" default="no" prompt="libmemcached directory"/>
+ </extsrcrelease>
  <changelog>
+   <release>
+   <stability><release>beta</release><api>stable</api></stability>
+   <version><release>2.2.0b1</release><api>2.2.0</api></version>
+   <date>2013-10-28</date>
+   <notes>
+- Reinstate support for libememcached 0.x series
+- Added SASL support to session handler
+- Added Memcached::flushBuffers as per GH #78
+- Fixes GH #54: Fixed UDP server adding with newer libmemcached
+- Fixed PHP bug #65334: (Segfault if uncompress value failed)
+- Fixes GH #14: get with cas token fails to fetch all results
+- Fixes GH #69: compiling on CentOS 6.4 with libmemcached 1.0.17
+   </notes>
+  </release>
    <release>
    <stability><release>stable</release><api>stable</api></stability>
    <version><release>2.1.0</release><api>2.1.0</api></version>
