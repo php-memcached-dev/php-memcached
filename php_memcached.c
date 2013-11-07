@@ -132,9 +132,9 @@ typedef unsigned long int uint32_t;
 /****************************************
   User-defined flags
 ****************************************/
-#define MEMC_UDF_MASK     0xf0
+#define MEMC_UDF_MASK     0xff00
 #define MEMC_UDF_GET(flags)              ((long)(flags & MEMC_UDF_MASK)>>8)
-#define MEMC_UDF_SET(flags, udf_flags)   ((flags) |= ((udf_flags<<8) & MEMC_VAL_TYPE_MASK))
+#define MEMC_UDF_SET(flags, udf_flags)   ((flags) |= ((udf_flags<<8) & MEMC_UDF_MASK))
 
 /****************************************
   "get" operation flags
@@ -558,7 +558,7 @@ static void php_memc_get_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 	keys[0] = key;
 	key_lens[0] = key_len;
 
-	if (cas_token) {
+	if (cas_token && Z_TYPE_P(cas_token) != IS_NULL) {
 		uint64_t orig_cas_flag;
 
 		/*
@@ -625,7 +625,7 @@ static void php_memc_get_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 		ZVAL_DOUBLE(cas_token, (double)cas);
 
 		if (udf_flags) {
-			ZVAL_DOUBLE(udf_flags, MEMC_UDF_GET(flags));
+			ZVAL_LONG(udf_flags, MEMC_UDF_GET(flags));
 		}
 
 		memcached_result_free(&result);
@@ -676,7 +676,7 @@ static void php_memc_get_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 		}
 
 		if (udf_flags) {
-			ZVAL_DOUBLE(udf_flags, MEMC_UDF_GET(flags));
+			ZVAL_LONG(udf_flags, MEMC_UDF_GET(flags));
 		}
 	}
 }
@@ -1260,8 +1260,8 @@ static void php_memc_setMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 	 * We use 8 upper bits to store user defined flags.
 	 */
 	if (udf_flags > 0) {
-		if (udf_flags > 0xf) {
-			php_error_docref(NULL TSRMLS_CC, E_WARNING, "udf_flags will be limited to 8 bits (0xf)");
+		if (udf_flags > (MEMC_UDF_MASK>>8)) {
+			php_error_docref(NULL TSRMLS_CC, E_WARNING, "udf_flags will be limited to %d", (MEMC_UDF_MASK>>8));
 		}
 	}
 
@@ -1469,8 +1469,8 @@ static void php_memc_store_impl(INTERNAL_FUNCTION_PARAMETERS, int op, zend_bool 
 	 * We use 8 upper bits to store user defined flags.
 	 */
 	if (udf_flags > 0) {
-		if (udf_flags > 0xf) {
-			php_error_docref(NULL TSRMLS_CC, E_WARNING, "udf_flags will be limited to 8 bits (0xf)");
+		if (udf_flags > (MEMC_UDF_MASK>>8)) {
+			php_error_docref(NULL TSRMLS_CC, E_WARNING, "udf_flags will be limited to %d", (MEMC_UDF_MASK>>8));
 		}
 
 		MEMC_UDF_SET(flags, udf_flags);
@@ -1613,8 +1613,8 @@ static void php_memc_cas_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 	 * We use 8 upper bits to store user defined flags.
 	 */
 	if (udf_flags > 0) {
-		if (udf_flags > 0xf) {
-			php_error_docref(NULL TSRMLS_CC, E_WARNING, "udf_flags will be limited to 8 bits (0xf)");
+		if (udf_flags > (MEMC_UDF_MASK>>8)) {
+			php_error_docref(NULL TSRMLS_CC, E_WARNING, "udf_flags will be limited to %d", (MEMC_UDF_MASK>>8));
 		}
 
 		MEMC_UDF_SET(flags, udf_flags);
