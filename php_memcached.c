@@ -120,9 +120,14 @@ typedef unsigned long int uint32_t;
 /****************************************
   Payload value flags
 ****************************************/
-#define MEMC_VAL_TYPE_MASK     0xf
-#define MEMC_VAL_GET_TYPE(flags)         ((flags) & MEMC_VAL_TYPE_MASK)
-#define MEMC_VAL_SET_TYPE(flags, type)   ((flags) |= ((type) & MEMC_VAL_TYPE_MASK))
+#define MEMC_CREATE_MASK(start, n_bits) (((1 << n_bits) - 1) << start)
+
+#define MEMC_MASK_TYPE     MEMC_CREATE_MASK(0, 4)
+#define MEMC_MASK_INTERNAL MEMC_CREATE_MASK(4, 12)
+#define MEMC_MASK_USER     MEMC_CREATE_MASK(16, 16)
+
+#define MEMC_VAL_GET_TYPE(flags)       ((flags) & MEMC_MASK_TYPE)
+#define MEMC_VAL_SET_TYPE(flags, type) ((flags) |= ((type) & MEMC_MASK_TYPE))
 
 #define MEMC_VAL_IS_STRING     0
 #define MEMC_VAL_IS_LONG       1
@@ -132,16 +137,21 @@ typedef unsigned long int uint32_t;
 #define MEMC_VAL_IS_IGBINARY   5
 #define MEMC_VAL_IS_JSON       6
 
-#define MEMC_VAL_COMPRESSED    (1<<4)
-#define MEMC_VAL_COMPRESSION_ZLIB    (1<<5)
-#define MEMC_VAL_COMPRESSION_FASTLZ  (1<<6)
+#define MEMC_VAL_COMPRESSED          (1<<0)
+#define MEMC_VAL_COMPRESSION_ZLIB    (1<<1)
+#define MEMC_VAL_COMPRESSION_FASTLZ  (1<<2)
+
+#define MEMC_VAL_GET_FLAGS(internal_flags)               ((internal_flags & MEMC_MASK_INTERNAL) >> 4)
+#define MEMC_VAL_SET_FLAG(internal_flags, internal_flag) ((internal_flags) |= ((internal_flag << 4) & MEMC_MASK_INTERNAL))
+#define MEMC_VAL_HAS_FLAG(internal_flags, internal_flag) ((MEMC_VAL_GET_FLAGS(internal_flags) & internal_flag) == internal_flag)
+#define MEMC_VAL_DEL_FLAG(internal_flags, internal_flag) internal_flags &= ~((internal_flag << 4) & MEMC_MASK_INTERNAL);
 
 /****************************************
   User-defined flags
 ****************************************/
-#define MEMC_UDF_MASK     0xff00
-#define MEMC_UDF_GET(flags)              ((long)(flags & MEMC_UDF_MASK)>>8)
-#define MEMC_UDF_SET(flags, udf_flags)   ((flags) |= ((udf_flags<<8) & MEMC_UDF_MASK))
+#define MEMC_VAL_GET_USER_FLAGS(flags)            ((flags & MEMC_MASK_USER) >> 16)
+#define MEMC_VAL_SET_USER_FLAGS(flags, udf_flags) ((flags) |= ((udf_flags << 16) & MEMC_MASK_USER))
+#define MEMC_VAL_USER_FLAGS_MAX                   (MEMC_MASK_USER >> 16)
 
 /****************************************
   "get" operation flags
@@ -652,7 +662,7 @@ static void php_memc_get_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 
 	if (udf_flags) {
 		zval_dtor(udf_flags);
-		ZVAL_LONG(udf_flags, MEMC_UDF_GET(flags));
+		ZVAL_LONG(udf_flags, MEMC_VAL_GET_USER_FLAGS(flags));
 	}
 
 	memcached_result_free(&result);
@@ -840,7 +850,7 @@ static void php_memc_getMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 			add_assoc_double_ex(cas_tokens, res_key, res_key_len+1, (double)cas);
 		}
 		if (udf_flags) {
-			add_assoc_long_ex(udf_flags, res_key, res_key_len+1, MEMC_UDF_GET(flags));
+			add_assoc_long_ex(udf_flags, res_key, res_key_len+1, MEMC_VAL_GET_USER_FLAGS(flags));
 		}
 	}
 
@@ -1052,8 +1062,8 @@ PHP_METHOD(Memcached, fetch)
 		/* XXX: also check against ULLONG_MAX or memc_behavior */
 		add_assoc_double_ex(return_value, ZEND_STRS("cas"), (double)cas);
 	}
-	if ((flags & MEMC_UDF_MASK) != 0) {
-		add_assoc_long_ex(return_value, ZEND_STRS("flags"), MEMC_UDF_GET(flags));
+	if (MEMC_VAL_GET_USER_FLAGS(flags) != 0) {
+		add_assoc_long_ex(return_value, ZEND_STRS("flags"), MEMC_VAL_GET_USER_FLAGS(flags));
 	}
 
 	memcached_result_free(&result);
@@ -1111,8 +1121,8 @@ PHP_METHOD(Memcached, fetchAll)
 			/* XXX: also check against ULLONG_MAX or memc_behavior */
 			add_assoc_double_ex(entry, ZEND_STRS("cas"), (double)cas);
 		}
-		if ((flags & MEMC_UDF_MASK) != 0) {
-			add_assoc_long_ex(entry, ZEND_STRS("flags"), MEMC_UDF_GET(flags));
+		if (MEMC_VAL_GET_USER_FLAGS(flags) != 0) {
+			add_assoc_long_ex(entry, ZEND_STRS("flags"), MEMC_VAL_GET_USER_FLAGS(flags));
 		}
 		add_next_index_zval(return_value, entry);
 	}
@@ -1241,8 +1251,8 @@ static void php_memc_setMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 	 * We use 8 upper bits to store user defined flags.
 	 */
 	if (udf_flags > 0) {
-		if (udf_flags > (MEMC_UDF_MASK>>8)) {
-			php_error_docref(NULL TSRMLS_CC, E_WARNING, "udf_flags will be limited to %d", (MEMC_UDF_MASK>>8));
+		if (udf_flags > MEMC_VAL_USER_FLAGS_MAX) {
+			php_error_docref(NULL TSRMLS_CC, E_WARNING, "udf_flags will be limited to %d", MEMC_VAL_USER_FLAGS_MAX);
 		}
 	}
 
@@ -1265,11 +1275,11 @@ static void php_memc_setMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 
 		flags = 0;
 		if (m_obj->compression) {
-			flags |= MEMC_VAL_COMPRESSED;
+			MEMC_VAL_SET_FLAG(flags, MEMC_VAL_COMPRESSED);
 		}
 
 		if (udf_flags > 0) {
-			MEMC_UDF_SET(flags, udf_flags);
+			MEMC_VAL_SET_USER_FLAGS(flags, udf_flags);
 		}
 
 		payload = php_memc_zval_to_payload(*entry, &payload_len, &flags, m_obj->serializer, m_obj->compression_type TSRMLS_CC);
@@ -1442,7 +1452,7 @@ static void php_memc_store_impl(INTERNAL_FUNCTION_PARAMETERS, int op, zend_bool 
 			php_error_docref(NULL TSRMLS_CC, E_WARNING, "cannot append/prepend with compression turned on");
 			return;
 		}
-		flags |= MEMC_VAL_COMPRESSED;
+		MEMC_VAL_SET_FLAG(flags, MEMC_VAL_COMPRESSED);
 	}
 
 	/*
@@ -1450,11 +1460,11 @@ static void php_memc_store_impl(INTERNAL_FUNCTION_PARAMETERS, int op, zend_bool 
 	 * We use 8 upper bits to store user defined flags.
 	 */
 	if (udf_flags > 0) {
-		if (udf_flags > (MEMC_UDF_MASK>>8)) {
-			php_error_docref(NULL TSRMLS_CC, E_WARNING, "udf_flags will be limited to %d", (MEMC_UDF_MASK>>8));
+		if (udf_flags > MEMC_VAL_USER_FLAGS_MAX) {
+			php_error_docref(NULL TSRMLS_CC, E_WARNING, "udf_flags will be limited to %d", MEMC_VAL_USER_FLAGS_MAX);
 		}
 
-		MEMC_UDF_SET(flags, udf_flags);
+		MEMC_VAL_SET_USER_FLAGS(flags, udf_flags);
 	}
 
 	if (op == MEMC_OP_TOUCH) {
@@ -1586,7 +1596,7 @@ static void php_memc_cas_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 	DVAL_TO_LVAL(cas_d, cas);
 
 	if (m_obj->compression) {
-		flags |= MEMC_VAL_COMPRESSED;
+		MEMC_VAL_SET_FLAG(flags, MEMC_VAL_COMPRESSED);
 	}
 
 	/*
@@ -1594,11 +1604,11 @@ static void php_memc_cas_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 	 * We use 8 upper bits to store user defined flags.
 	 */
 	if (udf_flags > 0) {
-		if (udf_flags > (MEMC_UDF_MASK>>8)) {
-			php_error_docref(NULL TSRMLS_CC, E_WARNING, "udf_flags will be limited to %d", (MEMC_UDF_MASK>>8));
+		if (udf_flags > MEMC_VAL_USER_FLAGS_MAX) {
+			php_error_docref(NULL TSRMLS_CC, E_WARNING, "udf_flags will be limited to %d", MEMC_VAL_USER_FLAGS_MAX);
 		}
 
-		MEMC_UDF_SET(flags, udf_flags);
+		MEMC_VAL_SET_USER_FLAGS(flags, udf_flags);
 	}
 
 	payload = php_memc_zval_to_payload(value, &payload_len, &flags, m_obj->serializer, m_obj->compression_type TSRMLS_CC);
@@ -2978,11 +2988,11 @@ static char *php_memc_zval_to_payload(zval *value, size_t *payload_len, uint32_t
 	}
 
 	/* turn off compression for values below the threshold */
-	if ((*flags & MEMC_VAL_COMPRESSED) && l < MEMC_G(compression_threshold)) {
-		*flags &= ~MEMC_VAL_COMPRESSED;
+	if (MEMC_VAL_HAS_FLAG(*flags, MEMC_VAL_COMPRESSED) && l < MEMC_G(compression_threshold)) {
+		MEMC_VAL_DEL_FLAG(*flags, MEMC_VAL_COMPRESSED);
 	}
 
-	if (*flags & MEMC_VAL_COMPRESSED) {
+	if (MEMC_VAL_HAS_FLAG(*flags, MEMC_VAL_COMPRESSED)) {
 		/* status */
 		zend_bool compress_status = 0;
 
@@ -2995,10 +3005,10 @@ static char *php_memc_zval_to_payload(zval *value, size_t *payload_len, uint32_t
 
 		if (compression_type == COMPRESSION_TYPE_FASTLZ) {
 			compress_status = ((payload_comp_len = fastlz_compress(p, l, payload_comp)) > 0);
-			*flags |= MEMC_VAL_COMPRESSION_FASTLZ;
+			MEMC_VAL_SET_FLAG(*flags, MEMC_VAL_COMPRESSION_FASTLZ);
 		} else if (compression_type == COMPRESSION_TYPE_ZLIB) {
 			compress_status = (compress((Bytef *)payload_comp, &payload_comp_len, (Bytef *)p, l) == Z_OK);
-			*flags |= MEMC_VAL_COMPRESSION_ZLIB;
+			MEMC_VAL_SET_FLAG(*flags, MEMC_VAL_COMPRESSION_ZLIB);
 		}
 
 		if (!compress_status) {
@@ -3016,7 +3026,7 @@ static char *php_memc_zval_to_payload(zval *value, size_t *payload_len, uint32_t
 			payload[*payload_len] = 0;
 		} else {
 			/* Store plain value */
-			*flags &= ~MEMC_VAL_COMPRESSED;
+			MEMC_VAL_DEL_FLAG(*flags, MEMC_VAL_COMPRESSED)
 			*payload_len = l;
 			memcpy(payload, p, l);
 			payload[l] = 0;
@@ -3041,7 +3051,7 @@ char *s_handle_decompressed (const char *payload, size_t *payload_len, uint32_t 
 	zend_bool decompress_status = 0;
 
 	/* Stored with newer memcached extension? */
-	if (flags & MEMC_VAL_COMPRESSION_FASTLZ || flags & MEMC_VAL_COMPRESSION_ZLIB) {
+	if (MEMC_VAL_HAS_FLAG(flags, MEMC_VAL_COMPRESSION_FASTLZ) || MEMC_VAL_HAS_FLAG(flags, MEMC_VAL_COMPRESSION_ZLIB)) {
 		/* This is copied from Ilia's patch */
 		memcpy(&len, payload, sizeof(uint32_t));
 		buffer = emalloc(len + 1);
@@ -3049,9 +3059,9 @@ char *s_handle_decompressed (const char *payload, size_t *payload_len, uint32_t 
 		payload += sizeof(uint32_t);
 		length = len;
 
-		if (flags & MEMC_VAL_COMPRESSION_FASTLZ) {
+		if (MEMC_VAL_HAS_FLAG(flags, MEMC_VAL_COMPRESSION_FASTLZ)) {
 			decompress_status = ((length = fastlz_decompress(payload, *payload_len, buffer, len)) > 0);
-		} else if (flags & MEMC_VAL_COMPRESSION_ZLIB) {
+		} else if (MEMC_VAL_HAS_FLAG(flags, MEMC_VAL_COMPRESSION_ZLIB)) {
 			decompress_status = (uncompress((Bytef *)buffer, &length, (Bytef *)payload, *payload_len) == Z_OK);
 		}
 	}
@@ -3106,7 +3116,7 @@ static int php_memc_zval_from_payload(zval *value, const char *payload_in, size_
 		return 0;
 	}
 
-	if (flags & MEMC_VAL_COMPRESSED) {
+	if (MEMC_VAL_HAS_FLAG(flags, MEMC_VAL_COMPRESSED)) {
 		char *datas = s_handle_decompressed (payload_in, &payload_len, flags TSRMLS_CC);
 		if (!datas) {
 			ZVAL_FALSE(value);
@@ -3426,8 +3436,8 @@ static int php_memc_do_result_callback(zval *zmemc_obj, zend_fcall_info *fci,
 	if (cas != 0) {
 		add_assoc_double_ex(z_result, ZEND_STRS("cas"), (double)cas);
 	}
-	if ((flags & MEMC_UDF_MASK) != 0) {
-		add_assoc_long_ex(z_result, ZEND_STRS("flags"), MEMC_UDF_GET(flags));
+	if (MEMC_VAL_GET_USER_FLAGS(flags) != 0) {
+		add_assoc_long_ex(z_result, ZEND_STRS("flags"), MEMC_VAL_GET_USER_FLAGS(flags));
 	}
 
 	if (zend_call_function(fci, fcc TSRMLS_CC) == FAILURE) {
