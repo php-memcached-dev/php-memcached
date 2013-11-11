@@ -1220,9 +1220,15 @@ memcached_return s_user_flag_cb(const memcached_st *ptr, php_memcached_instance_
 	uint32_t version;
 	uint8_t major, minor, micro;
 
+#if defined(LIBMEMCACHED_VERSION_HEX) && LIBMEMCACHED_VERSION_HEX >= 0x01000009
 	major = memcached_server_major_version (instance);
 	minor = memcached_server_minor_version (instance);
 	micro = memcached_server_micro_version (instance);
+#else
+	major = instance->major_version;
+	minor = instance->minor_version;
+	micro = instance->micro_version;
+#endif
 
 	if ((major < 1) || (major == 1 && minor < 2) || (major == 1 && minor == 2 && micro < 1)) {
 		MEMC_G (user_flag_check_result) = 0;
