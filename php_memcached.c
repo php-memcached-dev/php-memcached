@@ -116,6 +116,7 @@ typedef unsigned long int uint32_t;
   Custom result codes
 ****************************************/
 #define MEMC_RES_PAYLOAD_FAILURE -1001
+#define MEMC_RES_VERSION_FAILURE -1002
 
 /****************************************
   Payload value flags
@@ -1212,6 +1213,45 @@ PHP_METHOD(Memcached, setMultiByKey)
 		}	\
 	}	\
 
+
+static
+memcached_return s_user_flag_cb(const memcached_st *ptr, php_memcached_instance_st instance, void *in_context)
+{
+	uint32_t version;
+	uint8_t major, minor, micro;
+
+	major = memcached_server_major_version (instance);
+	minor = memcached_server_minor_version (instance);
+	micro = memcached_server_micro_version (instance);
+
+	if ((major < 1) || (major == 1 && minor < 2) || (major == 1 && minor == 2 && micro < 1)) {
+		MEMC_G (user_flag_check_result) = 0;
+	}
+	return MEMCACHED_SUCCESS;
+}
+
+static
+zend_bool s_user_flags_possible (const memcached_st *memc TSRMLS_DC)
+{
+	memcached_server_function callbacks [1];
+
+	if (MEMC_G (user_flag_check_done))
+		return MEMC_G (user_flag_check_result);
+
+	if (memcached_version(memc) != MEMCACHED_SUCCESS) {
+		MEMC_G (user_flag_check_done)   = 1;
+		MEMC_G (user_flag_check_result) = 0;
+		return 0;
+	}
+
+	MEMC_G (user_flag_check_done)   = 1;
+	MEMC_G (user_flag_check_result) = 1;
+
+	callbacks[0] =& s_user_flag_cb;
+	memcached_server_cursor(memc, callbacks, NULL, 1);
+}
+
+
 /* {{{ -- php_memc_setMulti_impl */
 static void php_memc_setMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 {
@@ -1251,6 +1291,11 @@ static void php_memc_setMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 	 * We use 8 upper bits to store user defined flags.
 	 */
 	if (udf_flags > 0) {
+		if (!s_user_flags_possible (m_obj->memc TSRMLS_CC)) {
+			php_error_docref(NULL TSRMLS_CC, E_WARNING, "memcached server 1.2.1+ needed to store user flags");
+			i_obj->rescode = MEMC_RES_VERSION_FAILURE;
+			RETURN_FALSE;
+		}
 		if (udf_flags > MEMC_VAL_USER_FLAGS_MAX) {
 			php_error_docref(NULL TSRMLS_CC, E_WARNING, "udf_flags will be limited to %d", MEMC_VAL_USER_FLAGS_MAX);
 		}
@@ -1460,6 +1505,11 @@ static void php_memc_store_impl(INTERNAL_FUNCTION_PARAMETERS, int op, zend_bool 
 	 * We use 8 upper bits to store user defined flags.
 	 */
 	if (udf_flags > 0) {
+		if (!s_user_flags_possible (m_obj->memc TSRMLS_CC)) {
+			php_error_docref(NULL TSRMLS_CC, E_WARNING, "memcached server 1.2.1+ needed to store user flags");
+			i_obj->rescode = MEMC_RES_VERSION_FAILURE;
+			RETURN_FALSE;
+		}
 		if (udf_flags > MEMC_VAL_USER_FLAGS_MAX) {
 			php_error_docref(NULL TSRMLS_CC, E_WARNING, "udf_flags will be limited to %d", MEMC_VAL_USER_FLAGS_MAX);
 		}
@@ -1604,6 +1654,11 @@ static void php_memc_cas_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 	 * We use 8 upper bits to store user defined flags.
 	 */
 	if (udf_flags > 0) {
+		if (!s_user_flags_possible (m_obj->memc TSRMLS_CC)) {
+			php_error_docref(NULL TSRMLS_CC, E_WARNING, "memcached server 1.2.1+ needed to store user flags");
+			i_obj->rescode = MEMC_RES_VERSION_FAILURE;
+			RETURN_FALSE;
+		}
 		if (udf_flags > MEMC_VAL_USER_FLAGS_MAX) {
 			php_error_docref(NULL TSRMLS_CC, E_WARNING, "udf_flags will be limited to %d", MEMC_VAL_USER_FLAGS_MAX);
 		}
@@ -3265,6 +3320,8 @@ static void php_memc_init_globals(zend_php_memcached_globals *php_memcached_glob
 #if HAVE_MEMCACHED_SASL
 	MEMC_G(use_sasl) = 0;
 #endif
+	MEMC_G(user_flag_check_done) = 0;
+	MEMC_G(user_flag_check_result) = 0;
 }
 
 static void php_memc_destroy_globals(zend_php_memcached_globals *php_memcached_globals_p TSRMLS_DC)
@@ -4018,6 +4075,7 @@ static void php_memc_register_constants(INIT_FUNC_ARGS)
 	 */
 
 	REGISTER_MEMC_CLASS_CONST_LONG(RES_PAYLOAD_FAILURE, MEMC_RES_PAYLOAD_FAILURE);
+	REGISTER_MEMC_CLASS_CONST_LONG(RES_VERSION_FAILURE, MEMC_RES_VERSION_FAILURE);
 
 	/*
 	 * Serializer types.
