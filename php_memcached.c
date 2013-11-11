@@ -1255,6 +1255,7 @@ zend_bool s_user_flags_possible (const memcached_st *memc TSRMLS_DC)
 
 	callbacks[0] =& s_user_flag_cb;
 	memcached_server_cursor(memc, callbacks, NULL, 1);
+	return MEMC_G (user_flag_check_result);
 }
 
 
