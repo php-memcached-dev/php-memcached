@@ -3139,18 +3139,29 @@ static int php_memc_zval_from_payload(zval *value, const char *payload_in, size_
 
 		case MEMC_VAL_IS_LONG:
 		{
+			long lval;
 			char conv_buf [128];
+
+			if (payload_len >= 128) {
+				php_error_docref(NULL TSRMLS_CC, E_WARNING, "could not read long value, too big");
+				goto my_error;
+			}
 			memcpy (conv_buf, pl, payload_len);
 			conv_buf [payload_len] = '\0';
 
-			long lval = strtol(conv_buf, NULL, 10);
+			lval = strtol(conv_buf, NULL, 10);
 			ZVAL_LONG(value, lval);
-			break;
 		}
+			break;
 
 		case MEMC_VAL_IS_DOUBLE:
 		{
 			char conv_buf [128];
+
+			if (payload_len >= 128) {
+				php_error_docref(NULL TSRMLS_CC, E_WARNING, "could not read double value, too big");
+				goto my_error;
+			}
 			memcpy (conv_buf, pl, payload_len);
 			conv_buf [payload_len] = '\0';
 
