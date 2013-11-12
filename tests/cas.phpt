@@ -30,6 +30,25 @@ if ($v !== 11) {
 	echo "Wanted cas_test to be 11, value is: ";
 	var_dump($v);
 }
+
+$v = $m->get('cas_test', null, 2);
+if ($v != 11) {
+	echo "Failed to get the value with \$cas_token passed by value (2)\n";
+	return;
+}
+
+$v = $m->get('cas_test', null, null);
+if ($v != 11) {
+	echo "Failed to get the value with \$cas_token passed by value (null)\n";
+	return;
+}
+
+$v = $m->get('cas_test', null, $data = array(2, 4));
+if ($v != 11 || $data !== array(2, 4)) {
+	echo "Failed to get the value with \$cas_token passed by value (\$data = array(2, 4))\n";
+	return;
+}
+
 echo "OK\n";
 ?>
 --EXPECT--

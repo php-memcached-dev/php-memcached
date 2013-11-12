@@ -116,7 +116,6 @@ typedef unsigned long int uint32_t;
   Custom result codes
 ****************************************/
 #define MEMC_RES_PAYLOAD_FAILURE -1001
-#define MEMC_RES_VERSION_FAILURE -1002
 
 /****************************************
   Payload value flags
@@ -591,13 +590,13 @@ static void php_memc_get_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 	/*
 		* Enable CAS support, but only if it is currently disabled.
 		*/
-	if (cas_token && Z_TYPE_P(cas_token) != IS_NULL && orig_cas_flag == 0) {
+	if (cas_token && PZVAL_IS_REF(cas_token) && orig_cas_flag == 0) {
 		memcached_behavior_set(m_obj->memc, MEMCACHED_BEHAVIOR_SUPPORT_CAS, 1);
 	}
 
 	status = memcached_mget_by_key(m_obj->memc, server_key, server_key_len, keys, key_lens, 1);
 
-	if (cas_token && Z_TYPE_P(cas_token) != IS_NULL && orig_cas_flag == 0) {
+	if (cas_token && PZVAL_IS_REF(cas_token) && orig_cas_flag == 0) {
 		memcached_behavior_set(m_obj->memc, MEMCACHED_BEHAVIOR_SUPPORT_CAS, orig_cas_flag);
 	}
 
@@ -766,7 +765,7 @@ static void php_memc_getMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 	/*
 	 * Enable CAS support, but only if it is currently disabled.
 	 */
-	if (cas_tokens) {
+	if (cas_tokens && PZVAL_IS_REF(cas_tokens)) {
 		orig_cas_flag = memcached_behavior_get(m_obj->memc, MEMCACHED_BEHAVIOR_SUPPORT_CAS);
 		if (orig_cas_flag == 0) {
 			memcached_behavior_set(m_obj->memc, MEMCACHED_BEHAVIOR_SUPPORT_CAS, 1);
@@ -780,7 +779,7 @@ static void php_memc_getMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 	/*
 	 * Restore the CAS support flag, but only if we had to turn it on.
 	 */
-	if (cas_tokens && orig_cas_flag == 0) {
+	if (cas_tokens && PZVAL_IS_REF(cas_tokens) && orig_cas_flag == 0) {
 		memcached_behavior_set(m_obj->memc, MEMCACHED_BEHAVIOR_SUPPORT_CAS, orig_cas_flag);
 	}
 
@@ -792,8 +791,17 @@ static void php_memc_getMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 	 * returned as doubles, because we cannot store potential 64-bit values in longs.
 	 */
 	if (cas_tokens) {
-		zval_dtor(cas_tokens);
-		array_init(cas_tokens);
+		if (PZVAL_IS_REF(cas_tokens)) {
+			/* cas_tokens was passed by reference, we'll create an array for it. */
+			zval_dtor(cas_tokens);
+			array_init(cas_tokens);
+		} else {
+			/* Not passed by reference, we allow this (eg.: if you specify null
+			 to not enable cas but you want to use the udf_flags parameter).
+			 We destruct it and set it to null for the peace of mind. */
+			zval_dtor(cas_tokens);
+			cas_tokens = NULL;
+		}
 	}
 
 	/*
@@ -1220,7 +1228,7 @@ static void php_memc_setMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 	char *server_key = NULL;
 	int   server_key_len = 0;
 	time_t expiration = 0;
-	uint32_t udf_flags = 0;
+	long udf_flags = 0;
 	zval **entry;
 	char *str_key;
 	uint  str_key_len;
@@ -1280,7 +1288,7 @@ static void php_memc_setMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 		}
 
 		if (udf_flags > 0) {
-			MEMC_VAL_SET_USER_FLAGS(flags, udf_flags);
+			MEMC_VAL_SET_USER_FLAGS(flags, ((uint32_t) udf_flags));
 		}
 
 		payload = php_memc_zval_to_payload(*entry, &payload_len, &flags, m_obj->serializer, m_obj->compression_type TSRMLS_CC);
@@ -1385,7 +1393,7 @@ static void php_memc_store_impl(INTERNAL_FUNCTION_PARAMETERS, int op, zend_bool 
 	zval  s_zvalue;
 	zval *value;
 	long expiration = 0;
-	uint32_t udf_flags = 0;
+	long udf_flags = 0;
 	char  *payload;
 	size_t payload_len;
 	uint32_t flags = 0;
@@ -1464,8 +1472,7 @@ static void php_memc_store_impl(INTERNAL_FUNCTION_PARAMETERS, int op, zend_bool 
 		if (udf_flags > MEMC_VAL_USER_FLAGS_MAX) {
 			php_error_docref(NULL TSRMLS_CC, E_WARNING, "udf_flags will be limited to %d", MEMC_VAL_USER_FLAGS_MAX);
 		}
-
-		MEMC_VAL_SET_USER_FLAGS(flags, udf_flags);
+		MEMC_VAL_SET_USER_FLAGS(flags, ((uint32_t) udf_flags));
 	}
 
 	if (op == MEMC_OP_TOUCH) {
@@ -1567,7 +1574,7 @@ static void php_memc_cas_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 	int   server_key_len = 0;
 	zval *value;
 	time_t expiration = 0;
-	uint32_t udf_flags = 0;
+	long udf_flags = 0;
 	char  *payload;
 	size_t payload_len;
 	uint32_t flags = 0;
@@ -1608,8 +1615,7 @@ static void php_memc_cas_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 		if (udf_flags > MEMC_VAL_USER_FLAGS_MAX) {
 			php_error_docref(NULL TSRMLS_CC, E_WARNING, "udf_flags will be limited to %d", MEMC_VAL_USER_FLAGS_MAX);
 		}
-
-		MEMC_VAL_SET_USER_FLAGS(flags, udf_flags);
+		MEMC_VAL_SET_USER_FLAGS(flags, ((uint32_t) udf_flags));
 	}
 
 	payload = php_memc_zval_to_payload(value, &payload_len, &flags, m_obj->serializer, m_obj->compression_type TSRMLS_CC);
@@ -3482,7 +3488,7 @@ ZEND_END_ARG_INFO()
 ZEND_BEGIN_ARG_INFO_EX(arginfo_get, 0, 0, 1)
 	ZEND_ARG_INFO(0, key)
 	ZEND_ARG_INFO(0, cache_cb)
-	ZEND_ARG_INFO(1, cas_token)
+	ZEND_ARG_INFO(2, cas_token)
 	ZEND_ARG_INFO(1, udf_flags)
 ZEND_END_ARG_INFO()
 
@@ -3490,13 +3496,13 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_getByKey, 0, 0, 2)
 	ZEND_ARG_INFO(0, server_key)
 	ZEND_ARG_INFO(0, key)
 	ZEND_ARG_INFO(0, cache_cb)
-	ZEND_ARG_INFO(1, cas_token)
+	ZEND_ARG_INFO(2, cas_token)
 	ZEND_ARG_INFO(1, udf_flags)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_getMulti, 0, 0, 1)
 	ZEND_ARG_ARRAY_INFO(0, keys, 0)
-	ZEND_ARG_INFO(1, cas_tokens)
+	ZEND_ARG_INFO(2, cas_tokens)
 	ZEND_ARG_INFO(0, flags)
 	ZEND_ARG_INFO(1, udf_flags)
 ZEND_END_ARG_INFO()
@@ -3504,7 +3510,7 @@ ZEND_END_ARG_INFO()
 ZEND_BEGIN_ARG_INFO_EX(arginfo_getMultiByKey, 0, 0, 2)
 	ZEND_ARG_INFO(0, server_key)
 	ZEND_ARG_ARRAY_INFO(0, keys, 0)
-	ZEND_ARG_INFO(1, cas_tokens)
+	ZEND_ARG_INFO(2, cas_tokens)
 	ZEND_ARG_INFO(0, flags)
 	ZEND_ARG_INFO(1, udf_flags)
 ZEND_END_ARG_INFO()
@@ -4030,7 +4036,6 @@ static void php_memc_register_constants(INIT_FUNC_ARGS)
 	 */
 
 	REGISTER_MEMC_CLASS_CONST_LONG(RES_PAYLOAD_FAILURE, MEMC_RES_PAYLOAD_FAILURE);
-	REGISTER_MEMC_CLASS_CONST_LONG(RES_VERSION_FAILURE, MEMC_RES_VERSION_FAILURE);
 
 	/*
 	 * Serializer types.
