@@ -3053,6 +3053,11 @@ static int php_memc_zval_from_payload(zval *value, const char *payload_in, size_
 
 		case MEMC_VAL_IS_LONG:
 		{
+			if (payload_len >= 128) {
+				php_error_docref(NULL TSRMLS_CC, E_WARNING, "could not read long value, too big");
+				goto my_error;
+			}
+
 			char conv_buf [128];
 			memcpy (conv_buf, pl, payload_len);
 			conv_buf [payload_len] = '\0';
@@ -3064,6 +3069,11 @@ static int php_memc_zval_from_payload(zval *value, const char *payload_in, size_
 
 		case MEMC_VAL_IS_DOUBLE:
 		{
+			if (payload_len >= 128) {
+				php_error_docref(NULL TSRMLS_CC, E_WARNING, "could not read double value, too big");
+				goto my_error;
+			}
+
 			char conv_buf [128];
 			memcpy (conv_buf, pl, payload_len);
 			conv_buf [payload_len] = '\0';
