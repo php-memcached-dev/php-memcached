@@ -1260,8 +1260,8 @@ static void php_memc_setMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 	 * We use 8 upper bits to store user defined flags.
 	 */
 	if (udf_flags > 0) {
-		if (udf_flags > MEMC_VAL_USER_FLAGS_MAX) {
-			php_error_docref(NULL TSRMLS_CC, E_WARNING, "udf_flags will be limited to %d", MEMC_VAL_USER_FLAGS_MAX);
+		if ((uint32_t) udf_flags > MEMC_VAL_USER_FLAGS_MAX) {
+			php_error_docref(NULL TSRMLS_CC, E_WARNING, "udf_flags will be limited to %u", MEMC_VAL_USER_FLAGS_MAX);
 		}
 	}
 
@@ -1469,8 +1469,8 @@ static void php_memc_store_impl(INTERNAL_FUNCTION_PARAMETERS, int op, zend_bool 
 	 * We use 8 upper bits to store user defined flags.
 	 */
 	if (udf_flags > 0) {
-		if (udf_flags > MEMC_VAL_USER_FLAGS_MAX) {
-			php_error_docref(NULL TSRMLS_CC, E_WARNING, "udf_flags will be limited to %d", MEMC_VAL_USER_FLAGS_MAX);
+		if ((uint32_t) udf_flags > MEMC_VAL_USER_FLAGS_MAX) {
+			php_error_docref(NULL TSRMLS_CC, E_WARNING, "udf_flags will be limited to %u", MEMC_VAL_USER_FLAGS_MAX);
 		}
 		MEMC_VAL_SET_USER_FLAGS(flags, ((uint32_t) udf_flags));
 	}
@@ -1612,8 +1612,8 @@ static void php_memc_cas_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 	 * We use 8 upper bits to store user defined flags.
 	 */
 	if (udf_flags > 0) {
-		if (udf_flags > MEMC_VAL_USER_FLAGS_MAX) {
-			php_error_docref(NULL TSRMLS_CC, E_WARNING, "udf_flags will be limited to %d", MEMC_VAL_USER_FLAGS_MAX);
+		if ((uint32_t) udf_flags > MEMC_VAL_USER_FLAGS_MAX) {
+			php_error_docref(NULL TSRMLS_CC, E_WARNING, "udf_flags will be limited to %u", MEMC_VAL_USER_FLAGS_MAX);
 		}
 		MEMC_VAL_SET_USER_FLAGS(flags, ((uint32_t) udf_flags));
 	}
