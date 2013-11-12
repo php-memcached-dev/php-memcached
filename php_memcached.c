@@ -151,7 +151,7 @@ typedef unsigned long int uint32_t;
 ****************************************/
 #define MEMC_VAL_GET_USER_FLAGS(flags)            ((flags & MEMC_MASK_USER) >> 16)
 #define MEMC_VAL_SET_USER_FLAGS(flags, udf_flags) ((flags) |= ((udf_flags << 16) & MEMC_MASK_USER))
-#define MEMC_VAL_USER_FLAGS_MAX                   (MEMC_MASK_USER >> 16)
+#define MEMC_VAL_USER_FLAGS_MAX                   ((1 << 16) - 1)
 
 /****************************************
   "get" operation flags
@@ -1256,8 +1256,8 @@ static void php_memc_setMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 	i_obj->rescode = MEMCACHED_SUCCESS;
 
 	/*
-	 * php_memcached uses 8 bits internally to store type, compression and serialization info.
-	 * We use 8 upper bits to store user defined flags.
+	 * php_memcached uses 16 bits internally to store type, compression and serialization info.
+	 * We use 16 upper bits to store user defined flags.
 	 */
 	if (udf_flags > 0) {
 		if ((uint32_t) udf_flags > MEMC_VAL_USER_FLAGS_MAX) {
@@ -1465,8 +1465,8 @@ static void php_memc_store_impl(INTERNAL_FUNCTION_PARAMETERS, int op, zend_bool 
 	}
 
 	/*
-	 * php_memcached uses 8 bits internally to store type, compression and serialization info.
-	 * We use 8 upper bits to store user defined flags.
+	 * php_memcached uses 16 bits internally to store type, compression and serialization info.
+	 * We use 16 upper bits to store user defined flags.
 	 */
 	if (udf_flags > 0) {
 		if ((uint32_t) udf_flags > MEMC_VAL_USER_FLAGS_MAX) {
@@ -1608,8 +1608,8 @@ static void php_memc_cas_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 	}
 
 	/*
-	 * php_memcached uses 8 bits internally to store type, compression and serialization info.
-	 * We use 8 upper bits to store user defined flags.
+	 * php_memcached uses 16 bits internally to store type, compression and serialization info.
+	 * We use 16 upper bits to store user defined flags.
 	 */
 	if (udf_flags > 0) {
 		if ((uint32_t) udf_flags > MEMC_VAL_USER_FLAGS_MAX) {
