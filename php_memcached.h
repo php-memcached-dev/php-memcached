@@ -93,8 +93,6 @@ ZEND_BEGIN_MODULE_GLOBALS(php_memcached)
 #if HAVE_MEMCACHED_SASL
 	zend_bool use_sasl;
 #endif
-    zend_bool user_flag_check_done;
-    zend_bool user_flag_check_result;
 ZEND_END_MODULE_GLOBALS(php_memcached)
 
 PHP_MEMCACHED_API zend_class_entry *php_memc_get_ce(void);
