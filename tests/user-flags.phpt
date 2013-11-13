@@ -5,9 +5,15 @@ Memcached user flags
 --FILE--
 <?php
 
-function check_flag ($flags, $flag)
+function check_flags ($flags, $expected_flags)
 {
-    return (bool) (($flags & $flag) == $flag);
+    foreach ($expected_flags as $f) {
+        if (($flags & $f) != $f) {
+            echo "Flag {$f} is not set" . PHP_EOL;
+            return;
+        }
+    }
+    echo "Flags OK" . PHP_EOL;
 }
 
 define ('FLAG_1', 1);
@@ -30,11 +36,7 @@ $m->set ($key, '1', 10, FLAG_1 | FLAG_4 | FLAG_64);
 $udf_flags = 0;
 $value = $m->get ($key, null, $x, $udf_flags);
 
-var_dump (check_flag ($udf_flags, FLAG_1));
-var_dump (check_flag ($udf_flags, FLAG_2));
-var_dump (check_flag ($udf_flags, FLAG_4));
-var_dump (check_flag ($udf_flags, FLAG_32));
-var_dump (check_flag ($udf_flags, FLAG_64));
+check_flags ($udf_flags, array (FLAG_1, FLAG_4, FLAG_64));
 
 echo "stored without flags" . PHP_EOL;
 $m->set ($key, '1');
@@ -43,17 +45,24 @@ $value = $m->get ($key, null, $x, $udf_flags);
 var_dump ($udf_flags == 0);
 $m->set ($key, '1', 10, FLAG_TOO_LARGE);
 
+$m->setOption(Memcached::OPT_COMPRESSION, true);
+$m->setOption(Memcached::OPT_COMPRESSION_TYPE, Memcached::COMPRESSION_FASTLZ);
+
+$m->set ($key, str_repeat ("abcdef1234567890", 200), 10, FLAG_1 | FLAG_4 | FLAG_64);
+
+$udf_flags = 0;
+$value_back = $m->get($key, null, null, $udf_flags);
+
+check_flags ($udf_flags, array (FLAG_1, FLAG_4, FLAG_64));
+
 echo "DONE TEST\n";
 ?>
 --EXPECTF--
 stored with flags
-bool(true)
-bool(false)
-bool(true)
-bool(false)
-bool(true)
+Flags OK
 stored without flags
 bool(true)
 
 Warning: Memcached::set(): udf_flags will be limited to 65535 in %s on line %d
+Flags OK
 DONE TEST
