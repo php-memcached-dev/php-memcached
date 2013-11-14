@@ -3418,10 +3418,16 @@ static int php_memc_do_result_callback(zval *zmemc_obj, zend_fcall_info *fci,
 static
 PHP_METHOD(MemcachedServer, run)
 {
+	char *address;
+	int address_len;
+
 	php_memc_server_t *intern;
 	intern = (php_memc_server_t *) zend_object_store_get_object(getThis() TSRMLS_CC);
 
-	php_memc_proto_handler_run (intern->handler);
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &address, &address_len) == FAILURE) {
+		return;
+	}
+	php_memc_proto_handler_run (intern->handler, address);
 }
 
 
@@ -3446,8 +3452,8 @@ PHP_METHOD(MemcachedServer, on)
 	}
 
 	if (fci.size > 0) {
-		MEMC_G(server_callbacks) [event].fci       = fci;
-		MEMC_G(server_callbacks) [event].fci_cache = fci_cache;
+		MEMC_G(server.callbacks) [event].fci       = fci;
+		MEMC_G(server.callbacks) [event].fci_cache = fci_cache;
 
 		Z_ADDREF_P (fci.function_name);
 		if (fci.object_ptr) {
@@ -4042,6 +4048,7 @@ static void php_memc_register_constants(INIT_FUNC_ARGS)
 	/*
 	 * Server callbacks
 	 */
+	REGISTER_MEMC_CLASS_CONST_LONG(ON_CONNECT,   MEMC_SERVER_ON_CONNECT);
 	REGISTER_MEMC_CLASS_CONST_LONG(ON_ADD,       MEMC_SERVER_ON_ADD);
 	REGISTER_MEMC_CLASS_CONST_LONG(ON_APPEND,    MEMC_SERVER_ON_APPEND);
 	REGISTER_MEMC_CLASS_CONST_LONG(ON_DECREMENT, MEMC_SERVER_ON_DECREMENT);

@@ -60,20 +60,21 @@ enum memcached_serializer {
 
 typedef enum {
 	MEMC_SERVER_ON_MIN       = -1,
-	MEMC_SERVER_ON_ADD       = 0,
-	MEMC_SERVER_ON_APPEND    = 1,
-	MEMC_SERVER_ON_DECREMENT = 2,
-	MEMC_SERVER_ON_DELETE    = 3,
-	MEMC_SERVER_ON_FLUSH     = 4,
-	MEMC_SERVER_ON_GET       = 5,
-	MEMC_SERVER_ON_INCREMENT = 6,
-	MEMC_SERVER_ON_NOOP      = 7,
-	MEMC_SERVER_ON_PREPEND   = 8,
-	MEMC_SERVER_ON_QUIT      = 9,
-	MEMC_SERVER_ON_REPLACE   = 10,
-	MEMC_SERVER_ON_SET       = 11,
-	MEMC_SERVER_ON_STAT      = 12,
-	MEMC_SERVER_ON_VERSION   = 13,
+	MEMC_SERVER_ON_CONNECT   = 0,
+	MEMC_SERVER_ON_ADD       = 1,
+	MEMC_SERVER_ON_APPEND    = 2,
+	MEMC_SERVER_ON_DECREMENT = 3,
+	MEMC_SERVER_ON_DELETE    = 4,
+	MEMC_SERVER_ON_FLUSH     = 5,
+	MEMC_SERVER_ON_GET       = 6,
+	MEMC_SERVER_ON_INCREMENT = 7,
+	MEMC_SERVER_ON_NOOP      = 8,
+	MEMC_SERVER_ON_PREPEND   = 9,
+	MEMC_SERVER_ON_QUIT      = 10,
+	MEMC_SERVER_ON_REPLACE   = 11,
+	MEMC_SERVER_ON_SET       = 12,
+	MEMC_SERVER_ON_STAT      = 13,
+	MEMC_SERVER_ON_VERSION   = 14,
 	MEMC_SERVER_ON_MAX
 } php_memc_event_t;
 
@@ -119,7 +120,9 @@ ZEND_BEGIN_MODULE_GLOBALS(php_memcached)
 	bool use_sasl;
 #endif
 
-	php_memc_server_cb_t server_callbacks [14];
+	struct {
+		php_memc_server_cb_t callbacks [14];
+	} server;
 ZEND_END_MODULE_GLOBALS(php_memcached)
 
 PHP_MEMCACHED_API zend_class_entry *php_memc_get_ce(void);
