@@ -51,6 +51,8 @@
 # include "php_memcached_session.h"
 #endif
 
+#include "php_memcached_server.h"
+
 #include "fastlz/fastlz.h"
 #include <zlib.h>
 
@@ -220,6 +222,7 @@ enum {
 };
 
 static zend_class_entry *memcached_ce = NULL;
+static zend_class_entry *memcached_server_ce = NULL;
 static zend_class_entry *memcached_exception_ce = NULL;
 
 static zend_object_handlers memcached_object_handlers;
@@ -3373,8 +3376,31 @@ static int php_memc_do_result_callback(zval *zmemc_obj, zend_fcall_info *fci,
 
 	return rc;
 }
-
 /* }}} */
+
+static
+PHP_METHOD(MemcachedServer, run)
+{
+	php_memc_proto_handler_t *h = php_memc_proto_handler_new ();
+	my_run (h);
+}
+
+static
+PHP_METHOD(MemcachedServer, on)
+{
+	char *event_name;
+	int event_name_len;
+	zend_fcall_info fci;
+	zend_fcall_info_cache fci_cache;
+
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sf", &event_name, &event_name_len, &fci, &fci_cache) == FAILURE) {
+		return;
+	}
+
+
+
+}
+
 
 /* {{{ methods arginfo */
 ZEND_BEGIN_ARG_INFO_EX(arginfo___construct, 0, 0, 0)
@@ -3744,6 +3770,17 @@ static zend_function_entry memcached_class_methods[] = {
 #undef MEMC_ME
 /* }}} */
 
+/* {{{ */
+#define MEMC_SE_ME(name, args) PHP_ME(MemcachedServer, name, args, ZEND_ACC_PUBLIC)
+static
+zend_function_entry memcached_server_class_methods[] = {
+	MEMC_SE_ME(run, NULL)
+	MEMC_SE_ME(on, NULL)
+}
+#undef MEMC_SE_ME
+/* }}} */
+
+
 /* {{{ memcached_module_entry
  */
 
@@ -3973,6 +4010,10 @@ PHP_MINIT_FUNCTION(memcached)
 	INIT_CLASS_ENTRY(ce, "Memcached", memcached_class_methods);
 	memcached_ce = zend_register_internal_class(&ce TSRMLS_CC);
 	memcached_ce->create_object = php_memc_new;
+
+	INIT_CLASS_ENTRY(ce, "MemcachedServer", memcached_server_class_methods);
+	memcached_server_ce = zend_register_internal_class(&ce TSRMLS_CC);
+	memcached_server_ce->create_object = php_memc_server_new;
 
 	INIT_CLASS_ENTRY(ce, "MemcachedException", NULL);
 	memcached_exception_ce = zend_register_internal_class_ex(&ce, php_memc_get_exception_base(0 TSRMLS_CC), NULL TSRMLS_CC);
