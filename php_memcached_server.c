@@ -121,14 +121,14 @@ protocol_binary_response_status s_add_handler(const void *cookie, const void *ke
 }
 
 static
-protocol_binary_response_status s_append_handler(const void *cookie, const void *key, uint16_t key_len,
-                                                 const void *data, uint32_t data_len, uint64_t cas, uint64_t *result_cas)
+protocol_binary_response_status s_append_prepend_handler (php_memc_event_t event, const void *cookie, const void *key, uint16_t key_len,
+                                                          const void *data, uint32_t data_len, uint64_t cas, uint64_t *result_cas)
 {
 	protocol_binary_response_status retval = PROTOCOL_BINARY_RESPONSE_UNKNOWN_COMMAND;
 	zval *zkey, *zvalue, *zcas, *zresult_cas;
 	zval **params [4];
 
-	if (!MEMC_HAS_CB(MEMC_SERVER_ON_APPEND)) {
+	if (!MEMC_HAS_CB(event)) {
 		return retval;
 	}
 
@@ -149,7 +149,7 @@ protocol_binary_response_status s_append_handler(const void *cookie, const void 
 	params [2] = &zcas;
 	params [3] = &zresult_cas;
 
-	retval = s_invoke_php_callback (&MEMC_GET_CB(MEMC_SERVER_ON_APPEND), params, 4);
+	retval = s_invoke_php_callback (&MEMC_GET_CB(event), params, 4);
 
 	if (Z_TYPE_P(zresult_cas) != IS_NULL) {
 		convert_to_double (zresult_cas);
@@ -162,6 +162,22 @@ protocol_binary_response_status s_append_handler(const void *cookie, const void 
 	zval_ptr_dtor (&zresult_cas);
 
 	return retval;
+}
+
+static
+protocol_binary_response_status s_append_handler (const void *cookie, const void *key, uint16_t key_len,
+                                                  const void *data, uint32_t data_len, uint64_t cas, uint64_t *result_cas)
+{
+	return
+		s_append_prepend_handler (MEMC_SERVER_ON_APPEND, cookie, key, key_len, data, data_len, cas, result_cas);
+}
+
+static
+protocol_binary_response_status s_prepend_handler (const void *cookie, const void *key, uint16_t key_len,
+                                                   const void *data, uint32_t data_len, uint64_t cas, uint64_t *result_cas)
+{
+	return
+		s_append_prepend_handler (MEMC_SERVER_ON_PREPEND, cookie, key, key_len, data, data_len, cas, result_cas);
 }
 
 static
@@ -288,6 +304,85 @@ protocol_binary_response_status s_flush_handler(const void *cookie, uint32_t whe
 	return retval;
 }
 
+static
+protocol_binary_response_status s_get_handler (const void *cookie, const void *key, uint16_t key_len,
+                                               memcached_binary_protocol_get_response_handler response_handler)
+{
+	protocol_binary_response_status retval = PROTOCOL_BINARY_RESPONSE_UNKNOWN_COMMAND;
+	zval *zkey, *zvalue, *zflags, *zresult_cas;
+	zval **params [4];
+
+	if (!MEMC_HAS_CB(MEMC_SERVER_ON_GET)) {
+		return retval;
+	}
+
+	MAKE_STD_ZVAL(zkey);
+	ZVAL_STRINGL(zkey, key, key_len, 1);
+
+	MAKE_STD_ZVAL(zvalue);
+	ZVAL_NULL(zvalue);
+
+	MAKE_STD_ZVAL(zflags);
+	ZVAL_NULL(zflags);
+
+	MAKE_STD_ZVAL(zresult_cas);
+	ZVAL_NULL(zresult_cas);
+
+	params [0] = &zkey;
+	params [1] = &zvalue;
+	params [2] = &zflags;
+	params [3] = &zresult_cas;
+
+	retval = s_invoke_php_callback (&MEMC_GET_CB(MEMC_SERVER_ON_GET), params, 4);
+
+	/* Succeeded in getting the key */
+	if (retval == PROTOCOL_BINARY_RESPONSE_SUCCESS) {
+		uint32_t flags = 0;
+		uint64_t result_cas = 0;
+
+		if (Z_TYPE_P (zvalue) == IS_NULL) {
+			zval_ptr_dtor (&zkey);
+			zval_ptr_dtor (&zvalue);
+			zval_ptr_dtor (&zflags);
+			zval_ptr_dtor (&zresult_cas);
+			return PROTOCOL_BINARY_RESPONSE_KEY_ENOENT;
+		}
+
+		if (Z_TYPE_P (zvalue) != IS_STRING) {
+			convert_to_string (zvalue);
+		}
+
+		if (Z_TYPE_P (zflags) == IS_LONG) {
+			flags = Z_LVAL_P (zflags);
+		}
+
+		if (Z_TYPE_P(zresult_cas) != IS_NULL) {
+			if (Z_TYPE_P (zresult_cas) != IS_DOUBLE) {
+				convert_to_double (zresult_cas);
+			}
+			result_cas = (uint64_t) Z_DVAL_P (zresult_cas);
+		}
+		retval = response_handler(cookie, key, key_len, Z_STRVAL_P(zvalue), Z_STRLEN_P(zvalue), flags, result_cas);
+	}
+
+	zval_ptr_dtor (&zkey);
+	zval_ptr_dtor (&zvalue);
+	zval_ptr_dtor (&zflags);
+	zval_ptr_dtor (&zresult_cas);
+	return retval;
+}
+
+static
+protocol_binary_response_status s_noop_handler(const void *cookie)
+{
+	protocol_binary_response_status retval = PROTOCOL_BINARY_RESPONSE_UNKNOWN_COMMAND;
+
+	if (!MEMC_HAS_CB(MEMC_SERVER_ON_NOOP)) {
+		return retval;
+	}
+	return s_invoke_php_callback (&MEMC_GET_CB(MEMC_SERVER_ON_NOOP), NULL, 0);
+}
+
 // libevent callbacks
 
 static
@@ -377,13 +472,11 @@ php_memc_proto_handler_t *php_memc_proto_handler_new ()
 	handler->callbacks.interface.v1.decrement     = s_decrement_handler;
 	handler->callbacks.interface.v1.delete_object = s_delete_handler;
 	handler->callbacks.interface.v1.flush_object  = s_flush_handler;
-	/*
 	handler->callbacks.interface.v1.get           = s_get_handler;
-	*/
 	handler->callbacks.interface.v1.increment     = s_increment_handler;
-	/*
 	handler->callbacks.interface.v1.noop          = s_noop_handler;
 	handler->callbacks.interface.v1.prepend       = s_prepend_handler;
+	/*
 	handler->callbacks.interface.v1.quit          = s_quit_handler;
 	handler->callbacks.interface.v1.replace       = s_replace_handler;
 	handler->callbacks.interface.v1.set           = s_set_handler;
