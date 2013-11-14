@@ -44,6 +44,7 @@
 #include <ext/standard/php_var.h>
 #include <ext/standard/basic_functions.h>
 
+#include "php_memcached_server.h"
 #include "php_memcached.h"
 #include "g_fmt.h"
 
@@ -51,7 +52,7 @@
 # include "php_memcached_session.h"
 #endif
 
-#include "php_memcached_server.h"
+
 
 #include "fastlz/fastlz.h"
 #include <zlib.h>
@@ -143,6 +144,7 @@ typedef unsigned long int uint32_t;
 ****************************************/
 #define MEMC_GET_PRESERVE_ORDER (1<<0)
 
+
 /****************************************
   Helper macros
 ****************************************/
@@ -212,6 +214,11 @@ typedef struct {
 	int memc_errno;
 } php_memc_t;
 
+typedef struct {
+	zend_object zo;
+	php_memc_proto_handler_t *handler;
+} php_memc_server_t;
+
 enum {
 	MEMC_OP_SET,
 	MEMC_OP_TOUCH,
@@ -226,6 +233,7 @@ static zend_class_entry *memcached_server_ce = NULL;
 static zend_class_entry *memcached_exception_ce = NULL;
 
 static zend_object_handlers memcached_object_handlers;
+static zend_object_handlers memcached_server_object_handlers;
 
 struct callbackContext
 {
@@ -243,8 +251,8 @@ static zend_class_entry *spl_ce_RuntimeException = NULL;
 #if (PHP_MAJOR_VERSION == 5 && PHP_MINOR_VERSION < 3)
 const zend_fcall_info empty_fcall_info = { 0, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0 };
 #undef ZEND_BEGIN_ARG_INFO_EX
-#define ZEND_BEGIN_ARG_INFO_EX(name, pass_rest_by_reference, return_reference, required_num_args)   \
-	static zend_arg_info name[] = {   \
+#define ZEND_BEGIN_ARG_INFO_EX(name, pass_rest_by_reference, return_reference, required_num_args) \
+	static zend_arg_info name[] = { \
 		{ NULL, 0, NULL, 0, 0, 0, pass_rest_by_reference, return_reference, required_num_args },
 #endif
 
@@ -2645,6 +2653,35 @@ zend_object_value php_memc_new(zend_class_entry *ce TSRMLS_DC)
 	return retval;
 }
 
+static
+void php_memc_server_free_storage(php_memc_server_t *intern TSRMLS_DC)
+{
+	zend_object_std_dtor(&intern->zo TSRMLS_CC);
+	efree (intern);
+}
+
+zend_object_value php_memc_server_new(zend_class_entry *ce TSRMLS_DC)
+{
+	zend_object_value retval;
+	php_memc_server_t *intern;
+	zval *tmp;
+
+	intern = ecalloc(1, sizeof(php_memc_server_t));
+	zend_object_std_init (&intern->zo, ce TSRMLS_CC);
+#if PHP_VERSION_ID >= 50400
+	object_properties_init( (zend_object *) intern, ce);
+#else
+	zend_hash_copy(intern->zo.properties, &ce->default_properties, (copy_ctor_func_t) zval_add_ref, (void *) &tmp, sizeof(zval *));
+#endif
+
+	intern->handler = php_memc_proto_handler_new ();
+
+	retval.handle = zend_objects_store_put(intern, (zend_objects_store_dtor_t)zend_objects_destroy_object, (zend_objects_free_object_storage_t)php_memc_server_free_storage, NULL TSRMLS_CC);
+	retval.handlers = &memcached_server_object_handlers;
+
+	return retval;
+}
+
 ZEND_RSRC_DTOR_FUNC(php_memc_dtor)
 {
 	if (rsrc->ptr) {
@@ -3381,24 +3418,43 @@ static int php_memc_do_result_callback(zval *zmemc_obj, zend_fcall_info *fci,
 static
 PHP_METHOD(MemcachedServer, run)
 {
-	php_memc_proto_handler_t *h = php_memc_proto_handler_new ();
-	my_run (h);
+	php_memc_server_t *intern;
+	intern = (php_memc_server_t *) zend_object_store_get_object(getThis() TSRMLS_CC);
+
+	php_memc_proto_handler_run (intern->handler);
 }
+
 
 static
 PHP_METHOD(MemcachedServer, on)
 {
-	char *event_name;
-	int event_name_len;
+	php_memc_server_t *intern;
+
+	long event;
 	zend_fcall_info fci;
 	zend_fcall_info_cache fci_cache;
+	zend_bool rc = 0;
 
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sf", &event_name, &event_name_len, &fci, &fci_cache) == FAILURE) {
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "lf!", &event, &fci, &fci_cache) == FAILURE) {
 		return;
 	}
 
+	intern = (php_memc_server_t *) zend_object_store_get_object(getThis() TSRMLS_CC);
 
+	if (event <= MEMC_SERVER_ON_MIN || event >= MEMC_SERVER_ON_MAX) {
+		RETURN_FALSE;
+	}
 
+	if (fci.size > 0) {
+		MEMC_G(server_callbacks) [event].fci       = fci;
+		MEMC_G(server_callbacks) [event].fci_cache = fci_cache;
+
+		Z_ADDREF_P (fci.function_name);
+		if (fci.object_ptr) {
+			Z_ADDREF_P (fci.object_ptr);
+		}
+	}
+	RETURN_BOOL(rc);
 }
 
 
@@ -3776,7 +3832,8 @@ static
 zend_function_entry memcached_server_class_methods[] = {
 	MEMC_SE_ME(run, NULL)
 	MEMC_SE_ME(on, NULL)
-}
+	{ NULL, NULL, NULL }
+};
 #undef MEMC_SE_ME
 /* }}} */
 
@@ -3982,6 +4039,42 @@ static void php_memc_register_constants(INIT_FUNC_ARGS)
 	 */
 	REGISTER_MEMC_CLASS_CONST_LONG(GET_PRESERVE_ORDER, MEMC_GET_PRESERVE_ORDER);
 
+	/*
+	 * Server callbacks
+	 */
+	REGISTER_MEMC_CLASS_CONST_LONG(ON_ADD,       MEMC_SERVER_ON_ADD);
+	REGISTER_MEMC_CLASS_CONST_LONG(ON_APPEND,    MEMC_SERVER_ON_APPEND);
+	REGISTER_MEMC_CLASS_CONST_LONG(ON_DECREMENT, MEMC_SERVER_ON_DECREMENT);
+	REGISTER_MEMC_CLASS_CONST_LONG(ON_DELETE,    MEMC_SERVER_ON_DELETE);
+	REGISTER_MEMC_CLASS_CONST_LONG(ON_FLUSH,     MEMC_SERVER_ON_FLUSH);
+	REGISTER_MEMC_CLASS_CONST_LONG(ON_GET,       MEMC_SERVER_ON_GET);
+	REGISTER_MEMC_CLASS_CONST_LONG(ON_INCREMENT, MEMC_SERVER_ON_INCREMENT);
+	REGISTER_MEMC_CLASS_CONST_LONG(ON_NOOP,      MEMC_SERVER_ON_NOOP);
+	REGISTER_MEMC_CLASS_CONST_LONG(ON_PREPEND,   MEMC_SERVER_ON_PREPEND);
+	REGISTER_MEMC_CLASS_CONST_LONG(ON_QUIT,      MEMC_SERVER_ON_QUIT);
+	REGISTER_MEMC_CLASS_CONST_LONG(ON_REPLACE,   MEMC_SERVER_ON_REPLACE);
+	REGISTER_MEMC_CLASS_CONST_LONG(ON_SET,       MEMC_SERVER_ON_SET);
+	REGISTER_MEMC_CLASS_CONST_LONG(ON_STAT,      MEMC_SERVER_ON_STAT);
+	REGISTER_MEMC_CLASS_CONST_LONG(ON_VERSION,   MEMC_SERVER_ON_VERSION);
+
+	REGISTER_MEMC_CLASS_CONST_LONG(RESPONSE_SUCCESS,         PROTOCOL_BINARY_RESPONSE_SUCCESS);
+	REGISTER_MEMC_CLASS_CONST_LONG(RESPONSE_KEY_ENOENT,      PROTOCOL_BINARY_RESPONSE_KEY_ENOENT);
+	REGISTER_MEMC_CLASS_CONST_LONG(RESPONSE_KEY_EEXISTS,     PROTOCOL_BINARY_RESPONSE_KEY_EEXISTS);
+	REGISTER_MEMC_CLASS_CONST_LONG(RESPONSE_E2BIG,           PROTOCOL_BINARY_RESPONSE_E2BIG);
+	REGISTER_MEMC_CLASS_CONST_LONG(RESPONSE_EINVAL,          PROTOCOL_BINARY_RESPONSE_EINVAL);
+	REGISTER_MEMC_CLASS_CONST_LONG(RESPONSE_NOT_STORED,      PROTOCOL_BINARY_RESPONSE_NOT_STORED);
+	REGISTER_MEMC_CLASS_CONST_LONG(RESPONSE_DELTA_BADVAL,    PROTOCOL_BINARY_RESPONSE_DELTA_BADVAL);
+	REGISTER_MEMC_CLASS_CONST_LONG(RESPONSE_NOT_MY_VBUCKET,  PROTOCOL_BINARY_RESPONSE_NOT_MY_VBUCKET);
+	REGISTER_MEMC_CLASS_CONST_LONG(RESPONSE_AUTH_ERROR,      PROTOCOL_BINARY_RESPONSE_AUTH_ERROR);
+	REGISTER_MEMC_CLASS_CONST_LONG(RESPONSE_AUTH_CONTINUE,   PROTOCOL_BINARY_RESPONSE_AUTH_CONTINUE);
+	REGISTER_MEMC_CLASS_CONST_LONG(RESPONSE_UNKNOWN_COMMAND, PROTOCOL_BINARY_RESPONSE_UNKNOWN_COMMAND);
+	REGISTER_MEMC_CLASS_CONST_LONG(RESPONSE_ENOMEM,          PROTOCOL_BINARY_RESPONSE_ENOMEM);
+	REGISTER_MEMC_CLASS_CONST_LONG(RESPONSE_NOT_SUPPORTED,   PROTOCOL_BINARY_RESPONSE_NOT_SUPPORTED);
+	REGISTER_MEMC_CLASS_CONST_LONG(RESPONSE_EINTERNAL,       PROTOCOL_BINARY_RESPONSE_EINTERNAL);
+	REGISTER_MEMC_CLASS_CONST_LONG(RESPONSE_EBUSY,           PROTOCOL_BINARY_RESPONSE_EBUSY);
+	REGISTER_MEMC_CLASS_CONST_LONG(RESPONSE_ETMPFAIL,        PROTOCOL_BINARY_RESPONSE_ETMPFAIL);
+
+
 	#undef REGISTER_MEMC_CLASS_CONST_LONG
 
 	/*
@@ -4003,6 +4096,9 @@ PHP_MINIT_FUNCTION(memcached)
 
 	memcpy(&memcached_object_handlers, zend_get_std_object_handlers(), sizeof(zend_object_handlers));
 	memcached_object_handlers.clone_obj = NULL;
+
+	memcpy(&memcached_server_object_handlers, zend_get_std_object_handlers(), sizeof(zend_object_handlers));
+	memcached_server_object_handlers.clone_obj = NULL;
 
 	le_memc = zend_register_list_destructors_ex(NULL, php_memc_dtor, "Memcached persistent connection", module_number);
 	le_memc_sess = zend_register_list_destructors_ex(NULL, php_memc_sess_dtor, "Memcached  Sessions persistent connection", module_number);

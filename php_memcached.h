@@ -58,6 +58,31 @@ enum memcached_serializer {
 # endif
 #endif
 
+typedef enum {
+	MEMC_SERVER_ON_MIN       = -1,
+	MEMC_SERVER_ON_ADD       = 0,
+	MEMC_SERVER_ON_APPEND    = 1,
+	MEMC_SERVER_ON_DECREMENT = 2,
+	MEMC_SERVER_ON_DELETE    = 3,
+	MEMC_SERVER_ON_FLUSH     = 4,
+	MEMC_SERVER_ON_GET       = 5,
+	MEMC_SERVER_ON_INCREMENT = 6,
+	MEMC_SERVER_ON_NOOP      = 7,
+	MEMC_SERVER_ON_PREPEND   = 8,
+	MEMC_SERVER_ON_QUIT      = 9,
+	MEMC_SERVER_ON_REPLACE   = 10,
+	MEMC_SERVER_ON_SET       = 11,
+	MEMC_SERVER_ON_STAT      = 12,
+	MEMC_SERVER_ON_VERSION   = 13,
+	MEMC_SERVER_ON_MAX
+} php_memc_event_t;
+
+
+typedef struct {
+	zend_fcall_info fci;
+	zend_fcall_info_cache fci_cache;
+} php_memc_server_cb_t;
+
 ZEND_BEGIN_MODULE_GLOBALS(php_memcached)
 #ifdef HAVE_MEMCACHED_SESSION
 	zend_bool sess_locking_enabled;
@@ -93,6 +118,8 @@ ZEND_BEGIN_MODULE_GLOBALS(php_memcached)
 #if HAVE_MEMCACHED_SASL
 	bool use_sasl;
 #endif
+
+	php_memc_server_cb_t server_callbacks [14];
 ZEND_END_MODULE_GLOBALS(php_memcached)
 
 PHP_MEMCACHED_API zend_class_entry *php_memc_get_ce(void);

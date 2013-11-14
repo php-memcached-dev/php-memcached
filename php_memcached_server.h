@@ -17,6 +17,8 @@
 #ifndef _PHP_MEMCACHED_SERVER_H_
 # define _PHP_MEMCACHED_SERVER_H_
 
+#include <libmemcachedprotocol-0.0/handler.h>
+
 /*
 	Opaque structure
 */
@@ -29,6 +31,7 @@ php_memc_proto_handler_t *php_memc_proto_handler_new ();
 
 void php_memc_proto_handler_destroy (php_memc_proto_handler_t **ptr);
 
-void my_run (php_memc_proto_handler_t *h);
+void php_memc_proto_handler_run (php_memc_proto_handler_t *h);
+
 
 #endif
