@@ -111,6 +111,7 @@ typedef unsigned long int uint32_t;
 #define MEMC_OPT_PREFIX_KEY         -1002
 #define MEMC_OPT_SERIALIZER         -1003
 #define MEMC_OPT_COMPRESSION_TYPE   -1004
+#define MEMC_OPT_STORE_RETRY_COUNT  -1005
 
 /****************************************
   Custom result codes
@@ -202,6 +203,7 @@ typedef struct {
 #if HAVE_MEMCACHED_SASL
 		zend_bool has_sasl_data;
 #endif
+		int store_retry_count;
 	} *obj;
 
 	zend_bool is_persistent;
@@ -465,6 +467,7 @@ static PHP_METHOD(Memcached, __construct)
 		m_obj->serializer = MEMC_G(serializer);
 		m_obj->compression_type = MEMC_G(compression_type_real);
 		m_obj->compression = 1;
+		m_obj->store_retry_count = 2;
 
 		i_obj->obj = m_obj;
 		i_obj->is_pristine = 1;
@@ -1142,7 +1145,7 @@ PHP_METHOD(Memcached, setMultiByKey)
 /* }}} */
 
 #define PHP_MEMC_FAILOVER_RETRY	\
-	if (!by_key && retry < 2) {	\
+	if (!by_key && retry < m_obj->store_retry_count) {	\
 		switch (i_obj->rescode) {	\
 			case MEMCACHED_HOST_LOOKUP_FAILURE:	\
 			case MEMCACHED_CONNECTION_FAILURE:	\
@@ -2278,6 +2281,10 @@ static PHP_METHOD(Memcached, getOption)
 			RETURN_LONG((long)m_obj->serializer);
 			break;
 
+		case MEMC_OPT_STORE_RETRY_COUNT:
+			RETURN_LONG((long)m_obj->store_retry_count);
+			break;
+
 		case MEMCACHED_BEHAVIOR_SOCKET_SEND_SIZE:
 		case MEMCACHED_BEHAVIOR_SOCKET_RECV_SIZE:
 			if (memcached_server_count(m_obj->memc) == 0) {
@@ -2399,6 +2406,11 @@ static int php_memc_set_option(php_memc_t *i_obj, long option, zval *value TSRML
 			}
 			break;
 		}
+
+		case MEMC_OPT_STORE_RETRY_COUNT:
+			convert_to_long(value);
+			m_obj->store_retry_count = Z_LVAL_P(value);
+			break;
 
 		default:
 			/*
@@ -3797,6 +3809,7 @@ static void php_memc_register_constants(INIT_FUNC_ARGS)
 	REGISTER_MEMC_CLASS_CONST_LONG(OPT_COMPRESSION_TYPE, MEMC_OPT_COMPRESSION_TYPE);
 	REGISTER_MEMC_CLASS_CONST_LONG(OPT_PREFIX_KEY,  MEMC_OPT_PREFIX_KEY);
 	REGISTER_MEMC_CLASS_CONST_LONG(OPT_SERIALIZER,  MEMC_OPT_SERIALIZER);
+	REGISTER_MEMC_CLASS_CONST_LONG(OPT_STORE_RETRY_COUNT,  MEMC_OPT_STORE_RETRY_COUNT);
 
 	/*
 	 * Indicate whether igbinary serializer is available
