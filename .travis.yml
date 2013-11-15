@@ -19,7 +19,7 @@ before_script:
     - wget "https://launchpad.net/libmemcached/1.0/${LIBMEMCACHED_VERSION}/+download/libmemcached-${LIBMEMCACHED_VERSION}.tar.gz"
     - tar xvfz libmemcached-${LIBMEMCACHED_VERSION}.tar.gz
     - cd libmemcached-${LIBMEMCACHED_VERSION}
-    - ./configure --prefix="${HOME}/libmemcached-${LIBMEMCACHED_VERSION}" LDFLAGS="-lpthread"
+    - ./configure --prefix="${HOME}/libmemcached-${LIBMEMCACHED_VERSION}" --enable-libmemcachedprotocol LDFLAGS="-lpthread"
     - make
     - make install
     - cd ..
@@ -32,7 +32,7 @@ script:
     - tar xfz "memcached-${PHP_MEMCACHED_VERSION}.tgz" -C /tmp/php-memcached-build
     - cd /tmp/php-memcached-build/memcached-${PHP_MEMCACHED_VERSION}
     - phpize
-    - ./configure --with-libmemcached-dir="${HOME}/libmemcached-${LIBMEMCACHED_VERSION}"
+    - ./configure --with-libmemcached-dir="${HOME}/libmemcached-${LIBMEMCACHED_VERSION}" --enable-memcached-protocol
     - make
     - export NO_INTERACTION=1
     - export REPORT_EXIT_STATUS=1
