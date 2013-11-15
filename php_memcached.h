@@ -58,6 +58,7 @@ enum memcached_serializer {
 # endif
 #endif
 
+#ifdef HAVE_MEMCACHED_PROTOCOL
 typedef enum {
 	MEMC_SERVER_ON_MIN       = -1,
 	MEMC_SERVER_ON_CONNECT   = 0,
@@ -83,6 +84,7 @@ typedef struct {
 	zend_fcall_info fci;
 	zend_fcall_info_cache fci_cache;
 } php_memc_server_cb_t;
+#endif
 
 ZEND_BEGIN_MODULE_GLOBALS(php_memcached)
 #ifdef HAVE_MEMCACHED_SESSION
@@ -119,10 +121,11 @@ ZEND_BEGIN_MODULE_GLOBALS(php_memcached)
 #if HAVE_MEMCACHED_SASL
 	bool use_sasl;
 #endif
-
+#ifdef HAVE_MEMCACHED_PROTOCOL
 	struct {
 		php_memc_server_cb_t callbacks [14];
 	} server;
+#endif
 ZEND_END_MODULE_GLOBALS(php_memcached)
 
 PHP_MEMCACHED_API zend_class_entry *php_memc_get_ce(void);

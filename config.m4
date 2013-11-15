@@ -349,13 +349,13 @@ if test "$PHP_MEMCACHED" != "no"; then
     LIBEVENT_INCLUDES=""
     if test "$PHP_MEMCACHED_PROTOCOL" != "no"; then
 
-      AC_MSG_CHECKING([for libmemcachedprotocol location])
+      AC_MSG_CHECKING([for libmemcachedprotocol])
       if test "$PHP_LIBMEMCACHED_DIR" != "no" && test "$PHP_LIBMEMCACHED_DIR" != "yes"; then
         if ! test -r "$PHP_LIBMEMCACHED_DIR/include/libmemcachedprotocol-0.0/handler.h"; then
           AC_MSG_ERROR([Can't find libmemcachedprotocol headers under "$PHP_LIBMEMCACHED_DIR"])
         fi
       fi
-      AC_MSG_CHECKING([found])
+      AC_MSG_RESULT([found])
 
       PHP_ADD_LIBRARY_WITH_PATH(memcachedprotocol, $PHP_LIBMEMCACHED_DIR/$PHP_LIBDIR, MEMCACHED_SHARED_LIBADD)
 
@@ -365,6 +365,7 @@ if test "$PHP_MEMCACHED" != "no"; then
         AC_MSG_ERROR([Please reinstall the pkg-config distribution])
       fi
 
+      AC_MSG_CHECKING([for libevent])
       if $PKG_CONFIG --exists libevent; then
         PHP_MEMCACHED_LIBEVENT_VERSION=`$PKG_CONFIG libevent --modversion`
         PHP_MEMCACHED_LIBEVENT_PREFIX=`$PKG_CONFIG libevent --variable=prefix`
@@ -379,6 +380,7 @@ if test "$PHP_MEMCACHED" != "no"; then
         AC_MSG_ERROR(Unable to find libevent installation)
       fi
       PHP_MEMCACHED_FILES="${PHP_MEMCACHED_FILES} php_memcached_server.c"
+      AC_DEFINE(HAVE_MEMCACHED_PROTOCOL,1,[Whether memcached protocol is enabled])
     fi
 
     PHP_SUBST(MEMCACHED_SHARED_LIBADD)
