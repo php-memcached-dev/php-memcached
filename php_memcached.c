@@ -317,6 +317,7 @@ PHP_INI_BEGIN()
 #if HAVE_MEMCACHED_SASL
 	STD_PHP_INI_ENTRY("memcached.use_sasl",	"0", PHP_INI_SYSTEM, OnUpdateBool, use_sasl,	zend_php_memcached_globals,	php_memcached_globals)
 #endif
+	STD_PHP_INI_ENTRY("memcached.store_retry_count",	"2",		PHP_INI_ALL, OnUpdateLong, store_retry_count,			zend_php_memcached_globals,     php_memcached_globals)
 PHP_INI_END()
 /* }}} */
 
@@ -467,7 +468,7 @@ static PHP_METHOD(Memcached, __construct)
 		m_obj->serializer = MEMC_G(serializer);
 		m_obj->compression_type = MEMC_G(compression_type_real);
 		m_obj->compression = 1;
-		m_obj->store_retry_count = 2;
+		m_obj->store_retry_count = MEMC_G(store_retry_count);
 
 		i_obj->obj = m_obj;
 		i_obj->is_pristine = 1;
@@ -3201,6 +3202,7 @@ static void php_memc_init_globals(zend_php_memcached_globals *php_memcached_glob
 #if HAVE_MEMCACHED_SASL
 	MEMC_G(use_sasl) = 0;
 #endif
+	MEMC_G(store_retry_count) = 2;
 }
 
 static void php_memc_destroy_globals(zend_php_memcached_globals *php_memcached_globals_p TSRMLS_DC)
