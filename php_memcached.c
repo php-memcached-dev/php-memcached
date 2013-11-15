@@ -203,7 +203,7 @@ typedef struct {
 #if HAVE_MEMCACHED_SASL
 		zend_bool has_sasl_data;
 #endif
-		int store_retry_count;
+		long store_retry_count;
 	} *obj;
 
 	zend_bool is_persistent;
