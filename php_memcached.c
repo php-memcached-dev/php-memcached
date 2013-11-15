@@ -3033,7 +3033,7 @@ static char *php_memc_zval_to_payload(zval *value, size_t *payload_len, uint32_t
 			payload[*payload_len] = 0;
 		} else {
 			/* Store plain value */
-			MEMC_VAL_DEL_FLAG(*flags, MEMC_VAL_COMPRESSED)
+			MEMC_VAL_DEL_FLAG(*flags, MEMC_VAL_COMPRESSED);
 			*payload_len = l;
 			memcpy(payload, p, l);
 			payload[l] = 0;
