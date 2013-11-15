@@ -20,6 +20,9 @@ PHP_ARG_ENABLE(memcached-json, whether to enable memcached json serializer suppo
 PHP_ARG_ENABLE(memcached-sasl, whether to disable memcached sasl support,
 [  --disable-memcached-sasl          Disable memcached sasl support], yes, no)
 
+PHP_ARG_ENABLE(memcached-protocol, whether to enable memcached protocol support,
+[  --enable-memcached-protocol          Enable memcached protocoll support], no, no)
+
 if test -z "$PHP_ZLIB_DIR"; then
 PHP_ARG_WITH(zlib-dir, for ZLIB,
 [  --with-zlib-dir[=DIR]   Set the path to ZLIB install prefix.], no)
@@ -337,18 +340,50 @@ if test "$PHP_MEMCACHED" != "no"; then
        AC_DEFINE(HAVE_LIBMEMCACHED_TOUCH, [1], [Whether memcached_touch is defined])
     fi
 
-    PHP_SUBST(MEMCACHED_SHARED_LIBADD)
-    
-    PHP_MEMCACHED_FILES="php_memcached.c php_libmemcached_compat.c php_memcached_server.c fastlz/fastlz.c g_fmt.c"
+    PHP_MEMCACHED_FILES="php_memcached.c php_libmemcached_compat.c fastlz/fastlz.c g_fmt.c"
 
     if test "$PHP_MEMCACHED_SESSION" != "no"; then
       PHP_MEMCACHED_FILES="${PHP_MEMCACHED_FILES} php_memcached_session.c"
     fi
-    
-    PHP_ADD_LIBRARY_WITH_PATH(memcachedprotocol, $PHP_LIBMEMCACHED_DIR/$PHP_LIBDIR, MEMCACHED_SHARED_LIBADD)
-    PHP_ADD_LIBRARY_WITH_PATH(event, $PHP_LIBMEMCACHED_DIR/$PHP_LIBDIR, MEMCACHED_SHARED_LIBADD)
 
-    PHP_NEW_EXTENSION(memcached, $PHP_MEMCACHED_FILES, $ext_shared,,$SESSION_INCLUDES $IGBINARY_INCLUDES)
+    LIBEVENT_INCLUDES=""
+    if test "$PHP_MEMCACHED_PROTOCOL" != "no"; then
+
+      AC_MSG_CHECKING([for libmemcachedprotocol location])
+      if test "$PHP_LIBMEMCACHED_DIR" != "no" && test "$PHP_LIBMEMCACHED_DIR" != "yes"; then
+        if ! test -r "$PHP_LIBMEMCACHED_DIR/include/libmemcachedprotocol-0.0/handler.h"; then
+          AC_MSG_ERROR([Can't find libmemcachedprotocol headers under "$PHP_LIBMEMCACHED_DIR"])
+        fi
+      fi
+      AC_MSG_CHECKING([found])
+
+      PHP_ADD_LIBRARY_WITH_PATH(memcachedprotocol, $PHP_LIBMEMCACHED_DIR/$PHP_LIBDIR, MEMCACHED_SHARED_LIBADD)
+
+      AC_PATH_PROG(PKG_CONFIG, pkg-config, no)
+      if test "x$PKG_CONFIG" = "xno"; then
+        AC_MSG_RESULT([pkg-config not found])
+        AC_MSG_ERROR([Please reinstall the pkg-config distribution])
+      fi
+
+      if $PKG_CONFIG --exists libevent; then
+        PHP_MEMCACHED_LIBEVENT_VERSION=`$PKG_CONFIG libevent --modversion`
+        PHP_MEMCACHED_LIBEVENT_PREFIX=`$PKG_CONFIG libevent --variable=prefix`
+
+        AC_MSG_RESULT([found version $PHP_MEMCACHED_LIBEVENT_VERSION, under $PHP_MEMCACHED_LIBEVENT_PREFIX])
+        LIBEVENT_LIBS=`$PKG_CONFIG libevent --libs`
+        LIBEVENT_INCLUDES=`$PKG_CONFIG libevent --cflags`
+
+        PHP_EVAL_LIBLINE($LIBEVENT_LIBS, MEMCACHED_SHARED_LIBADD)
+        PHP_EVAL_INCLINE($LIBEVENT_INCLUDES)
+      else
+        AC_MSG_ERROR(Unable to find libevent installation)
+      fi
+      PHP_MEMCACHED_FILES="${PHP_MEMCACHED_FILES} php_memcached_server.c"
+    fi
+
+    PHP_SUBST(MEMCACHED_SHARED_LIBADD)
+
+    PHP_NEW_EXTENSION(memcached, $PHP_MEMCACHED_FILES, $ext_shared,,$SESSION_INCLUDES $IGBINARY_INCLUDES $LIBEVENT_INCLUDES)
     PHP_ADD_BUILD_DIR($ext_builddir/fastlz, 1)
  
     ifdef([PHP_ADD_EXTENSION_DEP],
