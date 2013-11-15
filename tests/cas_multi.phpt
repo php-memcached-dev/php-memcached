@@ -45,6 +45,33 @@ foreach ($data as $key => $v) {
 	}
 }
 
+if (array_keys($actual) !== array_keys($data)) {
+	echo "missing value(s)\n";
+	echo "data :";
+	var_dump($data);
+	echo "actual data: ";
+	var_dump($actual);
+	return;
+}
+
+$actual = $m->getMulti(array_keys($data), 2);
+if (array_keys($actual) !== array_keys($data)) {
+	echo "Failed to getMulti \$cas_token passed by value (2)\n";
+	return;
+}
+
+$actual = $m->getMulti(array_keys($data), null);
+if (array_keys($actual) !== array_keys($data)) {
+	echo "Failed to getMulti \$cas_token passed by value (null)\n";
+	return;
+}
+
+$actual = $m->getMulti(array_keys($data), $cas_tokens = array(2, 4));
+if (array_keys($actual) !== array_keys($data) || $cas_tokens !== array(2, 4)) {
+	echo "Failed to getMulti \$cas_token passed by value (\$cas_tokens = array(2, 4))\n";
+	return;
+}
+
 echo "OK\n";
 
 ?>
