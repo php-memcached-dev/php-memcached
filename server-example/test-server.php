@@ -20,5 +20,7 @@ var_dump ($cache->get ('get_this'));
 $cache->set ('set_key', 'value 1', 100);
 $cache->replace ('replace_key', 'value 2', 200);
 
+$cache->getStats ();
+
 $cache->quit();
 sleep (1);

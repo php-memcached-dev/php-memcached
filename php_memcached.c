@@ -3416,8 +3416,21 @@ static int php_memc_do_result_callback(zval *zmemc_obj, zend_fcall_info *fci,
 /* }}} */
 
 static
+void s_destroy_cb (zend_fcall_info *fci)
+{
+	if (fci->size > 0) {
+		zval_ptr_dtor(&fci->function_name);
+		if (fci->object_ptr != NULL) {
+			zval_ptr_dtor(&fci->object_ptr);
+		}
+	}
+}
+
+static
 PHP_METHOD(MemcachedServer, run)
 {
+	int i;
+	zend_bool rc;
 	char *address;
 	int address_len;
 
@@ -3427,9 +3440,15 @@ PHP_METHOD(MemcachedServer, run)
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &address, &address_len) == FAILURE) {
 		return;
 	}
-	php_memc_proto_handler_run (intern->handler, address);
-}
 
+	rc = php_memc_proto_handler_run (intern->handler, address);
+
+	for (i = MEMC_SERVER_ON_MIN + 1; i < MEMC_SERVER_ON_MAX; i++) {
+		s_destroy_cb (&MEMC_G(server.callbacks) [i].fci);
+	}
+
+	RETURN_BOOL(rc);
+}
 
 static
 PHP_METHOD(MemcachedServer, on)
@@ -3452,6 +3471,8 @@ PHP_METHOD(MemcachedServer, on)
 	}
 
 	if (fci.size > 0) {
+		s_destroy_cb (&MEMC_G(server.callbacks) [event].fci);
+
 		MEMC_G(server.callbacks) [event].fci       = fci;
 		MEMC_G(server.callbacks) [event].fci_cache = fci_cache;
 
