@@ -364,8 +364,27 @@ static void php_memc_destroy(struct memc_obj *m_obj, zend_bool persistent TSRMLS
   Method implementations
 ****************************************/
 
+
+char *php_memc_printable_func (zend_fcall_info *fci, zend_fcall_info_cache *fci_cache TSRMLS_DC)
+{
+	char *buffer = NULL;
+
+	if (fci->object_ptr) {
+		spprintf (&buffer, 0, "%s::%s", Z_OBJCE_P (fci->object_ptr)->name, fci_cache->function_handler->common.function_name);
+	} else {
+		if (Z_TYPE_P (fci->function_name) == IS_OBJECT) {
+			spprintf (&buffer, 0, "%s", Z_OBJCE_P (fci->function_name)->name);
+		}
+		else {
+			spprintf (&buffer, 0, "%s", Z_STRVAL_P (fci->function_name));
+		}
+	}
+	return buffer;
+}
+
 static zend_bool php_memcached_on_new_callback(zval *object, zend_fcall_info *fci, zend_fcall_info_cache *fci_cache, char *persistent_id, int persistent_id_len TSRMLS_DC)
 {
+	zend_bool retval = 1;
 	zval pid_z;
 	zval *retval_ptr, *pid_z_ptr = &pid_z;
 	zval **params[2];
@@ -385,15 +404,17 @@ static zend_bool php_memcached_on_new_callback(zval *object, zend_fcall_info *fc
 	fci->no_separation  = 1;
 
 	if (zend_call_function(fci, fci_cache TSRMLS_CC) == FAILURE) {
-		php_error_docref(NULL TSRMLS_CC, E_WARNING, "Failed to invoke 'on_new' callback %s()", Z_STRVAL_P(fci->function_name));
-		return 0;
+		char *buf = php_memc_printable_func (fci, fci_cache TSRMLS_CC);
+		php_error_docref(NULL TSRMLS_CC, E_WARNING, "Failed to invoke 'on_new' callback %s()", buf);
+		efree (buf);
+		retval = 0;
 	}
 	zval_dtor(pid_z_ptr);
 
 	if (retval_ptr) {
 		zval_ptr_dtor(&retval_ptr);
 	}
-	return 1;
+	return retval;
 }
 
 static int le_memc, le_memc_sess;

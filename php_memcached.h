@@ -154,6 +154,8 @@ typedef struct {
 
 int php_memc_sess_list_entry(void);
 
+char *php_memc_printable_func (zend_fcall_info *fci, zend_fcall_info_cache *fci_cache TSRMLS_DC);
+
 #endif /* PHP_MEMCACHED_H */
 
 /*

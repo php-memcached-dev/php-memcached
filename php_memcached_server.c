@@ -78,7 +78,9 @@ long s_invoke_php_callback (php_memc_server_cb_t *cb, zval ***params, ssize_t pa
 	cb->fci.retval_ptr_ptr = &retval_ptr;
 
 	if (zend_call_function(&(cb->fci), &(cb->fci_cache) TSRMLS_CC) == FAILURE) {
-		php_error_docref (NULL TSRMLS_CC, E_WARNING, "Failed to invoke callback");
+		char *buf = php_memc_printable_func (&(cb->fci), &(cb->fci_cache) TSRMLS_CC);
+		php_error_docref(NULL TSRMLS_CC, E_WARNING, "Failed to invoke callback %s()", buf);
+		efree (buf);
 	}
 	if (retval_ptr) {
 		convert_to_long (retval_ptr);
