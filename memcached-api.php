@@ -253,7 +253,7 @@ class Memcached {
 
 	public function setOptions( array $options ) {}
 
-	public function setBucket( array $host_map, array $forward_map, $buckets, $replicas ) {}
+	public function setBucket( array $host_map, array $forward_map, $replicas ) {}
 
 	public function addServer( $host, $port,  $weight = 0 ) {}
 
@@ -285,7 +285,7 @@ class Memcached {
 
 	public function isPristine( ) {}
 
-  public function setSaslAuthData( $username, $password ) {}
+	public function setSaslAuthData( $username, $password ) {}
 
 }
 
