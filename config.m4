@@ -362,17 +362,21 @@ if test "$PHP_MEMCACHED" != "no"; then
       ORIG_CFLAGS="$CFLAGS"
       CFLAGS="$CFLAGS -I$PHP_LIBMEMCACHED_INCDIR"
 
-      AC_CACHE_CHECK([whether libmemcachedprotocol is usable], ac_cv_have_working_libmemcachedprotocol, [
+      AC_CACHE_CHECK([whether libmemcachedprotocol is usable], ac_cv_have_libmemcachedprotocol, [
         AC_TRY_COMPILE(
           [ #include <libmemcachedprotocol-0.0/handler.h> ],
           [ memcached_binary_protocol_callback_st s_test_impl;
             s_test_impl.interface.v1.delete_object = 0;
           ],
-          [ ac_cv_have_working_libmemcachedprotocol="yes" ],
-          [ ac_cv_have_working_libmemcachedprotocol="no" ]
+          [ ac_cv_have_libmemcachedprotocol="yes" ],
+          [ ac_cv_have_libmemcachedprotocol="no" ]
         )
       ])
       CFLAGS="$ORIG_CFLAGS"
+
+      if test "$ac_cv_have_libmemcachedprotocol" != "yes"; then
+        AC_MSG_ERROR([Cannot enable libmemcached protocol])
+      fi
 
       PHP_ADD_LIBRARY_WITH_PATH(memcachedprotocol, $PHP_LIBMEMCACHED_DIR/$PHP_LIBDIR, MEMCACHED_SHARED_LIBADD)
 
