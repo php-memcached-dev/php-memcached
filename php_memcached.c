@@ -2522,6 +2522,118 @@ static int php_memc_set_option(php_memc_t *i_obj, long option, zval *value TSRML
 	return 1;
 }
 
+static
+uint32_t *s_zval_to_uint32_array (zval *input, size_t *num_elements TSRMLS_DC)
+{
+	zval **ppzval;
+	uint32_t *retval;
+	size_t i = 0;
+
+	*num_elements = zend_hash_num_elements(Z_ARRVAL_P(input));
+
+	if (!*num_elements) {
+		return NULL;
+	}
+
+	retval = ecalloc(*num_elements, sizeof(uint32_t));
+
+	for (zend_hash_internal_pointer_reset(Z_ARRVAL_P(input));
+			zend_hash_get_current_data(Z_ARRVAL_P(input), (void **) &ppzval) == SUCCESS;
+			zend_hash_move_forward(Z_ARRVAL_P(input)), i++) {
+
+		long value = 0;
+
+		if (Z_TYPE_PP(ppzval) == IS_LONG) {
+			value = Z_LVAL_PP(ppzval);
+		}
+		else {
+			zval tmp_zval, *tmp_pzval;
+			tmp_zval = **ppzval;
+			zval_copy_ctor(&tmp_zval);
+			tmp_pzval = &tmp_zval;
+			convert_to_long(tmp_pzval);
+
+			value = (Z_LVAL_P(tmp_pzval) > 0) ? Z_LVAL_P(tmp_pzval) : 0;
+			zval_dtor(tmp_pzval);
+		}
+
+		if (value < 0) {
+			php_error_docref(NULL TSRMLS_CC, E_WARNING, "the map must contain positive integers");
+			efree (retval);
+			*num_elements = 0;
+			return NULL;
+		}
+		retval [i] = (uint32_t) value;
+	}
+	return retval;
+}
+
+/* {{{ Memcached::setBucket(array host_map, array forward_map, integer replicas)
+   Sets the memcached virtual buckets */
+
+PHP_METHOD(Memcached, setBucket)
+{
+	zval *zserver_map;
+	zval *zforward_map = NULL;
+	long replicas = 0;
+	zend_bool retval = 1;
+
+	uint32_t *server_map = NULL, *forward_map = NULL;
+	size_t server_map_len = 0, forward_map_len = 0;
+	memcached_return rc;
+	MEMC_METHOD_INIT_VARS;
+
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "aa!l", &zserver_map, &zforward_map, &replicas) == FAILURE) {
+		return;
+	}
+
+	MEMC_METHOD_FETCH_OBJECT;
+
+	if (zend_hash_num_elements (Z_ARRVAL_P(zserver_map)) == 0) {
+		php_error_docref(NULL TSRMLS_CC, E_WARNING, "server map cannot be empty");
+		RETURN_FALSE;
+	}
+
+	if (zforward_map && zend_hash_num_elements (Z_ARRVAL_P(zserver_map)) != zend_hash_num_elements (Z_ARRVAL_P(zforward_map))) {
+		php_error_docref(NULL TSRMLS_CC, E_WARNING, "forward_map length must match the server_map length");
+		RETURN_FALSE;
+	}
+
+	if (replicas < 0) {
+		php_error_docref(NULL TSRMLS_CC, E_WARNING, "replicas must be larger than zero");
+		RETURN_FALSE;
+	}
+
+	server_map = s_zval_to_uint32_array (zserver_map, &server_map_len TSRMLS_CC);
+
+	if (!server_map) {
+		RETURN_FALSE;
+	}
+
+	if (zforward_map) {
+		forward_map = s_zval_to_uint32_array (zforward_map, &forward_map_len TSRMLS_CC);
+
+		if (!forward_map) {
+			efree (server_map);
+			RETURN_FALSE;
+		}
+	}
+
+	rc = memcached_bucket_set (m_obj->memc, server_map, forward_map, (uint32_t) server_map_len, replicas);
+
+	if (php_memc_handle_error(i_obj, rc TSRMLS_CC) < 0) {
+		retval = 0;;
+	}
+
+	efree(server_map);
+
+	if (forward_map) {
+		efree(forward_map);
+	}
+	RETURN_BOOL(retval);
+}
+/* }}} */
+
 /* {{{ Memcached::setOptions(array options)
    Sets the value for the given option constant */
 static PHP_METHOD(Memcached, setOptions)
@@ -3772,6 +3884,12 @@ ZEND_BEGIN_ARG_INFO(arginfo_setOptions, 0)
 	ZEND_ARG_INFO(0, options)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO(arginfo_setBucket, 3)
+	ZEND_ARG_INFO(0, host_map)
+	ZEND_ARG_INFO(0, forward_map)
+	ZEND_ARG_INFO(0, replicas)
+ZEND_END_ARG_INFO()
+
 ZEND_BEGIN_ARG_INFO(arginfo_getStats, 0)
 ZEND_END_ARG_INFO()
 
@@ -3859,6 +3977,7 @@ static zend_function_entry memcached_class_methods[] = {
 	MEMC_ME(getOption,          arginfo_getOption)
 	MEMC_ME(setOption,          arginfo_setOption)
 	MEMC_ME(setOptions,         arginfo_setOptions)
+	MEMC_ME(setBucket,          arginfo_setBucket)
 #ifdef HAVE_MEMCACHED_SASL
     MEMC_ME(setSaslAuthData,    arginfo_setSaslAuthData)
 #endif

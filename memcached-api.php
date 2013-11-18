@@ -34,6 +34,8 @@ class Memcached {
 	const DISTRIBUTION_MODULA;
 
 	const DISTRIBUTION_CONSISTENT;
+	
+	const DISTRIBUTION_VIRTUAL_BUCKET;
 
 	const LIBKETAMA_COMPATIBLE;
 
@@ -203,9 +205,9 @@ class Memcached {
 
 	public function set( $key, $value, $expiration = 0, $udf_flags = 0 ) {}
 
-    public function touch( $key, $expiration = 0 ) {}
+	public function touch( $key, $expiration = 0 ) {}
 
-    public function touchbyKey( $key, $expiration = 0 ) {}
+	public function touchbyKey( $key, $expiration = 0 ) {}
 
 	public function setByKey( $server_key, $key, $value, $expiration = 0, $udf_flags = 0 ) {}
 
@@ -251,6 +253,8 @@ class Memcached {
 
 	public function setOptions( array $options ) {}
 
+	public function setBucket( array $host_map, array $forward_map, $replicas ) {}
+
 	public function addServer( $host, $port,  $weight = 0 ) {}
 
 	public function addServers( array $servers ) {}
@@ -281,7 +285,7 @@ class Memcached {
 
 	public function isPristine( ) {}
 
-  public function setSaslAuthData( $username, $password ) {}
+	public function setSaslAuthData( $username, $password ) {}
 
 }
 
