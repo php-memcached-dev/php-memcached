@@ -61,8 +61,11 @@ function run_memcached_tests() {
     export NO_INTERACTION=1
     export REPORT_EXIT_STATUS=1
     export TEST_PHP_EXECUTABLE=`which php`
-    php run-tests.php -d extension=igbinary.so -d extension=memcached.so -n ./tests/*.phpt
-    for i in `ls tests/*.out 2>/dev/null`; do echo "-- START ${i}"; cat $i; echo ""; echo "-- END"; done
+
+    pushd /tmp/php-memcached-build
+        php run-tests.php -d extension=igbinary.so -d extension=memcached.so -n ./tests/*.phpt
+        for i in `ls tests/*.out 2>/dev/null`; do echo "-- START ${i}"; cat $i; echo ""; echo "-- END"; done
+    popd
 }
 
 # Command line arguments
@@ -77,25 +80,25 @@ export PHP_LIBMEMCACHED_PREFIX="${HOME}/libmemcached-${PHP_LIBMEMCACHED_VERSION}
 # Check whether to enable building with protoocol support
 dpkg --compare-versions "$PHP_LIBMEMCACHED_VERSION" '>' 1.0.15
 if [ $? = 0 ]; then
-    enable_protocol=yes
+    ENABLE_PROTOOCOL=yes
 else
-    enable_protocol=no
+    ENABLE_PROTOOCOL=no
 fi
 
-echo "Enable protocol: $enable_protocol"
+echo "Enable protocol: $ENABLE_PROTOOCOL"
 
 # validate the package.xml
 validate_package_xml
 
 # Install libmemcached version
-install_libmemcached $PHP_LIBMEMCACHED_VERSION $enable_protocol
+install_libmemcached $PHP_LIBMEMCACHED_VERSION $ENABLE_PROTOOCOL
 
 # Install igbinary extension
 install_igbinary
 
 # Build the extension
-build_php_memcached $enable_protocol
+build_php_memcached $ENABLE_PROTOOCOL
 
 # Run tests
-run_memcached_tests
+run_memcached_tests $PHP_LIBMEMCACHED_VERSION
 
