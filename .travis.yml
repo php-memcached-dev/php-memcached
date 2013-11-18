@@ -23,7 +23,7 @@ before_script:
     - make
     - make install
     - cd ..
-    - git clone git@github.com:igbinary/igbinary.git
+    - git clone https://github.com/igbinary/igbinary.git
     - cd igbinary
     - phpize
     - ./configure
