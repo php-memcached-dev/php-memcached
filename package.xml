@@ -46,6 +46,8 @@ http://pear.php.net/dtd/package-2.0.xsd">
   * memcached.sess_randomize_replica_read
   * memcached.sess_remove_failed
   * memcached.sess_connect_timeout
+- Added support for memcached protocol handlers
+- Added Memcached::setBucket for virtual bucket support
  </notes>
  <contents>
   <dir name="/">
@@ -64,6 +66,8 @@ http://pear.php.net/dtd/package-2.0.xsd">
    <file role='src' name='php_memcached_session.h'/>
    <file role='src' name='php_libmemcached_compat.h'/>
    <file role='src' name='php_libmemcached_compat.c'/>
+   <file role='src' name='php_memcached_server.h'/>
+   <file role='src' name='php_memcached_server.c'/>
    <file role='src' name='g_fmt.c'/>
    <file role='src' name='g_fmt.h'/>
    <file role='src' name='fastlz/fastlz.c'/>
@@ -117,6 +121,8 @@ http://pear.php.net/dtd/package-2.0.xsd">
     <file role='test' name='types_multi.phpt'/>
     <file role='test' name='undefined_set.phpt'/>
     <file role='test' name='vbucket.phpt'/>
+    <file role='test' name='user-flags.phpt'/>
+    <file role='test' name='gh_93.phpt'/>
     <file role='test' name='testdata.res'/>
     <file role='test' name='config.inc'/>
   </dir>

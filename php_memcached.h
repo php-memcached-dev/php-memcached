@@ -58,6 +58,34 @@ enum memcached_serializer {
 # endif
 #endif
 
+#ifdef HAVE_MEMCACHED_PROTOCOL
+typedef enum {
+	MEMC_SERVER_ON_MIN       = -1,
+	MEMC_SERVER_ON_CONNECT   = 0,
+	MEMC_SERVER_ON_ADD       = 1,
+	MEMC_SERVER_ON_APPEND    = 2,
+	MEMC_SERVER_ON_DECREMENT = 3,
+	MEMC_SERVER_ON_DELETE    = 4,
+	MEMC_SERVER_ON_FLUSH     = 5,
+	MEMC_SERVER_ON_GET       = 6,
+	MEMC_SERVER_ON_INCREMENT = 7,
+	MEMC_SERVER_ON_NOOP      = 8,
+	MEMC_SERVER_ON_PREPEND   = 9,
+	MEMC_SERVER_ON_QUIT      = 10,
+	MEMC_SERVER_ON_REPLACE   = 11,
+	MEMC_SERVER_ON_SET       = 12,
+	MEMC_SERVER_ON_STAT      = 13,
+	MEMC_SERVER_ON_VERSION   = 14,
+	MEMC_SERVER_ON_MAX
+} php_memc_event_t;
+
+
+typedef struct {
+	zend_fcall_info fci;
+	zend_fcall_info_cache fci_cache;
+} php_memc_server_cb_t;
+#endif
+
 ZEND_BEGIN_MODULE_GLOBALS(php_memcached)
 #ifdef HAVE_MEMCACHED_SESSION
 	zend_bool sess_locking_enabled;
@@ -93,6 +121,11 @@ ZEND_BEGIN_MODULE_GLOBALS(php_memcached)
 #if HAVE_MEMCACHED_SASL
 	zend_bool use_sasl;
 #endif
+#ifdef HAVE_MEMCACHED_PROTOCOL
+	struct {
+		php_memc_server_cb_t callbacks [14];
+	} server;
+#endif
 	long store_retry_count;
 ZEND_END_MODULE_GLOBALS(php_memcached)
 
@@ -120,6 +153,8 @@ typedef struct {
 } memcached_sess;
 
 int php_memc_sess_list_entry(void);
+
+char *php_memc_printable_func (zend_fcall_info *fci, zend_fcall_info_cache *fci_cache TSRMLS_DC);
 
 #endif /* PHP_MEMCACHED_H */
 

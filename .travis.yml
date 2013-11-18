@@ -1,8 +1,8 @@
 language: php
 php:
     - 5.5
-    #- 5.4
-    #- 5.3
+    - 5.4
+    - 5.3
 env:
     - LIBMEMCACHED_VERSION=1.0.17
     - LIBMEMCACHED_VERSION=1.0.16
@@ -14,38 +14,5 @@ env:
     - LIBMEMCACHED_VERSION=0.53
     - LIBMEMCACHED_VERSION=0.44
 
-before_script:
-    - for file in tests/*.phpt; do grep $(basename $file) package.xml >/dev/null || (echo "Missing $file from package.xml" ; exit 1); done
-    - wget "https://launchpad.net/libmemcached/1.0/${LIBMEMCACHED_VERSION}/+download/libmemcached-${LIBMEMCACHED_VERSION}.tar.gz"
-    - tar xvfz libmemcached-${LIBMEMCACHED_VERSION}.tar.gz
-    - cd libmemcached-${LIBMEMCACHED_VERSION}
-    - ./configure --prefix="${HOME}/libmemcached-${LIBMEMCACHED_VERSION}" LDFLAGS="-lpthread"
-    - make
-    - make install
-    - cd ..
-    - git clone https://github.com/igbinary/igbinary.git
-    - cd igbinary
-    - phpize
-    - ./configure
-    - make
-    - make install
-    - cd ..
-
-
 script:
-    - export PHP_MEMCACHED_VERSION=$(php -r '$sxe = simplexml_load_file ("package.xml"); echo (string) $sxe->version->release;')
-    - pear package
-    - mkdir /tmp/php-memcached-build
-    - tar xfz "memcached-${PHP_MEMCACHED_VERSION}.tgz" -C /tmp/php-memcached-build
-    - cd /tmp/php-memcached-build/memcached-${PHP_MEMCACHED_VERSION}
-    - phpize
-    - ./configure --with-libmemcached-dir="${HOME}/libmemcached-${LIBMEMCACHED_VERSION}" --enable-memcached-json --enable-memcached-igbinary
-    - make
-    - make install
-    - export NO_INTERACTION=1
-    - export REPORT_EXIT_STATUS=1
-    - export TEST_PHP_EXECUTABLE=`which php`
-    - php run-tests.php -d extension=memcached.so -d extension=igbinary.so -n ./tests/*.phpt
-    - for i in `ls tests/*.out 2>/dev/null`; do echo "-- START ${i}"; cat $i; echo ""; echo "-- END"; done
-
-
+    - ./travis.sh $LIBMEMCACHED_VERSION
