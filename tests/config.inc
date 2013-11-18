@@ -58,5 +58,9 @@ function memc_get_serializer_options ()
 	if (defined ('Memcached::HAVE_JSON')) {
 		$options = array_merge ($options, memc_create_combinations ('JSON', Memcached::SERIALIZER_JSON, true));
 	}
+
+	if (defined ('Memcached::HAVE_MSGPACK')) {
+		$options = array_merge ($options, memc_create_combinations ('msgpack', Memcached::SERIALIZER_MSGPACK));
+	}
 	return $options;
 }
