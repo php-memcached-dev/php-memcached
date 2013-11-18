@@ -119,6 +119,8 @@ http://pear.php.net/dtd/package-2.0.xsd">
     <file role='test' name='types_multi.phpt'/>
     <file role='test' name='undefined_set.phpt'/>
     <file role='test' name='vbucket.phpt'/>
+    <file role='test' name='user-flags.phpt'/>
+    <file role='test' name='gh_93.phpt'/>
     <file role='test' name='testdata.res'/>
     <file role='test' name='config.inc'/>
   </dir>
