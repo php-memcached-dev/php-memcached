@@ -94,7 +94,7 @@ PHP_MEMCACHED_VERSION=$(php -r '$sxe = simplexml_load_file ("package.xml"); echo
 PHP_LIBMEMCACHED_PREFIX="${HOME}/libmemcached-${PHP_LIBMEMCACHED_VERSION}"
 
 # Check whether to enable building with protoocol support
-dpkg --compare-versions "$PHP_LIBMEMCACHED_VERSION" '>' 1.0.15
+dpkg --compare-versions "$PHP_LIBMEMCACHED_VERSION" gt 1.0.15
 if [ $? = 0 ]; then
     ENABLE_PROTOOCOL=yes
 else
