@@ -39,7 +39,7 @@ script:
     - tar xfz "memcached-${PHP_MEMCACHED_VERSION}.tgz" -C /tmp/php-memcached-build
     - cd /tmp/php-memcached-build/memcached-${PHP_MEMCACHED_VERSION}
     - phpize
-    - ./configure --with-libmemcached-dir="${HOME}/libmemcached-${LIBMEMCACHED_VERSION}" --enable-memcached-protocol --enable-memcached-json --enable-memcached-igbinary
+    - ./configure --with-libmemcached-dir="${HOME}/libmemcached-${LIBMEMCACHED_VERSION}" --enable-memcached-protocol --enable-memcached-json --enable-memcached-igbinary || ./configure --with-libmemcached-dir="${HOME}/libmemcached-${LIBMEMCACHED_VERSION}" --enable-memcached-json --enable-memcached-igbinary
     - make
     - make install
     - export NO_INTERACTION=1
