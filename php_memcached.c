@@ -96,6 +96,10 @@ typedef unsigned long int uint32_t;
 # include "ext/igbinary/igbinary.h"
 #endif
 
+#ifdef HAVE_MEMCACHED_MSGPACK
+# include "ext/msgpack/php_msgpack.h"
+#endif
+
 /*
  * This is needed because PHP 5.3.[01] does not install JSON_parser.h by default. This
  * constant will move into php_json.h in the future anyway.
@@ -137,6 +141,7 @@ typedef unsigned long int uint32_t;
 #define MEMC_VAL_IS_SERIALIZED 4
 #define MEMC_VAL_IS_IGBINARY   5
 #define MEMC_VAL_IS_JSON       6
+#define MEMC_VAL_IS_MSGPACK    7
 
 #define MEMC_VAL_COMPRESSED          (1<<0)
 #define MEMC_VAL_COMPRESSION_ZLIB    (1<<1)
@@ -300,6 +305,10 @@ static PHP_INI_MH(OnUpdateSerializer)
 	} else if (!strcmp(new_value, "json_array")) {
 		MEMC_G(serializer) = SERIALIZER_JSON_ARRAY;
 #endif // JSON
+#ifdef HAVE_MEMCACHED_MSGPACK
+	} else if (!strcmp(new_value, "msgpack")) {
+		MEMC_G(serializer) = SERIALIZER_MSGPACK;
+#endif // msgpack
 	} else {
 		return FAILURE;
 	}
@@ -2491,6 +2500,12 @@ static int php_memc_set_option(php_memc_t *i_obj, long option, zval *value TSRML
 				m_obj->serializer = SERIALIZER_JSON_ARRAY;
 			} else
 #endif
+			/* msgpack serializer */
+#ifdef HAVE_MEMCACHED_MSGPACK
+			if (Z_LVAL_P(value) == SERIALIZER_MSGPACK) {
+                m_obj->serializer = SERIALIZER_MSGPACK;
+            } else
+#endif
 			/* php serializer */
 			if (Z_LVAL_P(value) == SERIALIZER_PHP) {
 				m_obj->serializer = SERIALIZER_PHP;
@@ -3090,6 +3105,20 @@ static char *php_memc_zval_to_payload(zval *value, size_t *payload_len, uint32_t
 					break;
 				}
 #endif
+#ifdef HAVE_MEMCACHED_MSGPACK
+                case SERIALIZER_MSGPACK:
+                    php_msgpack_serialize(&buf, value TSRMLS_CC);
+					if(!buf.c) {
+						php_error_docref(NULL TSRMLS_CC, E_WARNING, "could not serialize value with msgpack");
+                        smart_str_free(&buf);
+                        return NULL;
+                    } 
+                    p = buf.c;
+                    l = buf.len;
+                    buf_used = 1;
+                    MEMC_VAL_SET_TYPE(*flags, MEMC_VAL_IS_MSGPACK);
+                    break;
+#endif
 				default:
 				{
 					php_serialize_data_t var_hash;
@@ -3357,6 +3386,15 @@ static int php_memc_zval_from_payload(zval *value, const char *payload_in, size_
 			goto my_error;
 #endif
 			break;
+
+        case MEMC_VAL_IS_MSGPACK:
+#ifdef HAVE_MEMCACHED_MSGPACK
+			php_msgpack_unserialize(value, payload, payload_len TSRMLS_CC);
+#else
+            php_error_docref(NULL TSRMLS_CC, E_WARNING, "could not unserialize value, no msgpack support");
+            goto my_error;
+#endif
+            break;
 
 		default:
 			ZVAL_FALSE(value);
@@ -3999,6 +4037,9 @@ static const zend_module_dep memcached_deps[] = {
 #ifdef HAVE_MEMCACHED_IGBINARY
 	ZEND_MOD_REQUIRED("igbinary")
 #endif
+#ifdef HAVE_MEMCACHED_MSGPACK
+    ZEND_MOD_REQUIRED("msgpack")
+#endif
 #ifdef HAVE_SPL
 	ZEND_MOD_REQUIRED("spl")
 #endif
@@ -4059,6 +4100,15 @@ static void php_memc_register_constants(INIT_FUNC_ARGS)
 	REGISTER_MEMC_CLASS_CONST_LONG(HAVE_JSON, 1);
 #else
 	REGISTER_MEMC_CLASS_CONST_LONG(HAVE_JSON, 0);
+#endif
+
+    /*
+     * Indicate whether msgpack serializer is available
+     */
+#ifdef HAVE_MEMCACHED_MSGPACK
+    REGISTER_MEMC_CLASS_CONST_LONG(HAVE_MSGPACK, 1);
+#else
+    REGISTER_MEMC_CLASS_CONST_LONG(HAVE_MSGPACK, 0);
 #endif
 
 #ifdef HAVE_MEMCACHED_SESSION
@@ -4178,6 +4228,7 @@ static void php_memc_register_constants(INIT_FUNC_ARGS)
 	REGISTER_MEMC_CLASS_CONST_LONG(SERIALIZER_IGBINARY, SERIALIZER_IGBINARY);
 	REGISTER_MEMC_CLASS_CONST_LONG(SERIALIZER_JSON, SERIALIZER_JSON);
 	REGISTER_MEMC_CLASS_CONST_LONG(SERIALIZER_JSON_ARRAY, SERIALIZER_JSON_ARRAY);
+    REGISTER_MEMC_CLASS_CONST_LONG(SERIALIZER_MSGPACK, SERIALIZER_MSGPACK);
 
 	/*
 	 * Compression types
@@ -4302,6 +4353,13 @@ PHP_MINFO_FUNCTION(memcached)
 #else
 	php_info_print_table_row(2, "json support", "no");
 #endif
+
+#ifdef HAVE_MEMCACHED_MSGPACK
+    php_info_print_table_row(2, "msgpack support", "yes");
+#else
+    php_info_print_table_row(2, "msgpack support", "no");
+#endif
+
 	php_info_print_table_end();
 
 	DISPLAY_INI_ENTRIES();
