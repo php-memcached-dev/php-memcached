@@ -70,11 +70,11 @@ function run_memcached_tests() {
     export REPORT_EXIT_STATUS=1
     export TEST_PHP_EXECUTABLE=`which php`
 
-    # We have one xfail test, we run it separately
-    php run-tests.php -d extension=igbinary.so -d extension=memcached.so -n ./tests/expire.phpt
-    rm ./tests/expire.phpt
-
     pushd "/tmp/php-memcached-build/memcached-${php_memcached_version}"
+        # We have one xfail test, we run it separately
+        php run-tests.php -d extension=igbinary.so -d extension=memcached.so -n ./tests/expire.phpt
+        rm ./tests/expire.phpt
+
         php run-tests.php -d extension=igbinary.so -d extension=memcached.so -n ./tests/*.phpt
         retval=$?
         for i in `ls tests/*.out 2>/dev/null`; do
