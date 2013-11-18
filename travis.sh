@@ -42,6 +42,10 @@ function install_igbinary() {
     popd
 }
 
+function install_msgpack() {
+    pecl install msgpack-beta
+}
+
 function build_php_memcached() {
     local libmemcached_prefix=$1
     local php_memcached_version=$2
@@ -72,10 +76,10 @@ function run_memcached_tests() {
 
     pushd "/tmp/php-memcached-build/memcached-${php_memcached_version}"
         # We have one xfail test, we run it separately
-        php run-tests.php -d extension=igbinary.so -d extension=memcached.so -n ./tests/expire.phpt
+        php run-tests.php -d msgpack.so -d extension=igbinary.so -d extension=memcached.so -n ./tests/expire.phpt
         rm ./tests/expire.phpt
 
-        php run-tests.php -d extension=igbinary.so -d extension=memcached.so -n ./tests/*.phpt
+        php run-tests.php -d msgpack.so -d extension=igbinary.so -d extension=memcached.so -n ./tests/*.phpt
         retval=$?
         for i in `ls tests/*.out 2>/dev/null`; do
             echo "-- START ${i}";
@@ -118,6 +122,9 @@ install_libmemcached $PHP_LIBMEMCACHED_VERSION $PHP_LIBMEMCACHED_PREFIX $ENABLE_
 
 # Install igbinary extension
 install_igbinary
+
+# install msgpack
+install_msgpack
 
 # Build the extension
 build_php_memcached $PHP_LIBMEMCACHED_PREFIX $PHP_MEMCACHED_VERSION $ENABLE_PROTOOCOL
