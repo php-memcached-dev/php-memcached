@@ -99,6 +99,8 @@ protocol_binary_response_status s_add_handler(const void *cookie, const void *ke
 	zval *zcookie, *zkey, *zvalue, *zflags, *zexptime, *zresult_cas;
 	zval **params [6];
 
+	TSRMLS_FETCH();
+
 	if (!MEMC_HAS_CB(MEMC_SERVER_ON_ADD)) {
 		return retval;
 	}
@@ -148,6 +150,8 @@ protocol_binary_response_status s_append_prepend_handler (php_memc_event_t event
 	protocol_binary_response_status retval = PROTOCOL_BINARY_RESPONSE_UNKNOWN_COMMAND;
 	zval *zcookie, *zkey, *zvalue, *zcas, *zresult_cas;
 	zval **params [5];
+
+	TSRMLS_FETCH();
 
 	if (!MEMC_HAS_CB(event)) {
 		return retval;
@@ -209,6 +213,8 @@ protocol_binary_response_status s_incr_decr_handler (php_memc_event_t event, con
 	protocol_binary_response_status retval = PROTOCOL_BINARY_RESPONSE_UNKNOWN_COMMAND;
 	zval *zcookie, *zkey, *zdelta, *zinital, *zexpiration, *zresult, *zresult_cas;
 	zval **params [7];
+
+	TSRMLS_FETCH();
 
 	if (!MEMC_HAS_CB(event)) {
 		return retval;
@@ -286,6 +292,8 @@ protocol_binary_response_status s_delete_handler (const void *cookie, const void
 	zval *zcookie, *zkey, *zcas;
 	zval **params [3];
 
+	TSRMLS_FETCH();
+
 	if (!MEMC_HAS_CB(MEMC_SERVER_ON_DELETE)) {
 		return retval;
 	}
@@ -317,6 +325,8 @@ protocol_binary_response_status s_flush_handler(const void *cookie, uint32_t whe
 	zval *zcookie, *zwhen;
 	zval **params [2];
 
+	TSRMLS_FETCH();
+
 	if (!MEMC_HAS_CB(MEMC_SERVER_ON_FLUSH)) {
 		return retval;
 	}
@@ -343,6 +353,8 @@ protocol_binary_response_status s_get_handler (const void *cookie, const void *k
 	protocol_binary_response_status retval = PROTOCOL_BINARY_RESPONSE_UNKNOWN_COMMAND;
 	zval *zcookie, *zkey, *zvalue, *zflags, *zresult_cas;
 	zval **params [5];
+
+	TSRMLS_FETCH();
 
 	if (!MEMC_HAS_CB(MEMC_SERVER_ON_GET)) {
 		return retval;
@@ -411,6 +423,8 @@ protocol_binary_response_status s_noop_handler(const void *cookie)
 	zval *zcookie;
 	zval **params [1];
 
+	TSRMLS_FETCH();
+
 	if (!MEMC_HAS_CB(MEMC_SERVER_ON_NOOP)) {
 		return retval;
 	}
@@ -431,6 +445,8 @@ protocol_binary_response_status s_quit_handler(const void *cookie)
 	zval **params [1];
 	protocol_binary_response_status retval = PROTOCOL_BINARY_RESPONSE_UNKNOWN_COMMAND;
 	zval *zcookie;
+
+	TSRMLS_FETCH();
 
 	if (!MEMC_HAS_CB(MEMC_SERVER_ON_QUIT)) {
 		return retval;
@@ -454,6 +470,8 @@ protocol_binary_response_status s_set_replace_handler (php_memc_event_t event, c
 	protocol_binary_response_status retval = PROTOCOL_BINARY_RESPONSE_UNKNOWN_COMMAND;
 	zval *zcookie, *zkey, *zdata, *zflags, *zexpiration, *zcas, *zresult_cas;
 	zval **params [7];
+
+	TSRMLS_FETCH();
 
 	if (!MEMC_HAS_CB(event)) {
 		return retval;
@@ -526,6 +544,8 @@ protocol_binary_response_status s_stat_handler (const void *cookie, const void *
 	protocol_binary_response_status retval = PROTOCOL_BINARY_RESPONSE_UNKNOWN_COMMAND;
 	zval *zcookie, *zkey, *zbody;
 
+	TSRMLS_FETCH();
+
 	if (!MEMC_HAS_CB(MEMC_SERVER_ON_STAT)) {
 		return retval;
 	}
@@ -569,6 +589,8 @@ protocol_binary_response_status s_version_handler (const void *cookie,
 	protocol_binary_response_status retval = PROTOCOL_BINARY_RESPONSE_UNKNOWN_COMMAND;
 	zval *zcookie, *zversion;
 
+	TSRMLS_FETCH();
+
 	if (!MEMC_HAS_CB(MEMC_SERVER_ON_VERSION)) {
 		return retval;
 	}
@@ -605,6 +627,8 @@ void s_handle_memcached_event (evutil_socket_t fd, short what, void *arg)
 	short flags = 0;
 	php_memc_client_t *client = (php_memc_client_t *) arg;
 	memcached_protocol_event_t events;
+
+	TSRMLS_FETCH();
 
 	if (!client->on_connect_invoked) {
 		if (MEMC_HAS_CB(MEMC_SERVER_ON_CONNECT)) {
@@ -679,6 +703,8 @@ void s_accept_cb (evutil_socket_t fd, short what, void *arg)
 
 	php_memc_proto_handler_t *handler = (php_memc_proto_handler_t *) arg;
 
+	TSRMLS_FETCH();
+
 	/* Accept the connection */
 	addr_len = sizeof (addr);
 	sock     = accept (fd, (struct sockaddr *) &addr, &addr_len);
@@ -750,6 +776,8 @@ evutil_socket_t s_create_listening_socket (const char *spec)
 
 	int rc;
 
+	TSRMLS_FETCH();
+
 	addr_len = sizeof (struct sockaddr);
 	rc = evutil_parse_sockaddr_port (spec, (struct sockaddr *) &addr, &addr_len);
 	if (rc != 0) {
@@ -799,6 +827,8 @@ zend_bool php_memc_proto_handler_run (php_memc_proto_handler_t *handler, const c
 {
 	struct event *accept_event;
 	evutil_socket_t sock = s_create_listening_socket (address);
+
+	TSRMLS_FETCH();
 
 	if (sock == -1) {
 		return 0;
