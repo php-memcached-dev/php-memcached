@@ -2543,8 +2543,8 @@ static int php_memc_set_option(php_memc_t *i_obj, long option, zval *value TSRML
 			/* msgpack serializer */
 #ifdef HAVE_MEMCACHED_MSGPACK
 			if (Z_LVAL_P(value) == SERIALIZER_MSGPACK) {
-                m_obj->serializer = SERIALIZER_MSGPACK;
-            } else
+				m_obj->serializer = SERIALIZER_MSGPACK;
+			} else
 #endif
 			/* php serializer */
 			if (Z_LVAL_P(value) == SERIALIZER_PHP) {
@@ -3177,18 +3177,18 @@ static char *php_memc_zval_to_payload(zval *value, size_t *payload_len, uint32_t
 				}
 #endif
 #ifdef HAVE_MEMCACHED_MSGPACK
-                case SERIALIZER_MSGPACK:
-                    php_msgpack_serialize(&buf, value TSRMLS_CC);
+				case SERIALIZER_MSGPACK:
+					php_msgpack_serialize(&buf, value TSRMLS_CC);
 					if(!buf.c) {
 						php_error_docref(NULL TSRMLS_CC, E_WARNING, "could not serialize value with msgpack");
-                        smart_str_free(&buf);
-                        return NULL;
-                    } 
-                    p = buf.c;
-                    l = buf.len;
-                    buf_used = 1;
-                    MEMC_VAL_SET_TYPE(*flags, MEMC_VAL_IS_MSGPACK);
-                    break;
+						smart_str_free(&buf);
+						return NULL;
+					}
+					p = buf.c;
+					l = buf.len;
+					buf_used = 1;
+					MEMC_VAL_SET_TYPE(*flags, MEMC_VAL_IS_MSGPACK);
+					break;
 #endif
 				default:
 				{
@@ -3462,10 +3462,10 @@ static int php_memc_zval_from_payload(zval *value, const char *payload_in, size_
 #ifdef HAVE_MEMCACHED_MSGPACK
 			php_msgpack_unserialize(value, pl, payload_len TSRMLS_CC);
 #else
-            php_error_docref(NULL TSRMLS_CC, E_WARNING, "could not unserialize value, no msgpack support");
-            goto my_error;
+			php_error_docref(NULL TSRMLS_CC, E_WARNING, "could not unserialize value, no msgpack support");
+			goto my_error;
 #endif
-            break;
+ 			break;
 
 		default:
 			ZVAL_FALSE(value);
@@ -4194,7 +4194,7 @@ static const zend_module_dep memcached_deps[] = {
 	ZEND_MOD_REQUIRED("igbinary")
 #endif
 #ifdef HAVE_MEMCACHED_MSGPACK
-    ZEND_MOD_REQUIRED("msgpack")
+	ZEND_MOD_REQUIRED("msgpack")
 #endif
 #ifdef HAVE_SPL
 	ZEND_MOD_REQUIRED("spl")
@@ -4262,9 +4262,9 @@ static void php_memc_register_constants(INIT_FUNC_ARGS)
      * Indicate whether msgpack serializer is available
      */
 #ifdef HAVE_MEMCACHED_MSGPACK
-    REGISTER_MEMC_CLASS_CONST_LONG(HAVE_MSGPACK, 1);
+	REGISTER_MEMC_CLASS_CONST_LONG(HAVE_MSGPACK, 1);
 #else
-    REGISTER_MEMC_CLASS_CONST_LONG(HAVE_MSGPACK, 0);
+	REGISTER_MEMC_CLASS_CONST_LONG(HAVE_MSGPACK, 0);
 #endif
 
 #ifdef HAVE_MEMCACHED_SESSION
@@ -4558,9 +4558,9 @@ PHP_MINFO_FUNCTION(memcached)
 #endif
 
 #ifdef HAVE_MEMCACHED_MSGPACK
-    php_info_print_table_row(2, "msgpack support", "yes");
+	php_info_print_table_row(2, "msgpack support", "yes");
 #else
-    php_info_print_table_row(2, "msgpack support", "no");
+	php_info_print_table_row(2, "msgpack support", "no");
 #endif
 
 	php_info_print_table_end();
