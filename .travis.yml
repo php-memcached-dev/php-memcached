@@ -23,9 +23,13 @@ before_script:
     - make
     - make install
     - cd ..
-    - sudo apt-get update
-    - sudo apt-get install php-pear php5-dev
-    - pecl install igbinary
+    - git clone git@github.com:igbinary/igbinary.git
+    - cd igbinary
+    - phpize
+    - ./configure
+    - make
+    - make install
+    - cd ..
 
 
 script:
