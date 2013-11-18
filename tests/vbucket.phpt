@@ -2,8 +2,8 @@
 Memcached virtual buckets
 --SKIPIF--
 <?php
-if (!extension_loaded("memcached")) die "skip";
-if (!defined("memcached::DISTRIBUTION_VIRTUAL_BUCKET")) die "skip DISTRIBUTION_VIRTUAL_BUCKET not defined";
+if (!extension_loaded("memcached")) die ("skip");
+if (!defined("Memcached::DISTRIBUTION_VIRTUAL_BUCKET")) die ("skip DISTRIBUTION_VIRTUAL_BUCKET not defined");
 ?>
 --FILE--
 <?php

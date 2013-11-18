@@ -23,6 +23,9 @@ before_script:
     - make
     - make install
     - cd ..
+    - sudo apt-get update
+    - sudo apt-get install php-pear php5-dev
+    - pecl install igbinary
 
 
 script:
@@ -32,12 +35,13 @@ script:
     - tar xfz "memcached-${PHP_MEMCACHED_VERSION}.tgz" -C /tmp/php-memcached-build
     - cd /tmp/php-memcached-build/memcached-${PHP_MEMCACHED_VERSION}
     - phpize
-    - ./configure --with-libmemcached-dir="${HOME}/libmemcached-${LIBMEMCACHED_VERSION}"
+    - ./configure --with-libmemcached-dir="${HOME}/libmemcached-${LIBMEMCACHED_VERSION}" --enable-memcached-json --enable-memcached-igbinary
     - make
+    - make install
     - export NO_INTERACTION=1
     - export REPORT_EXIT_STATUS=1
     - export TEST_PHP_EXECUTABLE=`which php`
-    - php run-tests.php -d extension=memcached.so -d extension_dir=modules -n ./tests/*.phpt
+    - php run-tests.php -d extension=memcached.so --d extension=igbinary.so -n ./tests/*.phpt
     - for i in `ls tests/*.out 2>/dev/null`; do echo "-- START ${i}"; cat $i; echo ""; echo "-- END"; done
 
 
