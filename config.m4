@@ -347,7 +347,9 @@ if test "$PHP_MEMCACHED" != "no"; then
     fi
 
     LIBEVENT_INCLUDES=""
+    AC_MSG_CHECKING([for memcached protocol support])
     if test "$PHP_MEMCACHED_PROTOCOL" != "no"; then
+      AC_MSG_RESULT([enabled])
 
       AC_MSG_CHECKING([for libmemcachedprotocol])
       if test "$PHP_LIBMEMCACHED_DIR" != "no" && test "$PHP_LIBMEMCACHED_DIR" != "yes"; then
@@ -356,6 +358,21 @@ if test "$PHP_MEMCACHED" != "no"; then
         fi
       fi
       AC_MSG_RESULT([found])
+
+      ORIG_CFLAGS="$CFLAGS"
+      CFLAGS="$CFLAGS -I$PHP_LIBMEMCACHED_INCDIR"
+
+      AC_CACHE_CHECK([whether libmemcachedprotocol is usable], ac_cv_have_working_libmemcachedprotocol, [
+        AC_TRY_COMPILE(
+          [ #include <libmemcachedprotocol-0.0/handler.h> ],
+          [ memcached_binary_protocol_callback_st s_test_impl;
+            s_test_impl.interface.v1.delete_object = 0;
+          ],
+          [ ac_cv_have_working_libmemcachedprotocol="yes" ],
+          [ ac_cv_have_working_libmemcachedprotocol="no" ]
+        )
+      ])
+      CFLAGS="$ORIG_CFLAGS"
 
       PHP_ADD_LIBRARY_WITH_PATH(memcachedprotocol, $PHP_LIBMEMCACHED_DIR/$PHP_LIBDIR, MEMCACHED_SHARED_LIBADD)
 
@@ -381,6 +398,8 @@ if test "$PHP_MEMCACHED" != "no"; then
       fi
       PHP_MEMCACHED_FILES="${PHP_MEMCACHED_FILES} php_memcached_server.c"
       AC_DEFINE(HAVE_MEMCACHED_PROTOCOL,1,[Whether memcached protocol is enabled])
+    else
+      AC_MSG_RESULT([disabled])
     fi
 
     PHP_SUBST(MEMCACHED_SHARED_LIBADD)
