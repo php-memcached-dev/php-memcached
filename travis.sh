@@ -1,4 +1,4 @@
-#!/bin/bash -e
+#!/bin/bash
 
 function validate_package_xml() {
     retval=0
@@ -72,8 +72,16 @@ function run_memcached_tests() {
 
     pushd "/tmp/php-memcached-build/memcached-${php_memcached_version}"
         php run-tests.php -d extension=igbinary.so -d extension=memcached.so -n ./tests/*.phpt
-        for i in `ls tests/*.out 2>/dev/null`; do echo "-- START ${i}"; cat $i; echo ""; echo "-- END"; done
+        retval=$?
+        for i in `ls tests/*.out 2>/dev/null`; do
+            echo "-- START ${i}";
+            cat $i;
+            echo "";
+            echo "-- END";
+        done
     popd
+
+    return $retval;
 }
 
 # Command line arguments
@@ -96,7 +104,10 @@ fi
 echo "Enable protocol: $ENABLE_PROTOOCOL"
 
 # validate the package.xml
-validate_package_xml
+validate_package_xml || exit 1
+
+# exit on error
+set -e
 
 # Install libmemcached version
 install_libmemcached $PHP_LIBMEMCACHED_VERSION $PHP_LIBMEMCACHED_PREFIX $ENABLE_PROTOOCOL
@@ -108,5 +119,6 @@ install_igbinary
 build_php_memcached $PHP_LIBMEMCACHED_PREFIX $PHP_MEMCACHED_VERSION $ENABLE_PROTOOCOL
 
 # Run tests
-run_memcached_tests $PHP_MEMCACHED_VERSION
+set +e
+run_memcached_tests $PHP_MEMCACHED_VERSION || exit 1
 
