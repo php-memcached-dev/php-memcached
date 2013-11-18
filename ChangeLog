@@ -16,6 +16,8 @@ Version 2.2.0b1
 		- memcached.sess_randomize_replica_read
 		- memcached.sess_remove_failed
 		- memcached.sess_connect_timeout
+	* Added support for memcached protocol handlers
+	* Added Memcached::setBucket for virtual bucket support
 
 Version 2.1.0
 -------------
