@@ -119,7 +119,7 @@ ZEND_BEGIN_MODULE_GLOBALS(php_memcached)
 
 	double compression_factor;
 #if HAVE_MEMCACHED_SASL
-	bool use_sasl;
+	zend_bool use_sasl;
 #endif
 #ifdef HAVE_MEMCACHED_PROTOCOL
 	struct {

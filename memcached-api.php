@@ -34,6 +34,8 @@ class Memcached {
 	const DISTRIBUTION_MODULA;
 
 	const DISTRIBUTION_CONSISTENT;
+	
+	const DISTRIBUTION_VIRTUAL_BUCKET;
 
 	const LIBKETAMA_COMPATIBLE;
 
@@ -185,13 +187,13 @@ class Memcached {
 
 	public function __construct( $persistent_id = '', $on_new_object_cb = null ) {}
 	
-	public function get( $key, $cache_cb = null, &$cas_token = null ) {}
+	public function get( $key, $cache_cb = null, &$cas_token = null, &$udf_flags = null ) {}
 
-	public function getByKey( $server_key, $key, $cache_cb = null, &$cas_token = null ) {}
+	public function getByKey( $server_key, $key, $cache_cb = null, &$cas_token = null, &$udf_flags = null ) {}
 
-	public function getMulti( array $keys, &$cas_tokens = null, $flags = 0 ) {}
+	public function getMulti( array $keys, &$cas_tokens = null, $flags = 0, &$udf_flags = null ) {}
 
-	public function getMultiByKey( $server_key, array $keys, &$cas_tokens = null, $flags = 0 ) {}
+	public function getMultiByKey( $server_key, array $keys, &$cas_tokens = null, $flags = 0, &$udf_flags = null ) {}
 
 	public function getDelayed( array $keys, $with_cas = null, $value_cb = null ) {}
 
@@ -201,25 +203,25 @@ class Memcached {
 	
 	public function fetchAll( ) {}
 
-	public function set( $key, $value, $expiration = 0 ) {}
+	public function set( $key, $value, $expiration = 0, $udf_flags = 0 ) {}
 
-    public function touch( $key, $expiration = 0 ) {}
+	public function touch( $key, $expiration = 0 ) {}
 
-    public function touchbyKey( $key, $expiration = 0 ) {}
+	public function touchbyKey( $key, $expiration = 0 ) {}
 
-	public function setByKey( $server_key, $key, $value, $expiration = 0 ) {}
+	public function setByKey( $server_key, $key, $value, $expiration = 0, $udf_flags = 0 ) {}
 
-	public function setMulti( array $items, $expiration = 0 ) {}
+	public function setMulti( array $items, $expiration = 0, $udf_flags = 0 ) {}
 
-	public function setMultiByKey( $server_key, array $items, $expiration = 0 ) {}
+	public function setMultiByKey( $server_key, array $items, $expiration = 0, $udf_flags = 0 ) {}
 
-	public function cas( $token, $key, $value, $expiration = 0 ) {}
+	public function cas( $token, $key, $value, $expiration = 0, $udf_flags = 0 ) {}
 
-	public function casByKey( $token, $server_key, $key, $value, $expiration = 0 ) {}
+	public function casByKey( $token, $server_key, $key, $value, $expiration = 0, $udf_flags = 0 ) {}
 
-	public function add( $key, $value, $expiration = 0 ) {}
+	public function add( $key, $value, $expiration = 0, $udf_flags = 0 ) {}
 
-	public function addByKey( $server_key, $key, $value, $expiration = 0 ) {}
+	public function addByKey( $server_key, $key, $value, $expiration = 0, $udf_flags = 0 ) {}
 
 	public function append( $key, $value ) {}
 
@@ -229,9 +231,9 @@ class Memcached {
 
 	public function prependByKey( $server_key, $key, $value ) {}
 
-	public function replace( $key, $value, $expiration = 0 ) {}
+	public function replace( $key, $value, $expiration = 0, $udf_flags = 0 ) {}
 
-	public function replaceByKey( $server_key, $key, $value, $expiration = 0 ) {}
+	public function replaceByKey( $server_key, $key, $value, $expiration = 0, $udf_flags = 0 ) {}
 
 	public function delete( $key, $time = 0 ) {}
 
@@ -250,6 +252,8 @@ class Memcached {
 	public function setOption( $option, $value ) {}
 
 	public function setOptions( array $options ) {}
+
+	public function setBucket( array $host_map, array $forward_map, $replicas ) {}
 
 	public function addServer( $host, $port,  $weight = 0 ) {}
 
@@ -281,7 +285,7 @@ class Memcached {
 
 	public function isPristine( ) {}
 
-  public function setSaslAuthData( $username, $password ) {}
+	public function setSaslAuthData( $username, $password ) {}
 
 }
 
