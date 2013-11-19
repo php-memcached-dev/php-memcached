@@ -97,14 +97,14 @@ try {
 	echo $e->getMessage(), "\n";
 }
 
---EXPECTF--
+--EXPECT--
 bool(true)
-Memcached::get(): could not unserialize value%S
+Memcached::get(): could not unserialize value
 123456
-Memcached::get(): could not unserialize value%S
+Memcached::get(): could not unserialize value
 123456
-Memcached::get(): could not unserialize value%S
+Memcached::get(): could not unserialize value
 123456
-Memcached::get(): could not unserialize value%S
+Memcached::get(): could not unserialize value
 1234
 

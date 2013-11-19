@@ -670,10 +670,12 @@ static void php_memc_get_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 			* it to get the value. The CAS token will be 0, because we cannot generate it
 			* ourselves.
 			*/
-		if (cas_token && status == MEMCACHED_NOTFOUND && fci.size != 0) {
-			status = php_memc_do_cache_callback(getThis(), &fci, &fcc, key, key_len,
-												return_value TSRMLS_CC);
-			ZVAL_DOUBLE(cas_token, 0);
+		if (cas_token) {
+			ZVAL_DOUBLE(cas_token, 0.0);
+		}
+
+		if (status == MEMCACHED_NOTFOUND && fci.size != 0) {
+			status = php_memc_do_cache_callback(getThis(), &fci, &fcc, key, key_len, return_value TSRMLS_CC);
 		}
 
 		if (php_memc_handle_error(i_obj, status TSRMLS_CC) < 0) {
