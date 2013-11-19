@@ -44,7 +44,7 @@ function memc_create_combinations ($name, $serializer, $ignore_object_type = fal
 	);
 }
 
-function memc_get_serializer_options () 
+function memc_get_serializer_options ($skipmsgpack=false)
 {
 	$options = memc_create_combinations ('PHP', Memcached::SERIALIZER_PHP);
 
@@ -56,7 +56,7 @@ function memc_get_serializer_options ()
 		$options = array_merge ($options, memc_create_combinations ('JSON', Memcached::SERIALIZER_JSON, true));
 	}
 
-	if (Memcached::HAVE_MSGPACK) {
+	if (Memcached::HAVE_MSGPACK && !$skipmsgpack) {
 		$options = array_merge ($options, memc_create_combinations ('msgpack', Memcached::SERIALIZER_MSGPACK));
 	}
 	return $options;
