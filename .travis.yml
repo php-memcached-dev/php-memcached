@@ -14,5 +14,8 @@ env:
     - LIBMEMCACHED_VERSION=0.53
     - LIBMEMCACHED_VERSION=0.44
 
+before_script:
+    - ./travis.sh before_script $LIBMEMCACHED_VERSION
+
 script:
-    - ./travis.sh $LIBMEMCACHED_VERSION
+    - ./travis.sh script $LIBMEMCACHED_VERSION

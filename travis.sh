@@ -99,7 +99,18 @@ function run_memcached_tests() {
 }
 
 # Command line arguments
-PHP_LIBMEMCACHED_VERSION=$1
+ACTION=$1
+PHP_LIBMEMCACHED_VERSION=$2
+
+if test "x$ACTION" = "x"; then
+    echo "Usage: $0 <action> <libmemcached version>"
+    exit 1
+fi
+
+if test "x$PHP_LIBMEMCACHED_VERSION" = "x"; then
+    echo "Usage: $0 <action> <libmemcached version>"
+    exit 1
+fi
 
 # the extension version
 PHP_MEMCACHED_VERSION=$(php -r '$sxe = simplexml_load_file ("package.xml"); echo (string) $sxe->version->release;')
@@ -108,34 +119,55 @@ PHP_MEMCACHED_VERSION=$(php -r '$sxe = simplexml_load_file ("package.xml"); echo
 PHP_LIBMEMCACHED_PREFIX="${HOME}/libmemcached-${PHP_LIBMEMCACHED_VERSION}"
 
 # Check whether to enable building with protoocol support
-dpkg --compare-versions "$PHP_LIBMEMCACHED_VERSION" gt 1.0.15
-if [ $? = 0 ]; then
+DPKG=`which dpkg`
+
+if [ "x$DPKG" = "x" ]; then
+    echo "dpkg not found, enabling protocol support"
     ENABLE_PROTOOCOL=yes
 else
-    ENABLE_PROTOOCOL=no
+    dpkg --compare-versions "$PHP_LIBMEMCACHED_VERSION" gt 1.0.15
+    if [ $? = 0 ]; then
+        ENABLE_PROTOOCOL=yes
+    else
+        ENABLE_PROTOOCOL=no
+    fi
 fi
 
 echo "Enable protocol: $ENABLE_PROTOOCOL"
 
-# validate the package.xml
-validate_package_xml || exit 1
-
-# exit on error
 set -e
 
-# Install libmemcached version
-install_libmemcached $PHP_LIBMEMCACHED_VERSION $PHP_LIBMEMCACHED_PREFIX $ENABLE_PROTOOCOL
+case $ACTION in
+    before_script)
+        # validate the package.xml
+        validate_package_xml || exit 1
 
-# Install igbinary extension
-install_igbinary
+        # Install libmemcached version
+        install_libmemcached $PHP_LIBMEMCACHED_VERSION $PHP_LIBMEMCACHED_PREFIX $ENABLE_PROTOOCOL
 
-# install msgpack
-install_msgpack
+        # Install igbinary extension
+        install_igbinary
 
-# Build the extension
-build_php_memcached $PHP_LIBMEMCACHED_PREFIX $PHP_MEMCACHED_VERSION $ENABLE_PROTOOCOL
+        # install msgpack
+        install_msgpack
+    ;;
 
-# Run tests
-set +e
-run_memcached_tests $PHP_MEMCACHED_VERSION || exit 1
+    script)
+        # Build the extension
+        build_php_memcached $PHP_LIBMEMCACHED_PREFIX $PHP_MEMCACHED_VERSION $ENABLE_PROTOOCOL
+
+        # Run tests
+        set +e
+        run_memcached_tests $PHP_MEMCACHED_VERSION || exit 1
+    ;;
+
+    *)
+        echo "Unknown action. Valid actions are: before_script and script"
+        exit 1
+    ;;
+esac
+
+
+
+
 
