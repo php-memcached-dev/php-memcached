@@ -7,10 +7,10 @@ if (!defined("Memcached::DISTRIBUTION_VIRTUAL_BUCKET")) die ("skip DISTRIBUTION_
 ?>
 --FILE--
 <?php
-$m = new Memcached();
-var_dump ($m->setOption (Memcached::OPT_DISTRIBUTION, Memcached::DISTRIBUTION_VIRTUAL_BUCKET));
-
-$m->addServer('127.0.0.1', 11211, 1);
+include dirname (__FILE__) . '/config.inc';
+$m = memc_get_instance (array (
+							Memcached::OPT_DISTRIBUTION => Memcached::DISTRIBUTION_VIRTUAL_BUCKET
+						));
 
 var_dump ($m->setBucket (array (1, 2, 3), null, 2));
 
@@ -30,7 +30,6 @@ echo "OK\n";
 
 ?>
 --EXPECTF--
-bool(true)
 bool(true)
 bool(true)
 bool(true)

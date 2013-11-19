@@ -32,9 +32,8 @@ function status_print ($op, $mem, $expected)
 	}
 }
 
-$mem = new Memcached();
-$mem->setOption(Memcached::OPT_BINARY_PROTOCOL,true);
-$mem->addServer('127.0.0.1', 11211) or die ("Could not connect");
+include dirname (__FILE__) . '/config.inc';
+$mem = memc_get_instance (array (Memcached::OPT_BINARY_PROTOCOL => true));
 
 $key = uniqid ('touch_t_');
 

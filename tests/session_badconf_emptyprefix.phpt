@@ -9,11 +9,13 @@ if (!Memcached::HAVE_SESSION) print "skip";
 memcached.sess_locking = on
 memcached.sess_lock_wait = 150000
 memcached.sess_prefix = "memc.sess.key."
-session.save_path="127.0.0.1:11211"
 session.save_handler = memcached
 
 --FILE--
-<?php 
+<?php
+include dirname (__FILE__) . '/config.inc';
+ini_set ('session.save_path', MEMC_SERVER_HOST . ':' . MEMC_SERVER_PORT);
+
 error_reporting(0);
 function handler($errno, $errstr) {
 	echo "$errstr\n";

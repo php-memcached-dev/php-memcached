@@ -7,6 +7,8 @@ https://code.google.com/p/memcached/issues/detail?id=275
 --FILE--
 <?php
 
+include dirname (__FILE__) . '/config.inc';
+
 function run_expiry_test ($m) {
 	
 	$key = uniqid ('will_expire_');
@@ -43,16 +45,14 @@ function run_expiry_test ($m) {
 	echo "All OK" . PHP_EOL;
 }
 
-
-$m = new Memcached();
-$m->setOption(Memcached::OPT_BINARY_PROTOCOL, true);
-$m->addServer('127.0.0.1', 11211, 1);
+$m = memc_get_instance (array (
+							Memcached::OPT_BINARY_PROTOCOL => true
+						));
 
 echo '-- binary protocol' . PHP_EOL;
 run_expiry_test ($m);
 
-$m = new Memcached();
-$m->addServer('127.0.0.1', 11211, 1);
+$m = memc_get_instance ();
 
 echo '-- text protocol' . PHP_EOL;
 run_expiry_test ($m);

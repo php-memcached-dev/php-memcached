@@ -4,8 +4,8 @@ Set with undefined key and value
 <?php if (!extension_loaded("memcached")) print "skip"; ?>
 --FILE--
 <?php
-$m = new Memcached();
-$m->addServer('127.0.0.1', 11211, 1);
+include dirname (__FILE__) . '/config.inc';
+$m = memc_get_instance ();
 
 $key = 'foobarbazDEADC0DE';
 $value = array('foo' => 'bar');

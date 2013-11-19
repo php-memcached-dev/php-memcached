@@ -4,12 +4,10 @@ Test for GH #90
 <?php if (!extension_loaded("memcached")) print "skip"; ?>
 --FILE--
 <?php
-//Setup MemcacheD
-{
-    $memcached = new Memcached();
-    $memcached->setOptions(array(memcached::OPT_BINARY_PROTOCOL => true));
-    $memcached->addServers(array(array('127.0.0.1', 11211, 100)));
-}
+include dirname (__FILE__) . '/config.inc';
+$memcached = memc_get_instance (array (
+									Memcached::OPT_BINARY_PROTOCOL => true
+								));
 
 // Create a key for use as a lock.  If this key already exists, wait till it doesn't exist.
 {

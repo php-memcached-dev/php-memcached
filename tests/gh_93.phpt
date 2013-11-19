@@ -4,9 +4,10 @@ Test for Github issue #93 (double and long overflow)
 <?php if (!extension_loaded("memcached")) print "skip"; ?>
 --FILE--
 <?php
-$m = new Memcached();
-$m->addServer('127.0.0.1', 11211, 1);
-$m->setOption(Memcached::OPT_COMPRESSION, false);
+include dirname (__FILE__) . '/config.inc';
+$m = memc_get_instance (array (
+							Memcached::OPT_COMPRESSION => false
+						));
 
 function testOverflow($m, $value) {
 	$m->delete('overflow');

@@ -4,9 +4,10 @@ Memcached: Bug #16959 (getMulti + BINARY_PROTOCOL problem)
 <?php if (!extension_loaded("memcached")) print "skip"; ?>
 --FILE--
 <?php
-$cache = new Memcached();
-$cache->setOption(Memcached::OPT_BINARY_PROTOCOL, true);
-$cache->addServer('localhost', 11211);
+include dirname (__FILE__) . '/config.inc';
+$cache = memc_get_instance (array (
+							Memcached::OPT_BINARY_PROTOCOL => true
+						));
 
 $cache->set('key_0', 'value0');
 $cache->set('key_0_additional', 'value0_additional');

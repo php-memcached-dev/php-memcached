@@ -24,9 +24,8 @@ define ('FLAG_64', 64);
 define ('FLAG_TOO_LARGE', pow(2, 16));
 $x = 0;
 
-$m = new Memcached();
-$m->setOption(Memcached::OPT_BINARY_PROTOCOL, true);
-$m->addServer('127.0.0.1', 11211, 1);
+include dirname (__FILE__) . '/config.inc';
+$m = memc_get_instance (array (Memcached::OPT_BINARY_PROTOCOL => true));
 
 $key = uniqid ('udf_test_');
 

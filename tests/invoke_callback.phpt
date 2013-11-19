@@ -5,9 +5,11 @@ Test that callback is invoked on new object
 --FILE--
 <?php
 
+include dirname (__FILE__) . '/config.inc';
+
 function my_func(Memcached $obj, $persistent_id = null)
 {
-	$obj->addServer("127.0.0.1", 11211);
+	$obj->addServer(MEMC_SERVER_HOST, MEMC_SERVER_PORT);
 }
 
 $m = new Memcached('hi', 'my_func');

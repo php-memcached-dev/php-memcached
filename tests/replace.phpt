@@ -4,8 +4,8 @@ Memcached::replace()
 <?php if (!extension_loaded("memcached")) print "skip"; ?>
 --FILE--
 <?php
-$m = new Memcached();
-$m->addServer('localhost', 11211, 1);
+include dirname (__FILE__) . '/config.inc';
+$m = memc_get_instance ();
 
 $m->delete('foo');
 var_dump($m->replace('foo', 'bar', 60));

@@ -4,8 +4,8 @@ Memcached fetch cas & set cas
 <?php if (!extension_loaded("memcached")) print "skip"; ?>
 --FILE--
 <?php
-$m = new Memcached();
-$m->addServer('127.0.0.1', 11211, 1);
+include dirname (__FILE__) . '/config.inc';
+$m = memc_get_instance ();
 
 $m->delete('cas_test');
 $cas_token = null;

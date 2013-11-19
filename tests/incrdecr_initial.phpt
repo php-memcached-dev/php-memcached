@@ -4,9 +4,10 @@ Memcached::increment() Memcached::decrement() with initial support
 <?php if (!extension_loaded("memcached")) print "skip"; ?>
 --FILE--
 <?php
-$m = new Memcached();
-$m->setOption(Memcached::OPT_BINARY_PROTOCOL, 1);
-$m->addServer('localhost', 11211, 1);
+include dirname (__FILE__) . '/config.inc';
+$m = memc_get_instance (array (
+							Memcached::OPT_BINARY_PROTOCOL => true
+						));
 
 $m->delete('foo');
 var_dump($m->increment('foo', 1, 1));

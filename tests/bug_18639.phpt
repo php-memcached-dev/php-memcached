@@ -4,10 +4,9 @@ Memcached::getServerByKey(): Bug pecl#18639 (Segfault in getServerByKey)
 <?php if (!extension_loaded("memcached")) print "skip"; ?>
 --FILE--
 <?php
-error_reporting(0);
+include dirname (__FILE__) . '/config.inc';
+$m = memc_get_instance ();
 
-$m = new Memcached();
-$m->addServer('127.0.0.1', 11211);
 var_dump($m->set('test', 'test1'));
 var_dump($m->getServerByKey('1'));
 

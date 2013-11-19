@@ -6,14 +6,10 @@ Test for Github issue #77
 ?>
 --FILE--
 <?php
-$mc = new Memcached();
-$mc->addServer('127.0.0.1', 11211, 1);
+include dirname (__FILE__) . '/config.inc';
+$mc = memc_get_instance ();
 
 $key = uniqid ("this_does_not_exist_");
-
-$mc = new \Memcached();
-$mc->setOption(\Memcached::OPT_BINARY_PROTOCOL, true);
-$mc->addServer("127.0.0.1", 11211);
 
 $mc->touch($key, 5);
 var_dump ($mc->getResultCode() == Memcached::RES_NOTFOUND);

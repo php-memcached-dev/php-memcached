@@ -3,9 +3,12 @@
 define ("MEMC_SERVER_HOST", "127.0.0.1");
 define ("MEMC_SERVER_PORT", 11211);
 
-function memc_get_instance ()
+function memc_get_instance (array $opts = array (), $persistent_id = null)
 {
-	$memcached = new Memcached();
+	$memcached = new Memcached($persistent_id);
+	if ($memcached->setOptions ($opts) == false)
+		echo "Failed to set options" . PHP_EOL;
+
 	$memcached->addServer(MEMC_SERVER_HOST, MEMC_SERVER_PORT);
 	$memcached->flush ();
 	return $memcached;
@@ -14,13 +17,7 @@ function memc_get_instance ()
 function memc_run_test ($test_function, $options = array ())
 {
 	foreach ($options as $option_set) {
-		$memc = memc_get_instance ();
-
-		foreach ($option_set ['options'] as $key => $value) {
-			if ($memc->setOption ($key, $value) == false) {
-				die ('Failed to set option: ' . $key);
-			}
-		}
+		$memc = memc_get_instance ($option_set ['options']);
 		$test_function ($memc, $option_set);
 	}
 	echo "TEST DONE" . PHP_EOL;

@@ -4,10 +4,12 @@ Memcached result codes.
 <?php if (!extension_loaded("memcached")) print "skip"; ?>
 --FILE--
 <?php
+include dirname (__FILE__) . '/config.inc';
+
 $m = new Memcached();
 echo $m->getResultMessage(), "\n";
 
-$m->addServer('127.0.0.1', 11211, 1);
+$m->addServer(MEMC_SERVER_HOST, MEMC_SERVER_PORT, 1);
 echo $m->getResultCode(), "\n";
 echo $m->getResultMessage(), "\n";
 
@@ -39,8 +41,8 @@ echo $m2->getResultCode(), "\n";
 echo $m2->getResultMessage(), "\n";
 
 var_dump($m->getResultCode() == $code);
-$m = new Memcached('test1');
-$m->addServer('127.0.0.1', 11211);
+
+$m = memc_get_instance (array (), 'test1');
 $m2 = new Memcached('test1');
 
 $m->delete('moikkamitakuuluu');

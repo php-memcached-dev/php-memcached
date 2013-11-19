@@ -4,9 +4,11 @@ Conf settings persist.
 <?php if (!extension_loaded("memcached")) print "skip"; ?>
 --FILE--
 <?php 
-$m1 = new Memcached('id1');
-$m1->setOption(Memcached::OPT_PREFIX_KEY, 'php');
-$m1->addServer('localhost', 11211);
+include dirname (__FILE__) . '/config.inc';
+$m1 = memc_get_instance (array (
+							Memcached::OPT_PREFIX_KEY => 'php'
+), 'id1');
+
 $m1->set('foo', 'bar');
 
 for ($i = 1000; $i > 0; $i--) {

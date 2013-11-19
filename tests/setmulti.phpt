@@ -5,9 +5,8 @@ Memcached::setMulti()
 --FILE--
 <?php
 
-$m = new Memcached();
-$m->addServer('localhost', 11211, 1);
-
+include dirname (__FILE__) . '/config.inc';
+$m = memc_get_instance ();
 
 $data['foo'] = 'bar';
 

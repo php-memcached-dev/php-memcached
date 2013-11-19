@@ -4,17 +4,18 @@ Test flushing buffers
 <?php if (!extension_loaded("memcached")) print "skip"; ?>
 --FILE--
 <?php
-$m = new Memcached();
-$m->addServer('127.0.0.1', 11211);
-$m->setOption(Memcached::OPT_NO_BLOCK, 1);
-$m->setOption(Memcached::OPT_BUFFER_WRITES, 1);
+
+include dirname (__FILE__) . '/config.inc';
+$m = memc_get_instance (array (
+							Memcached::OPT_NO_BLOCK => 1,
+							Memcached::OPT_BUFFER_WRITES => 1,
+						));
 
 $key = uniqid ('flush_key_');
 
 var_dump ($m->set($key, 'test_val'));
 
-$m2 = new Memcached();
-$m2->addServer('127.0.0.1', 11211);
+$m2 = memc_get_instance ();
 
 var_dump ($m2->get ($key));
 var_dump ($m->flushBuffers ());
