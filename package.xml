@@ -48,6 +48,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
   * memcached.sess_connect_timeout
 - Added support for memcached protocol handlers
 - Added Memcached::setBucket for virtual bucket support
+- Added support for msgpack serialization
  </notes>
  <contents>
   <dir name="/">
