@@ -116,7 +116,7 @@ PS_OPEN_FUNC(memcached)
 	memcached_sess *memc_sess = PS_GET_MOD_DATA();
 	memcached_return status;
 	char *p, *plist_key = NULL;
-	int plist_key_len;
+	int plist_key_len = 0;
 
 	if (!strncmp((char *)save_path, "PERSISTENT=", sizeof("PERSISTENT=") - 1)) {
 		zend_rsrc_list_entry *le = NULL;
