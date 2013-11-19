@@ -77,7 +77,7 @@ function types_simple_test ($m, $options)
 	}
 }
 
-memc_run_test ('types_simple_test', memc_get_serializer_options (true));
+memc_run_test ('types_simple_test', memc_get_serializer_options (version_compare(phpversion("msgpack"), "0.5.5", "<=")));
 
 ?>
 --EXPECT--
