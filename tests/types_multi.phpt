@@ -66,7 +66,7 @@ function types_test ($m, $options)
 	}
 }
 
-memc_run_test ('types_test', memc_get_serializer_options ());
+memc_run_test ('types_test', memc_get_serializer_options (true));
 
 ?>
 --EXPECT--
