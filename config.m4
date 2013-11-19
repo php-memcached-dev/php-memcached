@@ -41,6 +41,11 @@ fi
 
 if test "$PHP_MEMCACHED" != "no"; then
 
+  AC_PATH_PROG(PKG_CONFIG, pkg-config, no)
+  if test "x$PKG_CONFIG" = "xno"; then
+    AC_MSG_RESULT([pkg-config not found])
+    AC_MSG_ERROR([Please reinstall the pkg-config distribution])
+  fi
 
   dnl # zlib
   if test "$PHP_ZLIB_DIR" != "no" && test "$PHP_ZLIB_DIR" != "yes"; then
@@ -271,38 +276,37 @@ if test "$PHP_MEMCACHED" != "no"; then
   fi
 
   AC_MSG_CHECKING([for libmemcached location])
+  export ORIG_PKG_CONFIG_PATH="$PKG_CONFIG_PATH"
+
   if test "$PHP_LIBMEMCACHED_DIR" != "no" && test "$PHP_LIBMEMCACHED_DIR" != "yes"; then
-    if ! test -r "$PHP_LIBMEMCACHED_DIR/include/libmemcached/memcached.h"; then
-      AC_MSG_ERROR([Can't find libmemcached headers under "$PHP_LIBMEMCACHED_DIR"])
-    fi
+    export PKG_CONFIG_PATH="$PHP_LIBMEMCACHED_DIR/$PHP_LIBDIR/pkgconfig"
   else
-    PHP_LIBMEMCACHED_DIR="no"
-    for i in /usr /usr/local; do
-      if test -r "$i/include/libmemcached/memcached.h"; then
-        PHP_LIBMEMCACHED_DIR=$i
-        break
-      fi
-    done
+    export PKG_CONFIG_PATH="$PKG_CONFIG_PATH:/usr/local/$PHP_LIBDIR/pkgconfig:/usr/$PHP_LIBDIR/pkgconfig:/opt/$PHP_LIBDIR/pkgconfig"
   fi
 
-  if test "$PHP_LIBMEMCACHED_DIR" = "no"; then
+  if ! $PKG_CONFIG --exists libmemcached; then
     AC_MSG_ERROR([memcached support requires libmemcached. Use --with-libmemcached-dir=<DIR> to specify the prefix where libmemcached headers and library are located])
   else
-    AC_MSG_RESULT([$PHP_LIBMEMCACHED_DIR])
+    PHP_LIBMEMCACHED_VERSION=`$PKG_CONFIG libmemcached --modversion`
+    PHP_LIBMEMCACHED_DIR=`$PKG_CONFIG libmemcached --variable=prefix`
 
-    PHP_LIBMEMCACHED_INCDIR="$PHP_LIBMEMCACHED_DIR/include"
-    PHP_ADD_INCLUDE($PHP_LIBMEMCACHED_INCDIR)
-    PHP_ADD_LIBRARY_WITH_PATH(memcached, $PHP_LIBMEMCACHED_DIR/$PHP_LIBDIR, MEMCACHED_SHARED_LIBADD)
+    AC_MSG_RESULT([found version $PHP_LIBMEMCACHED_VERSION, under $PHP_LIBMEMCACHED_DIR])
+
+    PHP_LIBMEMCACHED_LIBS=`$PKG_CONFIG libmemcached --libs`
+    PHP_LIBMEMCACHED_INCLUDES=`$PKG_CONFIG libmemcached --cflags`
+
+    PHP_EVAL_LIBLINE($PHP_LIBMEMCACHED_LIBS, MEMCACHED_SHARED_LIBADD)
+    PHP_EVAL_INCLINE($PHP_LIBMEMCACHED_INCLUDES)
 
     ORIG_CFLAGS="$CFLAGS"
     ORIG_LIBS="$LIBS"
 
-    CFLAGS="$CFLAGS -I$PHP_LIBMEMCACHED_INCDIR"
+    CFLAGS="$CFLAGS $PHP_LIBMEMCACHED_INCLUDES"
 
     #
     # Added -lpthread here because AC_TRY_LINK tests on CentOS 6 seem to fail with undefined reference to pthread_once
     #
-    LIBS="$LIBS -lpthread -lmemcached -L$PHP_LIBMEMCACHED_DIR/$PHP_LIBDIR"
+    LIBS="$LIBS -lpthread $PHP_LIBMEMCACHED_LIBS"
 
     AC_CACHE_CHECK([whether memcached_instance_st is defined], ac_cv_have_memcached_instance_st, [
       AC_TRY_COMPILE(
@@ -316,7 +320,7 @@ if test "$PHP_MEMCACHED" != "no"; then
     AC_CACHE_CHECK([whether MEMCACHED_BEHAVIOR_REMOVE_FAILED_SERVERS is defined], ac_cv_have_libmemcached_remove_failed_servers, [
       AC_TRY_COMPILE(
         [ #include <libmemcached/memcached.h> ],
-        [ MEMCACHED_BEHAVIOR_REMOVE_FAILED_SERVERS; ],
+        [ (void)MEMCACHED_BEHAVIOR_REMOVE_FAILED_SERVERS; ],
         [ ac_cv_have_libmemcached_remove_failed_servers="yes" ],
         [ ac_cv_have_libmemcached_remove_failed_servers="no" ]
       )
@@ -325,7 +329,7 @@ if test "$PHP_MEMCACHED" != "no"; then
     AC_CACHE_CHECK([whether MEMCACHED_SERVER_TEMPORARILY_DISABLED is defined], ac_cv_have_libmemcached_server_temporarily_disabled, [
       AC_TRY_COMPILE(
         [ #include <libmemcached/memcached.h> ],
-        [ MEMCACHED_SERVER_TEMPORARILY_DISABLED; ],
+        [ (void)MEMCACHED_SERVER_TEMPORARILY_DISABLED; ],
         [ ac_cv_have_libmemcached_server_temporarily_disabled="yes" ],
         [ ac_cv_have_libmemcached_server_temporarily_disabled="no" ]
       )
@@ -396,16 +400,8 @@ if test "$PHP_MEMCACHED" != "no"; then
     if test "$PHP_MEMCACHED_PROTOCOL" != "no"; then
       AC_MSG_RESULT([enabled])
 
-      AC_MSG_CHECKING([for libmemcachedprotocol])
-      if test "$PHP_LIBMEMCACHED_DIR" != "no" && test "$PHP_LIBMEMCACHED_DIR" != "yes"; then
-        if ! test -r "$PHP_LIBMEMCACHED_DIR/include/libmemcachedprotocol-0.0/handler.h"; then
-          AC_MSG_ERROR([Can't find libmemcachedprotocol headers under "$PHP_LIBMEMCACHED_DIR"])
-        fi
-      fi
-      AC_MSG_RESULT([found])
-
       ORIG_CFLAGS="$CFLAGS"
-      CFLAGS="$CFLAGS -I$PHP_LIBMEMCACHED_INCDIR"
+      CFLAGS="$CFLAGS $PHP_LIBMEMCACHED_INCLUDES"
 
       AC_CACHE_CHECK([whether libmemcachedprotocol is usable], ac_cv_have_libmemcachedprotocol, [
         AC_TRY_COMPILE(
@@ -424,12 +420,6 @@ if test "$PHP_MEMCACHED" != "no"; then
       fi
 
       PHP_ADD_LIBRARY_WITH_PATH(memcachedprotocol, $PHP_LIBMEMCACHED_DIR/$PHP_LIBDIR, MEMCACHED_SHARED_LIBADD)
-
-      AC_PATH_PROG(PKG_CONFIG, pkg-config, no)
-      if test "x$PKG_CONFIG" = "xno"; then
-        AC_MSG_RESULT([pkg-config not found])
-        AC_MSG_ERROR([Please reinstall the pkg-config distribution])
-      fi
 
       AC_MSG_CHECKING([for libevent])
       if $PKG_CONFIG --exists libevent; then
@@ -451,6 +441,7 @@ if test "$PHP_MEMCACHED" != "no"; then
       AC_MSG_RESULT([disabled])
     fi
 
+    export PKG_CONFIG_PATH="$ORIG_PKG_CONFIG_PATH"
     PHP_SUBST(MEMCACHED_SHARED_LIBADD)
 
     PHP_NEW_EXTENSION(memcached, $PHP_MEMCACHED_FILES, $ext_shared,,$SESSION_INCLUDES $IGBINARY_INCLUDES $LIBEVENT_INCLUDES $MSGPACK_INCLUDES)
