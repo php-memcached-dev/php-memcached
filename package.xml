@@ -127,7 +127,10 @@ http://pear.php.net/dtd/package-2.0.xsd">
     <file role='test' name='add.phpt'/>
     <file role='test' name='bad_construct.phpt'/>
     <file role='test' name='append.phpt'/>
-    <file role='test' name='get_badunserialize.phpt'/>
+    <file role='test' name='get_bad_unserialize_php.phpt'/>
+    <file role='test' name='get_bad_unserialize_igbinary.phpt'/>
+    <file role='test' name='get_bad_unserialize_json.phpt'/>
+    <file role='test' name='get_bad_unserialize_msgpack.phpt'/>
     <file role='test' name='set_badserialize.phpt'/>
     <file role='test' name='cachecallback.phpt'/>
     <file role='test' name='testdata.res'/>
