@@ -2170,8 +2170,7 @@ PHP_METHOD(Memcached, quit)
    Flush and senf buffered commands */
 PHP_METHOD(Memcached, flushBuffers)
 {
-	memcached_return rc;
-    MEMC_METHOD_INIT_VARS;
+	MEMC_METHOD_INIT_VARS;
 
 	if (zend_parse_parameters_none() == FAILURE) {
 		return;
@@ -2449,7 +2448,7 @@ static PHP_METHOD(Memcached, getOption)
 
 static int php_memc_set_option(php_memc_t *i_obj, long option, zval *value TSRMLS_DC)
 {
-	memcached_return rc;
+	memcached_return rc = MEMCACHED_FAILURE;
 	memcached_behavior flag;
 	struct memc_obj *m_obj = i_obj->obj;
 
@@ -2758,7 +2757,7 @@ static PHP_METHOD(Memcached, setSaslAuthData)
 	MEMC_METHOD_INIT_VARS;
 
 	char *user, *pass;
-	int user_len, pass_len, rc;
+	int user_len, pass_len;
 
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ss", &user, &user_len, &pass, &pass_len) == FAILURE) {
 		return;
@@ -2900,14 +2899,16 @@ zend_object_value php_memc_new(zend_class_entry *ce TSRMLS_DC)
 {
 	zend_object_value retval;
 	php_memc_t *i_obj;
-	zval *tmp;
 
 	i_obj = ecalloc(1, sizeof(*i_obj));
 	zend_object_std_init( &i_obj->zo, ce TSRMLS_CC );
 #if PHP_VERSION_ID >= 50400
 	object_properties_init( (zend_object *) i_obj, ce);
 #else
-	zend_hash_copy(i_obj->zo.properties, &ce->default_properties, (copy_ctor_func_t) zval_add_ref, (void *) &tmp, sizeof(zval *));
+	{
+		zval *tmp;
+		zend_hash_copy(i_obj->zo.properties, &ce->default_properties, (copy_ctor_func_t) zval_add_ref, (void *) &tmp, sizeof(zval *));
+	}
 #endif
 
 	retval.handle = zend_objects_store_put(i_obj, (zend_objects_store_dtor_t)zend_objects_destroy_object, (zend_objects_free_object_storage_t)php_memc_free_storage, NULL TSRMLS_CC);
@@ -3332,7 +3333,7 @@ static int php_memc_zval_from_payload(zval *value, const char *payload_in, size_
 	   A NULL payload is completely valid if length is 0, it is simply empty.
 	 */
 	zend_bool payload_emalloc = 0;
-	char *datas = NULL, *buffer = NULL, *pl = NULL;
+	char *pl = NULL;
 
 	if (payload_in == NULL && payload_len > 0) {
 		ZVAL_FALSE(value);
