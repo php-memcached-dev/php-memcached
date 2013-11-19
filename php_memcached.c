@@ -687,7 +687,7 @@ static void php_memc_get_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 			return;
 		}
 	}
-	
+
 	/* Fetch all remaining results */
 	memcached_result_st dummy_result;
 	memcached_return dummy_status = MEMCACHED_SUCCESS;

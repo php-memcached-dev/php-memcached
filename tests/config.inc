@@ -51,15 +51,15 @@ function memc_get_serializer_options ()
 {
 	$options = memc_create_combinations ('PHP', Memcached::SERIALIZER_PHP);
 
-	if (defined ('Memcached::HAVE_IGBINARY')) {
+	if (Memcached::HAVE_IGBINARY) {
 		$options = array_merge ($options, memc_create_combinations ('igbinary', Memcached::SERIALIZER_IGBINARY));
 	}
 
-	if (defined ('Memcached::HAVE_JSON')) {
+	if (Memcached::HAVE_JSON) {
 		$options = array_merge ($options, memc_create_combinations ('JSON', Memcached::SERIALIZER_JSON, true));
 	}
 
-	if (defined ('Memcached::HAVE_MSGPACK')) {
+	if (Memcached::HAVE_MSGPACK) {
 		$options = array_merge ($options, memc_create_combinations ('msgpack', Memcached::SERIALIZER_MSGPACK));
 	}
 	return $options;
