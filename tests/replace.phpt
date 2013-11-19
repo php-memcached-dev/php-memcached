@@ -6,20 +6,17 @@ Memcached::replace()
 <?php
 $m = new Memcached();
 $m->addServer('localhost', 11211, 1);
-error_reporting(0);
 
 $m->delete('foo');
 var_dump($m->replace('foo', 'bar', 60));
-echo $php_errormsg, "\n";
 var_dump($m->get('foo'));
 
 $m->set('foo', 'kef');
 var_dump($m->replace('foo', 'bar', 60));
 var_dump($m->get('foo'));
 
---EXPECTF--
+--EXPECT--
 bool(false)
-
 bool(false)
 bool(true)
 string(3) "bar"
