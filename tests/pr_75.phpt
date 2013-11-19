@@ -7,6 +7,7 @@ Wrong return values for binary protocol
 $client = new Memcached();
 $client->addServer ('127.0.0.1', 11211);
 $client->setOption(Memcached::OPT_BINARY_PROTOCOL, true);
+$client->flush ();
 
 $client->set('key1', 'value1');
 echo "set result code: ".$client->getResultCode()."\n";
