@@ -3465,6 +3465,7 @@ static int php_memc_zval_from_payload(zval *value, const char *payload_in, size_
 #ifdef HAVE_MEMCACHED_MSGPACK
 			php_msgpack_unserialize(value, pl, payload_len TSRMLS_CC);
 #else
+			ZVAL_FALSE(value);
 			php_error_docref(NULL TSRMLS_CC, E_WARNING, "could not unserialize value, no msgpack support");
 			goto my_error;
 #endif
