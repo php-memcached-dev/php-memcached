@@ -3215,7 +3215,7 @@ zend_bool s_serialize_value (enum memcached_serializer serializer, zval *value, 
 #ifdef HAVE_MEMCACHED_MSGPACK
 		case SERIALIZER_MSGPACK:
 			php_msgpack_serialize(buf, value TSRMLS_CC);
-			if (!buf.c) {
+			if (!buf->c) {
 				php_error_docref(NULL TSRMLS_CC, E_WARNING, "could not serialize value with msgpack");
 				return 0;
 			}
@@ -3380,7 +3380,7 @@ char *s_decompress_value (const char *payload, size_t *payload_len, uint32_t fla
 }
 
 static
-zend_bool s_unserialize_value (int val_type, zval *value, const char *payload, size_t payload_len TSRMLS_DC)
+zend_bool s_unserialize_value (enum memcached_serializer serializer, int val_type, zval *value, const char *payload, size_t payload_len TSRMLS_DC)
 {
 	switch (val_type) {
 		case MEMC_VAL_IS_SERIALIZED:
@@ -3538,7 +3538,7 @@ static int php_memc_zval_from_payload(zval *value, const char *payload_in, size_
 		case MEMC_VAL_IS_IGBINARY:
 		case MEMC_VAL_IS_JSON:
 		case MEMC_VAL_IS_MSGPACK:
-			if (!s_unserialize_value (MEMC_VAL_GET_TYPE(flags), value, pl, payload_len TSRMLS_CC)) {
+			if (!s_unserialize_value (serializer, MEMC_VAL_GET_TYPE(flags), value, pl, payload_len TSRMLS_CC)) {
 				retval = -1;
 			}
 			break;
