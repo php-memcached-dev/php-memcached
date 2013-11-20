@@ -3244,7 +3244,6 @@ zend_bool s_serialize_value (enum memcached_serializer serializer, zval *value, 
 
 	/* Check for exceptions caused by serializers */
 	if (EG(exception) && buf->len) {
-		smart_str_free(buf);
 		return 0;
 	}
 	return 1;
