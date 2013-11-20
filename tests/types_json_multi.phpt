@@ -11,7 +11,7 @@ include dirname (__FILE__) . '/config.inc';
 include dirname (__FILE__) . '/types.inc';
 
 memc_run_test ('memc_types_test_multi',
-	memc_create_combinations ('json', Memcached::SERIALIZER_JSON, true)
+	memc_create_combinations ('JSON', Memcached::SERIALIZER_JSON, true)
 );
 
 ?>

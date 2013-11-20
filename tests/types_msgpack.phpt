@@ -11,7 +11,7 @@ include dirname (__FILE__) . '/config.inc';
 include dirname (__FILE__) . '/types.inc';
 
 memc_run_test ('memc_types_test',
-	memc_create_combinations ('JSON', Memcached::SERIALIZER_MSGPACK, version_compare(phpversion("msgpack"), "0.5.5", "<=")))
+	memc_create_combinations ('msgpack', Memcached::SERIALIZER_MSGPACK, version_compare(phpversion("msgpack"), "0.5.5", "<="))
 );
 
 ?>
