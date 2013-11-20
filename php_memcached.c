@@ -2496,14 +2496,16 @@ static int php_memc_set_option(php_memc_t *i_obj, long option, zval *value TSRML
 				php_error_docref(NULL TSRMLS_CC, E_WARNING, "bad key provided");
 				return 0;
 			}
-			break;
 		}
+			break;
 
 		case MEMCACHED_BEHAVIOR_KETAMA_WEIGHTED:
 			flag = (memcached_behavior) option;
 
 			convert_to_long(value);
-			if ((rc = memcached_behavior_set(m_obj->memc, flag, (uint64_t)Z_LVAL_P(value))) != MEMCACHED_SUCCESS) {
+			rc = memcached_behavior_set(m_obj->memc, flag, (uint64_t) Z_LVAL_P(value));
+
+			if (php_memc_handle_error(i_obj, rc TSRMLS_CC) < 0) {
 				php_error_docref(NULL TSRMLS_CC, E_WARNING, "error setting memcached option: %s", memcached_strerror (m_obj->memc, rc));
 				return 0;
 			}
@@ -2552,6 +2554,7 @@ static int php_memc_set_option(php_memc_t *i_obj, long option, zval *value TSRML
 				m_obj->serializer = SERIALIZER_PHP;
 			} else {
 				m_obj->serializer = SERIALIZER_PHP;
+				i_obj->rescode = MEMCACHED_FAILURE;
 				php_error_docref(NULL TSRMLS_CC, E_WARNING, "invalid serializer provided");
 				return 0;
 			}
@@ -2569,7 +2572,10 @@ static int php_memc_set_option(php_memc_t *i_obj, long option, zval *value TSRML
 			 */
 			flag = (memcached_behavior) option;
 			convert_to_long(value);
-			if (flag >= MEMCACHED_BEHAVIOR_MAX || (rc = memcached_behavior_set(m_obj->memc, flag, (uint64_t)Z_LVAL_P(value))) != MEMCACHED_SUCCESS) {
+
+			rc = memcached_behavior_set(m_obj->memc, flag, (uint64_t) Z_LVAL_P(value));
+
+			if (php_memc_handle_error(i_obj, rc TSRMLS_CC) < 0) {
 				php_error_docref(NULL TSRMLS_CC, E_WARNING, "error setting memcached option: %s", memcached_strerror (m_obj->memc, rc));
 				return 0;
 			}
@@ -3430,8 +3436,8 @@ static int php_memc_zval_from_payload(zval *value, const char *payload_in, size_
 				goto my_error;
 			}
 			PHP_VAR_UNSERIALIZE_DESTROY(var_hash);
-			break;
 		}
+			break;
 
 		case MEMC_VAL_IS_IGBINARY:
 #ifdef HAVE_MEMCACHED_IGBINARY
