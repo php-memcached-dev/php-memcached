@@ -158,7 +158,7 @@ case $ACTION in
 
         # Make sure that memcached is running
         sudo service memcached restart
-        nc -vv -z localhost 11211
+        nc -vv -z 127.0.0.1 11211
 
         # Run tests
         set +e
