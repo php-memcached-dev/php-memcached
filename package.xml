@@ -136,8 +136,8 @@ http://pear.php.net/dtd/package-2.0.xsd">
     <file role='test' name='incrdecr_initial.phpt'/>
     <file role='test' name='incrdecr_invalid_key.phpt'/>
     <file role='test' name='incrdecr_bykey.phpt'/>
-    <file role='test' name='tests/keys.phpt'/>
     <file role='test' name='invalid_options.phpt'/>
+    <file role='test' name='keys.phpt'/>
     <file role='test' name='testdata.res'/>
     <file role='test' name='config.inc'/>
   </dir>

@@ -2467,6 +2467,7 @@ static int php_memc_set_option(php_memc_t *i_obj, long option, zval *value TSRML
 				m_obj->compression_type = Z_LVAL_P(value);
 			} else {
 				/* invalid compression type */
+				i_obj->rescode = MEMCACHED_INVALID_ARGUMENTS;
 				return 0;
 			}
 			break;
@@ -2493,6 +2494,7 @@ static int php_memc_set_option(php_memc_t *i_obj, long option, zval *value TSRML
 #endif
 			}
 			if (memcached_callback_set(m_obj->memc, MEMCACHED_CALLBACK_PREFIX_KEY, key) == MEMCACHED_BAD_KEY_PROVIDED) {
+				i_obj->rescode = MEMCACHED_INVALID_ARGUMENTS;
 				php_error_docref(NULL TSRMLS_CC, E_WARNING, "bad key provided");
 				return 0;
 			}
@@ -2554,7 +2556,7 @@ static int php_memc_set_option(php_memc_t *i_obj, long option, zval *value TSRML
 				m_obj->serializer = SERIALIZER_PHP;
 			} else {
 				m_obj->serializer = SERIALIZER_PHP;
-				i_obj->rescode = MEMCACHED_FAILURE;
+				i_obj->rescode = MEMCACHED_INVALID_ARGUMENTS;
 				php_error_docref(NULL TSRMLS_CC, E_WARNING, "invalid serializer provided");
 				return 0;
 			}
@@ -2573,7 +2575,12 @@ static int php_memc_set_option(php_memc_t *i_obj, long option, zval *value TSRML
 			flag = (memcached_behavior) option;
 			convert_to_long(value);
 
-			rc = memcached_behavior_set(m_obj->memc, flag, (uint64_t) Z_LVAL_P(value));
+			if (Z_LVAL_P(value) >= 0 && Z_LVAL_P(value) < MEMCACHED_BEHAVIOR_MAX) {
+				rc = memcached_behavior_set(m_obj->memc, flag, (uint64_t) Z_LVAL_P(value));
+			}
+			else {
+				rc = MEMCACHED_INVALID_ARGUMENTS;
+			}
 
 			if (php_memc_handle_error(i_obj, rc TSRMLS_CC) < 0) {
 				php_error_docref(NULL TSRMLS_CC, E_WARNING, "error setting memcached option: %s", memcached_strerror (m_obj->memc, rc));
@@ -3110,181 +3117,218 @@ static int php_memc_handle_error(php_memc_t *i_obj, memcached_return status TSRM
 	return result;
 }
 
-static char *php_memc_zval_to_payload(zval *value, size_t *payload_len, uint32_t *flags, enum memcached_serializer serializer, enum memcached_compression_type compression_type TSRMLS_DC)
+static
+char *s_compress_value (enum memcached_compression_type compression_type, const char *payload, size_t *payload_len, uint32_t *flags TSRMLS_DC)
 {
-	char *payload;
-	char *p;
-	int l;
-	zend_bool buf_used = 0;
+	/* status */
+	zend_bool compress_status = 0;
+
+	/* Additional 5% for the data */
+	size_t buffer_size = (size_t) (((double) *payload_len * 1.05) + 1.0);
+	char *buffer = emalloc(sizeof(uint32_t) + buffer_size);
+
+	/* Store compressed size here */
+	size_t compressed_size = 0;
+
+	/* Copy the uin32_t at the beginning */
+	memcpy(buffer, payload_len, sizeof(uint32_t));
+	buffer += sizeof(uint32_t);
+
+	switch (compression_type) {
+
+		case COMPRESSION_TYPE_FASTLZ:
+			compress_status = ((compressed_size = fastlz_compress(payload, *payload_len, buffer)) > 0);
+			MEMC_VAL_SET_FLAG(*flags, MEMC_VAL_COMPRESSION_FASTLZ);
+			break;
+
+		case COMPRESSION_TYPE_ZLIB:
+			/* ZLIB returns the compressed size in this buffer */
+			compressed_size = buffer_size;
+
+			compress_status = (compress((Bytef *)buffer, &compressed_size, (Bytef *)payload, *payload_len) == Z_OK);
+			MEMC_VAL_SET_FLAG(*flags, MEMC_VAL_COMPRESSION_ZLIB);
+			break;
+
+		default:
+			compress_status = 0;
+			break;
+	}
+	buffer -= sizeof(uint32_t);
+	*payload_len = compressed_size + sizeof(uint32_t);
+
+	if (!compress_status) {
+		php_error_docref(NULL TSRMLS_CC, E_WARNING, "could not compress value");
+		MEMC_VAL_DEL_FLAG(*flags, MEMC_VAL_COMPRESSED);
+
+		efree (buffer);
+		*payload_len = 0;
+		return NULL;
+	}
+
+	else if (*payload_len > (compressed_size * MEMC_G(compression_factor))) {
+		MEMC_VAL_DEL_FLAG(*flags, MEMC_VAL_COMPRESSED);
+		efree (buffer);
+		*payload_len = 0;
+		return NULL;
+	}
+	return buffer;
+}
+
+static
+zend_bool s_serialize_value (enum memcached_serializer serializer, zval *value, smart_str *buf, uint32_t *flags TSRMLS_DC)
+{
+	switch (serializer) {
+
+		/*
+			Igbinary serialization
+		*/
+#ifdef HAVE_MEMCACHED_IGBINARY
+		case SERIALIZER_IGBINARY:
+			if (igbinary_serialize((uint8_t **) &buf->c, &buf->len, value TSRMLS_CC) != 0) {
+				php_error_docref(NULL TSRMLS_CC, E_WARNING, "could not serialize value with igbinary");
+				return 0;
+			}
+			MEMC_VAL_SET_TYPE(*flags, MEMC_VAL_IS_IGBINARY);
+			break;
+#endif
+
+		/*
+			JSON serialization
+		*/
+#ifdef HAVE_JSON_API
+		case SERIALIZER_JSON:
+		case SERIALIZER_JSON_ARRAY:
+		{
+#if HAVE_JSON_API_5_2
+			php_json_encode(buf, value TSRMLS_CC);
+#elif HAVE_JSON_API_5_3
+			php_json_encode(buf, value, 0 TSRMLS_CC); /* options */
+#endif
+			MEMC_VAL_SET_TYPE(*flags, MEMC_VAL_IS_JSON);
+		}
+			break;
+#endif
+
+		/*
+			msgpack serialization
+		*/
+#ifdef HAVE_MEMCACHED_MSGPACK
+		case SERIALIZER_MSGPACK:
+			php_msgpack_serialize(buf, value TSRMLS_CC);
+			if (!buf->c) {
+				php_error_docref(NULL TSRMLS_CC, E_WARNING, "could not serialize value with msgpack");
+				return 0;
+			}
+			MEMC_VAL_SET_TYPE(*flags, MEMC_VAL_IS_MSGPACK);
+			break;
+#endif
+
+		/*
+			PHP serialization
+		*/
+		default:
+		{
+			php_serialize_data_t var_hash;
+			PHP_VAR_SERIALIZE_INIT(var_hash);
+			php_var_serialize(buf, &value, &var_hash TSRMLS_CC);
+			PHP_VAR_SERIALIZE_DESTROY(var_hash);
+
+			if (!buf->c) {
+				php_error_docref(NULL TSRMLS_CC, E_WARNING, "could not serialize value");
+				return 0;
+			}
+			MEMC_VAL_SET_TYPE(*flags, MEMC_VAL_IS_SERIALIZED);
+		}
+			break;
+	}
+
+	/* Check for exceptions caused by serializers */
+	if (EG(exception) && buf->len) {
+		return 0;
+	}
+	return 1;
+}
+
+static
+char *php_memc_zval_to_payload(zval *value, size_t *payload_len, uint32_t *flags, enum memcached_serializer serializer, enum memcached_compression_type compression_type TSRMLS_DC)
+{
+	const char *pl;
+	size_t pl_len = 0;
+
+	char *payload = NULL;
 	smart_str buf = {0};
 	char tmp[40] = {0};
 
 	switch (Z_TYPE_P(value)) {
 
 		case IS_STRING:
-			p = Z_STRVAL_P(value);
-			l = Z_STRLEN_P(value);
+			pl = Z_STRVAL_P(value);
+			pl_len = Z_STRLEN_P(value);
 			MEMC_VAL_SET_TYPE(*flags, MEMC_VAL_IS_STRING);
 			break;
 
 		case IS_LONG:
-			l = sprintf(tmp, "%ld", Z_LVAL_P(value));
-			p = tmp;
+			pl_len = sprintf(tmp, "%ld", Z_LVAL_P(value));
+			pl = tmp;
 			MEMC_VAL_SET_TYPE(*flags, MEMC_VAL_IS_LONG);
 			break;
 
 		case IS_DOUBLE:
 			php_memcached_g_fmt(tmp, Z_DVAL_P(value));
-			p = tmp;
-			l = strlen(tmp);
+			pl = tmp;
+			pl_len = strlen(tmp);
 			MEMC_VAL_SET_TYPE(*flags, MEMC_VAL_IS_DOUBLE);
 			break;
 
 		case IS_BOOL:
 			if (Z_BVAL_P(value)) {
-				l = 1;
+				pl_len = 1;
 				tmp[0] = '1';
 				tmp[1] = '\0';
 			} else {
-				l = 0;
+				pl_len = 0;
 				tmp[0] = '\0';
 			}
-			p = tmp;
+			pl = tmp;
 			MEMC_VAL_SET_TYPE(*flags, MEMC_VAL_IS_BOOL);
 			break;
 
 		default:
-			switch (serializer) {
-#ifdef HAVE_MEMCACHED_IGBINARY
-				case SERIALIZER_IGBINARY:
-					if (igbinary_serialize((uint8_t **) &buf.c, &buf.len, value TSRMLS_CC) != 0) {
-						smart_str_free(&buf);
-						return NULL;
-					}
-					p = buf.c;
-					l = buf.len;
-					buf_used = 1;
-					MEMC_VAL_SET_TYPE(*flags, MEMC_VAL_IS_IGBINARY);
-					break;
-#endif
-
-#ifdef HAVE_JSON_API
-				case SERIALIZER_JSON:
-				case SERIALIZER_JSON_ARRAY:
-				{
-#if HAVE_JSON_API_5_2
-					php_json_encode(&buf, value TSRMLS_CC);
-#elif HAVE_JSON_API_5_3
-					php_json_encode(&buf, value, 0 TSRMLS_CC); /* options */
-#endif
-					buf.c[buf.len] = 0;
-					p = buf.c;
-					l = buf.len;
-					buf_used = 1;
-					MEMC_VAL_SET_TYPE(*flags, MEMC_VAL_IS_JSON);
-					break;
-				}
-#endif
-#ifdef HAVE_MEMCACHED_MSGPACK
-				case SERIALIZER_MSGPACK:
-					php_msgpack_serialize(&buf, value TSRMLS_CC);
-					if(!buf.c) {
-						php_error_docref(NULL TSRMLS_CC, E_WARNING, "could not serialize value with msgpack");
-						smart_str_free(&buf);
-						return NULL;
-					}
-					p = buf.c;
-					l = buf.len;
-					buf_used = 1;
-					MEMC_VAL_SET_TYPE(*flags, MEMC_VAL_IS_MSGPACK);
-					break;
-#endif
-				default:
-				{
-					php_serialize_data_t var_hash;
-					PHP_VAR_SERIALIZE_INIT(var_hash);
-					php_var_serialize(&buf, &value, &var_hash TSRMLS_CC);
-					PHP_VAR_SERIALIZE_DESTROY(var_hash);
-
-					if (!buf.c) {
-						php_error_docref(NULL TSRMLS_CC, E_WARNING, "could not serialize value");
-						smart_str_free(&buf);
-						return NULL;
-					}
-					p = buf.c;
-					l = buf.len;
-					buf_used = 1;
-					MEMC_VAL_SET_TYPE(*flags, MEMC_VAL_IS_SERIALIZED);
-					break;
-				}
+			if (!s_serialize_value (serializer, value, &buf, flags TSRMLS_CC)) {
+				smart_str_free (&buf);
+				return NULL;
 			}
-
+			pl = buf.c;
+			pl_len = buf.len;
 			break;
 	}
 
-	/* Check for exceptions caused by serializers */
-	if (EG(exception) && buf_used) {
-		smart_str_free(&buf);
-		return NULL;
-	}
-
 	/* turn off compression for values below the threshold */
-	if (MEMC_VAL_HAS_FLAG(*flags, MEMC_VAL_COMPRESSED) && l < MEMC_G(compression_threshold)) {
+	if (MEMC_VAL_HAS_FLAG(*flags, MEMC_VAL_COMPRESSED) && pl_len < MEMC_G(compression_threshold)) {
 		MEMC_VAL_DEL_FLAG(*flags, MEMC_VAL_COMPRESSED);
 	}
 
+	/* If we have compression flag, compress the value */
 	if (MEMC_VAL_HAS_FLAG(*flags, MEMC_VAL_COMPRESSED)) {
 		/* status */
-		zend_bool compress_status = 0;
-
-		/* Additional 5% for the data */
-		unsigned long payload_comp_len = (unsigned long)((l * 1.05) + 1);
-		char *payload_comp = emalloc(payload_comp_len + sizeof(uint32_t));
-		payload = payload_comp;
-		memcpy(payload_comp, &l, sizeof(uint32_t));
-		payload_comp += sizeof(uint32_t);
-
-		if (compression_type == COMPRESSION_TYPE_FASTLZ) {
-			compress_status = ((payload_comp_len = fastlz_compress(p, l, payload_comp)) > 0);
-			MEMC_VAL_SET_FLAG(*flags, MEMC_VAL_COMPRESSION_FASTLZ);
-		} else if (compression_type == COMPRESSION_TYPE_ZLIB) {
-			compress_status = (compress((Bytef *)payload_comp, &payload_comp_len, (Bytef *)p, l) == Z_OK);
-			MEMC_VAL_SET_FLAG(*flags, MEMC_VAL_COMPRESSION_ZLIB);
-		}
-
-		if (!compress_status) {
-			php_error_docref(NULL TSRMLS_CC, E_WARNING, "could not compress value");
-			efree(payload);
-			if (buf_used) {
-				smart_str_free(&buf);
-			}
-			return NULL;
-		}
-
-		/* Check that we are above ratio */
-		if (l > (payload_comp_len * MEMC_G(compression_factor))) {
-			*payload_len = payload_comp_len + sizeof(uint32_t);
-			payload[*payload_len] = 0;
-		} else {
-			/* Store plain value */
-			MEMC_VAL_DEL_FLAG(*flags, MEMC_VAL_COMPRESSED);
-			*payload_len = l;
-			memcpy(payload, p, l);
-			payload[l] = 0;
-		}
-	} else {
-		*payload_len = l;
-		payload = estrndup(p, l);
+		*payload_len = Z_STRLEN_P(value);
+		payload = s_compress_value (compression_type, pl, payload_len, flags TSRMLS_CC);
 	}
 
-	if (buf_used) {
+	/* If compression failed or value is below threshold we just use plain value */
+	if (!payload || !MEMC_VAL_HAS_FLAG(*flags, MEMC_VAL_COMPRESSED)) {
+		*payload_len = (uint32_t) pl_len;
+		payload      = estrndup(pl, pl_len);
+	}
+
+	if (buf.len) {
 		smart_str_free(&buf);
 	}
 	return payload;
 }
 
 static
-char *s_handle_decompressed (const char *payload, size_t *payload_len, uint32_t flags TSRMLS_DC)
+char *s_decompress_value (const char *payload, size_t *payload_len, uint32_t flags TSRMLS_DC)
 {
 	char *buffer;
 	uint32_t len;
@@ -3334,12 +3378,74 @@ char *s_handle_decompressed (const char *payload, size_t *payload_len, uint32_t 
 	return buffer;
 }
 
+static
+zend_bool s_unserialize_value (enum memcached_serializer serializer, int val_type, zval *value, const char *payload, size_t payload_len TSRMLS_DC)
+{
+	switch (val_type) {
+		case MEMC_VAL_IS_SERIALIZED:
+		{
+			const char *payload_tmp = payload;
+			php_unserialize_data_t var_hash;
+
+			PHP_VAR_UNSERIALIZE_INIT(var_hash);
+			if (!php_var_unserialize(&value, (const unsigned char **)&payload_tmp, (const unsigned char *)payload_tmp + payload_len, &var_hash TSRMLS_CC)) {
+				ZVAL_FALSE(value);
+				PHP_VAR_UNSERIALIZE_DESTROY(var_hash);
+				php_error_docref(NULL TSRMLS_CC, E_WARNING, "could not unserialize value");
+				return 0;
+			}
+			PHP_VAR_UNSERIALIZE_DESTROY(var_hash);
+		}
+			break;
+
+		case MEMC_VAL_IS_IGBINARY:
+#ifdef HAVE_MEMCACHED_IGBINARY
+			if (igbinary_unserialize((uint8_t *)payload, payload_len, &value TSRMLS_CC)) {
+				ZVAL_FALSE(value);
+				php_error_docref(NULL TSRMLS_CC, E_WARNING, "could not unserialize value with igbinary");
+				return 0;
+			}
+#else
+			ZVAL_FALSE(value);
+			php_error_docref(NULL TSRMLS_CC, E_WARNING, "could not unserialize value, no igbinary support");
+			return 0;
+#endif
+			break;
+
+		case MEMC_VAL_IS_JSON:
+#ifdef HAVE_JSON_API
+# if HAVE_JSON_API_5_2
+			php_json_decode(value, payload, payload_len, (serializer == SERIALIZER_JSON_ARRAY) TSRMLS_CC);
+# elif HAVE_JSON_API_5_3
+			php_json_decode(value, payload, payload_len, (serializer == SERIALIZER_JSON_ARRAY), JSON_PARSER_DEFAULT_DEPTH TSRMLS_CC);
+# endif
+#else
+			ZVAL_FALSE(value);
+			php_error_docref(NULL TSRMLS_CC, E_WARNING, "could not unserialize value, no json support");
+			return 0;
+#endif
+			break;
+
+        case MEMC_VAL_IS_MSGPACK:
+#ifdef HAVE_MEMCACHED_MSGPACK
+			php_msgpack_unserialize(value, payload, payload_len TSRMLS_CC);
+#else
+			ZVAL_FALSE(value);
+			php_error_docref(NULL TSRMLS_CC, E_WARNING, "could not unserialize value, no msgpack support");
+			return 0;
+#endif
+ 			break;
+	}
+	return 1;
+}
+
 /* The caller MUST free the payload */
 static int php_memc_zval_from_payload(zval *value, const char *payload_in, size_t payload_len, uint32_t flags, enum memcached_serializer serializer TSRMLS_DC)
 {
 	/*
 	   A NULL payload is completely valid if length is 0, it is simply empty.
 	 */
+	int retval = 0;
 	zend_bool payload_emalloc = 0;
 	char *pl = NULL;
 
@@ -3358,7 +3464,7 @@ static int php_memc_zval_from_payload(zval *value, const char *payload_in, size_
 	}
 
 	if (MEMC_VAL_HAS_FLAG(flags, MEMC_VAL_COMPRESSED)) {
-		char *datas = s_handle_decompressed (payload_in, &payload_len, flags TSRMLS_CC);
+		char *datas = s_decompress_value (payload_in, &payload_len, flags TSRMLS_CC);
 		if (!datas) {
 			ZVAL_FALSE(value);
 			return -1;
@@ -3386,13 +3492,15 @@ static int php_memc_zval_from_payload(zval *value, const char *payload_in, size_
 
 			if (payload_len >= 128) {
 				php_error_docref(NULL TSRMLS_CC, E_WARNING, "could not read long value, too big");
-				goto my_error;
+				retval = -1;
 			}
-			memcpy (conv_buf, pl, payload_len);
-			conv_buf [payload_len] = '\0';
+			else {
+				memcpy (conv_buf, pl, payload_len);
+				conv_buf [payload_len] = '\0';
 
-			lval = strtol(conv_buf, NULL, 10);
-			ZVAL_LONG(value, lval);
+				lval = strtol(conv_buf, NULL, 10);
+				ZVAL_LONG(value, lval);
+			}
 		}
 			break;
 
@@ -3402,19 +3510,21 @@ static int php_memc_zval_from_payload(zval *value, const char *payload_in, size_
 
 			if (payload_len >= 128) {
 				php_error_docref(NULL TSRMLS_CC, E_WARNING, "could not read double value, too big");
-				goto my_error;
+				retval = -1;
 			}
-			memcpy (conv_buf, pl, payload_len);
-			conv_buf [payload_len] = '\0';
+			else {
+				memcpy (conv_buf, pl, payload_len);
+				conv_buf [payload_len] = '\0';
 
-			if (payload_len == 8 && memcmp(conv_buf, "Infinity", 8) == 0) {
-				ZVAL_DOUBLE(value, php_get_inf());
-			} else if (payload_len == 9 && memcmp(conv_buf, "-Infinity", 9) == 0) {
-				ZVAL_DOUBLE(value, -php_get_inf());
-			} else if (payload_len == 3 && memcmp(conv_buf, "NaN", 3) == 0) {
-				ZVAL_DOUBLE(value, php_get_nan());
-			} else {
-				ZVAL_DOUBLE(value, zend_strtod(conv_buf, NULL));
+				if (payload_len == 8 && memcmp(conv_buf, "Infinity", 8) == 0) {
+					ZVAL_DOUBLE(value, php_get_inf());
+				} else if (payload_len == 9 && memcmp(conv_buf, "-Infinity", 9) == 0) {
+					ZVAL_DOUBLE(value, -php_get_inf());
+				} else if (payload_len == 3 && memcmp(conv_buf, "NaN", 3) == 0) {
+					ZVAL_DOUBLE(value, php_get_nan());
+				} else {
+					ZVAL_DOUBLE(value, zend_strtod(conv_buf, NULL));
+				}
 			}
 		}
 			break;
@@ -3424,76 +3534,25 @@ static int php_memc_zval_from_payload(zval *value, const char *payload_in, size_
 			break;
 
 		case MEMC_VAL_IS_SERIALIZED:
-		{
-			const char *payload_tmp = pl;
-			php_unserialize_data_t var_hash;
-
-			PHP_VAR_UNSERIALIZE_INIT(var_hash);
-			if (!php_var_unserialize(&value, (const unsigned char **)&payload_tmp, (const unsigned char *)payload_tmp + payload_len, &var_hash TSRMLS_CC)) {
-				ZVAL_FALSE(value);
-				PHP_VAR_UNSERIALIZE_DESTROY(var_hash);
-				php_error_docref(NULL TSRMLS_CC, E_WARNING, "could not unserialize value");
-				goto my_error;
-			}
-			PHP_VAR_UNSERIALIZE_DESTROY(var_hash);
-		}
-			break;
-
 		case MEMC_VAL_IS_IGBINARY:
-#ifdef HAVE_MEMCACHED_IGBINARY
-			if (igbinary_unserialize((uint8_t *)pl, payload_len, &value TSRMLS_CC)) {
-				ZVAL_FALSE(value);
-				php_error_docref(NULL TSRMLS_CC, E_WARNING, "could not unserialize value with igbinary");
-				goto my_error;
-			}
-#else
-			ZVAL_FALSE(value);
-			php_error_docref(NULL TSRMLS_CC, E_WARNING, "could not unserialize value, no igbinary support");
-			goto my_error;
-#endif
-			break;
-
 		case MEMC_VAL_IS_JSON:
-#ifdef HAVE_JSON_API
-# if HAVE_JSON_API_5_2
-			php_json_decode(value, pl, payload_len, (serializer == SERIALIZER_JSON_ARRAY) TSRMLS_CC);
-# elif HAVE_JSON_API_5_3
-			php_json_decode(value, pl, payload_len, (serializer == SERIALIZER_JSON_ARRAY), JSON_PARSER_DEFAULT_DEPTH TSRMLS_CC);
-# endif
-#else
-			ZVAL_FALSE(value);
-			php_error_docref(NULL TSRMLS_CC, E_WARNING, "could not unserialize value, no json support");
-			goto my_error;
-#endif
+		case MEMC_VAL_IS_MSGPACK:
+			if (!s_unserialize_value (serializer, MEMC_VAL_GET_TYPE(flags), value, pl, payload_len TSRMLS_CC)) {
+				retval = -1;
+			}
 			break;
-
-        case MEMC_VAL_IS_MSGPACK:
-#ifdef HAVE_MEMCACHED_MSGPACK
-			php_msgpack_unserialize(value, pl, payload_len TSRMLS_CC);
-#else
-			ZVAL_FALSE(value);
-			php_error_docref(NULL TSRMLS_CC, E_WARNING, "could not unserialize value, no msgpack support");
-			goto my_error;
-#endif
- 			break;
 
 		default:
 			ZVAL_FALSE(value);
 			php_error_docref(NULL TSRMLS_CC, E_WARNING, "unknown payload type");
-			goto my_error;
+			retval = -1;
+			break;
 	}
 
 	if (payload_emalloc) {
 		efree(pl);
 	}
-
-	return 0;
-
-my_error:
-	if (payload_emalloc) {
-		efree(pl);
-	}
-	return -1;
+	return retval;
 }
 
 static void php_memc_init_globals(zend_php_memcached_globals *php_memcached_globals_p TSRMLS_DC)
@@ -4376,11 +4435,22 @@ static void php_memc_register_constants(INIT_FUNC_ARGS)
 	REGISTER_MEMC_CLASS_CONST_LONG(RES_INVALID_HOST_PROTOCOL, MEMCACHED_INVALID_HOST_PROTOCOL);
 	REGISTER_MEMC_CLASS_CONST_LONG(RES_MEMORY_ALLOCATION_FAILURE, MEMCACHED_MEMORY_ALLOCATION_FAILURE);
 	REGISTER_MEMC_CLASS_CONST_LONG(RES_CONNECTION_SOCKET_CREATE_FAILURE, MEMCACHED_CONNECTION_SOCKET_CREATE_FAILURE);
+
+	REGISTER_MEMC_CLASS_CONST_LONG(RES_BAD_KEY_PROVIDED,                 MEMCACHED_BAD_KEY_PROVIDED);
+	REGISTER_MEMC_CLASS_CONST_LONG(RES_E2BIG,                            MEMCACHED_E2BIG);
+	REGISTER_MEMC_CLASS_CONST_LONG(RES_KEY_TOO_BIG,                      MEMCACHED_KEY_TOO_BIG);
+	REGISTER_MEMC_CLASS_CONST_LONG(RES_SERVER_TEMPORARILY_DISABLED,      MEMCACHED_SERVER_TEMPORARILY_DISABLED);
+
+#if defined(LIBMEMCACHED_VERSION_HEX) && LIBMEMCACHED_VERSION_HEX >= 0x01000008
+	REGISTER_MEMC_CLASS_CONST_LONG(RES_SERVER_MEMORY_ALLOCATION_FAILURE, MEMCACHED_SERVER_MEMORY_ALLOCATION_FAILURE);
+#endif
+
 #if HAVE_MEMCACHED_SASL
 	REGISTER_MEMC_CLASS_CONST_LONG(RES_AUTH_PROBLEM, MEMCACHED_AUTH_PROBLEM);
 	REGISTER_MEMC_CLASS_CONST_LONG(RES_AUTH_FAILURE, MEMCACHED_AUTH_FAILURE);
 	REGISTER_MEMC_CLASS_CONST_LONG(RES_AUTH_CONTINUE, MEMCACHED_AUTH_CONTINUE);
 #endif
+
 	/*
 	 * Our result codes.
 	 */
