@@ -156,6 +156,10 @@ case $ACTION in
         # Build the extension
         build_php_memcached $PHP_LIBMEMCACHED_PREFIX $PHP_MEMCACHED_VERSION $ENABLE_PROTOOCOL
 
+        # Make sure that memcached is running
+        sudo service memcached restart
+        nc -vv -z 127.0.0.1 11211
+
         # Run tests
         set +e
         run_memcached_tests $PHP_MEMCACHED_VERSION || exit 1

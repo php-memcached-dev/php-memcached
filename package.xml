@@ -118,8 +118,15 @@ http://pear.php.net/dtd/package-2.0.xsd">
     <file role='test' name='set_large.phpt'/>
     <file role='test' name='setoptions.phpt'/>
     <file role='test' name='touch_binary.phpt'/>
-    <file role='test' name='types.phpt'/>
-    <file role='test' name='types_multi.phpt'/>
+    <file role='test' name='types.inc'/>
+    <file role='test' name='types_igbinary.phpt'/>
+    <file role='test' name='types_igbinary_multi.phpt'/>
+    <file role='test' name='types_json.phpt'/>
+    <file role='test' name='types_json_multi.phpt'/>
+    <file role='test' name='types_msgpack.phpt'/>
+    <file role='test' name='types_msgpack_multi.phpt'/>
+    <file role='test' name='types_php.phpt'/>
+    <file role='test' name='types_php_multi.phpt'/>
     <file role='test' name='undefined_set.phpt'/>
     <file role='test' name='vbucket.phpt'/>
     <file role='test' name='user-flags.phpt'/>
