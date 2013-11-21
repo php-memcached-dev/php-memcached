@@ -158,6 +158,7 @@ case $ACTION in
 
         # Make sure that memcached is running
         sudo service memcached restart
+        netstat -an | grep LISTEN
         nc -vv -z 127.0.0.1 11211
 
         # Run tests
