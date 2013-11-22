@@ -48,14 +48,14 @@ char *php_memcached_g_fmt(register char *b, double x) {
 	if (sign)
 		*b++ = '-';
 	if (decpt == 9999) /* Infinity or Nan */ {
-		while(*b++ = *s++);
+		while((*b++ = *s++));
 		goto done0;
 	}
 	if (decpt <= -4 || decpt > se - s + 5) {
 		*b++ = *s++;
 		if (*s) {
 			*b++ = '.';
-			while(*b = *s++)
+			while((*b = *s++))
 				b++;
 		}
 		*b++ = 'e';
@@ -80,9 +80,9 @@ char *php_memcached_g_fmt(register char *b, double x) {
 		*b++ = '.';
 		for(; decpt < 0; decpt++)
 			*b++ = '0';
-		while(*b++ = *s++);
+		while((*b++ = *s++));
 	} else {
-		while(*b = *s++) {
+		while((*b = *s++)) {
 			b++;
 			if (--decpt == 0 && *s)
 				*b++ = '.';
@@ -94,6 +94,8 @@ char *php_memcached_g_fmt(register char *b, double x) {
 
  done0:
 	zend_freedtoa(s0);
+#ifdef IGNORE_ZERO_SIGN
  done:
+#endif
 	return b0;
 }
