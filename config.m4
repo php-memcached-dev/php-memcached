@@ -20,7 +20,7 @@ PHP_ARG_ENABLE(memcached-json, whether to enable memcached json serializer suppo
 PHP_ARG_ENABLE(memcached-msgpack, whether to enable memcached msgpack serializer support,
 [  --enable-memcached-msgpack          Enable memcached msgpack serializer support], no, no)
 
-PHP_ARG_ENABLE(memcached-sasl, whether to disable memcached sasl support,
+PHP_ARG_ENABLE(memcached-sasl, whether to enable memcached sasl support,
 [  --disable-memcached-sasl          Disable memcached sasl support], yes, no)
 
 PHP_ARG_ENABLE(memcached-protocol, whether to enable memcached protocol support,
