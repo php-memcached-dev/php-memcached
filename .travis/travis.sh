@@ -125,7 +125,7 @@ function build_php_memcached() {
 
         local sasl_flag="--disable-memcached-sasl"
         if test "x$ENABLE_SASL" = "xyes"; then
-            protocol_flag="--enable-memcached-sasl"
+            sasl_flag="--enable-memcached-sasl"
         fi
 
         ./configure --with-libmemcached-dir="$LIBMEMCACHED_PREFIX" $protocol_flag $sasl_flag --enable-memcached-json --enable-memcached-igbinary --enable-memcached-msgpack
