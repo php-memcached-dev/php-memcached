@@ -2540,7 +2540,7 @@ static int php_memc_set_option(php_memc_t *i_obj, long option, zval *value TSRML
 			flag = (memcached_behavior) option;
 			convert_to_long(value);
 
-			if (Z_LVAL_P(value) >= 0 && Z_LVAL_P(value) < MEMCACHED_BEHAVIOR_MAX) {
+			if (flag >= 0 && flag < MEMCACHED_BEHAVIOR_MAX) {
 				rc = memcached_behavior_set(m_obj->memc, flag, (uint64_t) Z_LVAL_P(value));
 			}
 			else {
