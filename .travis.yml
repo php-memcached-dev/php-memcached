@@ -1,8 +1,8 @@
 language: php
 php:
     - 5.5
-    - 5.4
-    - 5.3
+    #- 5.4
+    #- 5.3
 env:
     - LIBMEMCACHED_VERSION=1.0.17
     - LIBMEMCACHED_VERSION=1.0.16
@@ -10,12 +10,17 @@ env:
     - LIBMEMCACHED_VERSION=1.0.14
     - LIBMEMCACHED_VERSION=1.0.10
     - LIBMEMCACHED_VERSION=1.0.8
+    - LIBMEMCACHED_VERSION=1.0.7
+    - LIBMEMCACHED_VERSION=1.0.6
     - LIBMEMCACHED_VERSION=1.0.2
     - LIBMEMCACHED_VERSION=0.53
     - LIBMEMCACHED_VERSION=0.44
 
+services:
+  - memcached # will start memcached
+
 before_script:
-    - ./travis.sh before_script $LIBMEMCACHED_VERSION
+    - ./.travis/travis.sh before_script $LIBMEMCACHED_VERSION
 
 script:
-    - ./travis.sh script $LIBMEMCACHED_VERSION
+    - ./.travis/travis.sh script $LIBMEMCACHED_VERSION
