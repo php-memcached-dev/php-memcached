@@ -44,52 +44,17 @@
 #include <ext/standard/php_var.h>
 #include <ext/standard/basic_functions.h>
 
-#include "php_memcached_server.h"
 #include "php_memcached.h"
+#include "php_memcached_private.h"
+#include "php_memcached_server.h"
 #include "g_fmt.h"
 
 #ifdef HAVE_MEMCACHED_SESSION
 # include "php_memcached_session.h"
 #endif
 
-
-
 #include "fastlz/fastlz.h"
 #include <zlib.h>
-
-/* Compatibility with older versions */
-#ifdef HAVE_MEMCACHED_INSTANCE_ST
-typedef const memcached_instance_st * php_memcached_instance_st;
-#else
-typedef memcached_server_instance_st php_memcached_instance_st;
-#endif
-
-/* Used to store the size of the block */
-#if defined(HAVE_INTTYPES_H)
-#include <inttypes.h>
-#elif defined(HAVE_STDINT_H)
-#include <stdint.h>
-#endif
-
-#ifdef PHP_WIN32
-# include "win32/php_stdint.h"
-#else
-# ifndef HAVE_INT32_T
-#  if SIZEOF_INT == 4
-typedef int int32_t;
-#  elif SIZEOF_LONG == 4
-typedef long int int32_t;
-#  endif
-# endif
-
-# ifndef HAVE_UINT32_T
-#  if SIZEOF_INT == 4
-typedef unsigned int uint32_t;
-#  elif SIZEOF_LONG == 4
-typedef unsigned long int uint32_t;
-#  endif
-# endif
-#endif
 
 #ifdef HAVE_JSON_API
 # include "ext/json/php_json.h"
@@ -2770,6 +2735,7 @@ static PHP_METHOD(Memcached, setOption)
 static PHP_METHOD(Memcached, setSaslAuthData)
 {
 	MEMC_METHOD_INIT_VARS;
+	memcached_return status;
 
 	char *user, *pass;
 	int user_len, pass_len;
@@ -2790,7 +2756,12 @@ static PHP_METHOD(Memcached, setSaslAuthData)
 		RETURN_FALSE;
 	}
 	m_obj->has_sasl_data = 1;
-	RETURN_BOOL(memcached_set_sasl_auth_data(m_obj->memc, user, pass));
+	status = memcached_set_sasl_auth_data(m_obj->memc, user, pass);
+
+	if (php_memc_handle_error(i_obj, status TSRMLS_CC) < 0) {
+		RETURN_FALSE;
+	}
+	RETURN_TRUE;
 }
 /* }}} */
 #endif /* HAVE_MEMCACHED_SASL */
@@ -3593,19 +3564,19 @@ static void php_memc_destroy_globals(zend_php_memcached_globals *php_memcached_g
 {
 }
 
-PHP_MEMCACHED_API
+PHPAPI
 zend_class_entry *php_memc_get_ce(void)
 {
 	return memcached_ce;
 }
 
-PHP_MEMCACHED_API
+PHPAPI
 zend_class_entry *php_memc_get_exception(void)
 {
 	return memcached_exception_ce;
 }
 
-PHP_MEMCACHED_API
+PHPAPI
 zend_class_entry *php_memc_get_exception_base(int root TSRMLS_DC)
 {
 #if HAVE_SPL
@@ -4446,8 +4417,8 @@ static void php_memc_register_constants(INIT_FUNC_ARGS)
 #endif
 
 #if HAVE_MEMCACHED_SASL
-	REGISTER_MEMC_CLASS_CONST_LONG(RES_AUTH_PROBLEM, MEMCACHED_AUTH_PROBLEM);
-	REGISTER_MEMC_CLASS_CONST_LONG(RES_AUTH_FAILURE, MEMCACHED_AUTH_FAILURE);
+	REGISTER_MEMC_CLASS_CONST_LONG(RES_AUTH_PROBLEM,  MEMCACHED_AUTH_PROBLEM);
+	REGISTER_MEMC_CLASS_CONST_LONG(RES_AUTH_FAILURE,  MEMCACHED_AUTH_FAILURE);
 	REGISTER_MEMC_CLASS_CONST_LONG(RES_AUTH_CONTINUE, MEMCACHED_AUTH_CONTINUE);
 #endif
 

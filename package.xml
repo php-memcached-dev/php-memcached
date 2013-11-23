@@ -49,6 +49,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
 - Added support for memcached protocol handlers
 - Added Memcached::setBucket for virtual bucket support
 - Added support for msgpack serialization
+- Memcached::setSaslAuthData returns correct status on success
  </notes>
  <contents>
   <dir name="/">
@@ -63,6 +64,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
    <file role='src' name='config.w32'/>
    <file role='src' name='php_memcached.c'/>
    <file role='src' name='php_memcached.h'/>
+   <file role='src' name='php_memcached_private.h'/>
    <file role='src' name='php_memcached_session.c'/>
    <file role='src' name='php_memcached_session.h'/>
    <file role='src' name='php_libmemcached_compat.h'/>
@@ -147,6 +149,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
     <file role='test' name='keys.phpt'/>
     <file role='test' name='testdata.res'/>
     <file role='test' name='config.inc'/>
+    <file role='test' name='sasl_basic.phpt'/>
   </dir>
  </dir>
  </contents>

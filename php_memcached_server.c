@@ -20,6 +20,7 @@
 
 #include <php.h>
 #include "php_memcached.h"
+#include "php_memcached_private.h"
 #include "php_memcached_server.h"
 #include "php_libmemcached_compat.h"
 

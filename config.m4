@@ -268,13 +268,6 @@ if test "$PHP_MEMCACHED" != "no"; then
     AC_MSG_RESULT([disabled])
   fi
 
-
-  if test "$PHP_MEMCACHED_SASL" != "no"; then
-    AC_CHECK_HEADERS([sasl/sasl.h], [memcached_enable_sasl="yes"], [memcached_enable_sasl="no"])
-    AC_MSG_CHECKING([whether to enable sasl support])
-    AC_MSG_RESULT([$memcached_enable_sasl])
-  fi
-
   AC_MSG_CHECKING([for libmemcached location])
   export ORIG_PKG_CONFIG_PATH="$PKG_CONFIG_PATH"
 
@@ -361,6 +354,41 @@ if test "$PHP_MEMCACHED" != "no"; then
         [ ac_cv_have_libmemcached_touch="no" ]
       )
     ])
+
+    AC_MSG_CHECKING([whether to enable sasl support])
+    if test "$PHP_MEMCACHED_SASL" != "no"; then
+      AC_MSG_RESULT(yes)
+    
+      AC_CHECK_HEADERS([sasl/sasl.h], [ac_cv_have_memc_sasl_h="yes"], [ac_cv_have_memc_sasl_h="no"])
+
+      if test "$ac_cv_have_memc_sasl_h" = "yes"; then
+
+        AC_CACHE_CHECK([whether libmemcached supports sasl], ac_cv_memc_sasl_support, [
+          AC_TRY_COMPILE(
+            [ #include <libmemcached/memcached.h> ],
+            [ 
+            #if LIBMEMCACHED_WITH_SASL_SUPPORT
+              /* yes */
+            #else
+            #  error "no sasl support"
+            #endif
+            ],
+            [ ac_cv_memc_sasl_support="yes" ],
+            [ ac_cv_memc_sasl_support="no" ]
+          )
+        ])
+
+        if test "$ac_cv_memc_sasl_support" = "yes"; then
+          AC_DEFINE(HAVE_MEMCACHED_SASL, 1, [Have SASL support])
+        else
+          AC_MSG_ERROR([no, libmemcached sasl support is not enabled. Run configure with --disable-memcached-sasl to disable this check])
+        fi
+      else
+        AC_MSG_ERROR([no, sasl.h is not available. Run configure with --disable-memcached-sasl to disable this check])
+      fi
+    else
+      AC_MSG_RESULT([no])
+    fi
 
     CFLAGS="$ORIG_CFLAGS"
     LIBS="$ORIG_LIBS"

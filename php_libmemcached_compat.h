@@ -30,4 +30,10 @@ memcached_st *php_memc_create_str (const char *str, size_t str_len);
 #  define MEMCACHED_SERVER_TEMPORARILY_DISABLED (1024 << 2)
 #endif
 
+#ifdef HAVE_MEMCACHED_INSTANCE_ST
+typedef const memcached_instance_st * php_memcached_instance_st;
+#else
+typedef memcached_server_instance_st php_memcached_instance_st;
+#endif
+
 #endif
