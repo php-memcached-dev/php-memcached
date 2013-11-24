@@ -20,7 +20,7 @@
 
 memcached_st *php_memc_create_str (const char *str, size_t str_len)
 {
-#if HAVE_LIBMEMCACHED_MEMCACHED
+#ifdef HAVE_LIBMEMCACHED_MEMCACHED
 	return memcached (str, str_len);
 #else
 	memcached_return rc;
