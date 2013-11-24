@@ -14,23 +14,6 @@
   +----------------------------------------------------------------------+
 */
 
-#include <stdlib.h>
-#include <string.h>
-#include <php.h>
-#include <php_main.h>
-
-#ifdef ZTS
-#include "TSRM.h"
-#endif
-
-#include <php_ini.h>
-#include <SAPI.h>
-#include <ext/standard/info.h>
-#include <zend_extensions.h>
-#include <zend_exceptions.h>
-#include <ext/standard/php_smart_str.h>
-#include <ext/standard/php_var.h>
-
 #include "php_memcached.h"
 #include "php_memcached_private.h"
 #include "php_memcached_session.h"

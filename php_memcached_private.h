@@ -19,11 +19,31 @@
 #ifndef PHP_MEMCACHED_PRIVATE_H
 #define PHP_MEMCACHED_PRIVATE_H
 
-#include "php_libmemcached_compat.h"
+#include "main/php_config.h"
 
 #ifdef HAVE_CONFIG_H
 # include "config.h"
 #endif
+
+#include "php_libmemcached_compat.h"
+
+#include <stdlib.h>
+#include <string.h>
+#include <php.h>
+#include <php_main.h>
+
+#ifdef ZTS
+#  include "TSRM.h"
+#endif
+
+#include <php_ini.h>
+#include <SAPI.h>
+#include <ext/standard/info.h>
+#include <zend_extensions.h>
+#include <zend_exceptions.h>
+#include <ext/standard/php_smart_str.h>
+#include <ext/standard/php_var.h>
+#include <ext/standard/basic_functions.h>
 
 #ifdef PHP_WIN32
 # include "win32/php_stdint.h"

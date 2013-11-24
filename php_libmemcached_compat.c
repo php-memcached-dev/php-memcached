@@ -14,6 +14,8 @@
   +----------------------------------------------------------------------+
 */
 
+#include "php_memcached.h"
+#include "php_memcached_private.h"
 #include "php_libmemcached_compat.h"
 
 memcached_st *php_memc_create_str (const char *str, size_t str_len)

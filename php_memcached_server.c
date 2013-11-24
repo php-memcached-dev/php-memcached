@@ -14,15 +14,9 @@
   +----------------------------------------------------------------------+
 */
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
-#include <php.h>
 #include "php_memcached.h"
 #include "php_memcached_private.h"
 #include "php_memcached_server.h"
-#include "php_libmemcached_compat.h"
 
 #include <event2/listener.h>
 

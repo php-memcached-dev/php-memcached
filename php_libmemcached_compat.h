@@ -20,10 +20,6 @@
 /* this is the version(s) we support */
 #include <libmemcached/memcached.h>
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
 memcached_st *php_memc_create_str (const char *str, size_t str_len);
 
 #ifndef HAVE_LIBMEMCACHED_SERVER_TEMPORARILY_MARKER_DISABLED

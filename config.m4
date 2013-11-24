@@ -479,8 +479,6 @@ if test "$PHP_MEMCACHED" != "no"; then
     [
       PHP_ADD_EXTENSION_DEP(memcached, spl, true)
     ])
-
   fi
-
 fi
 
