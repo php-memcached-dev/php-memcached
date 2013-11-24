@@ -291,15 +291,12 @@ if test "$PHP_MEMCACHED" != "no"; then
     PHP_EVAL_LIBLINE($PHP_LIBMEMCACHED_LIBS, MEMCACHED_SHARED_LIBADD)
     PHP_EVAL_INCLINE($PHP_LIBMEMCACHED_INCLUDES)
 
-    ORIG_CFLAGS="$CFLAGS"
-    ORIG_LIBS="$LIBS"
-
-    CFLAGS="$CFLAGS $PHP_LIBMEMCACHED_INCLUDES"
-
     #
     # Added -lpthread here because AC_TRY_LINK tests on CentOS 6 seem to fail with undefined reference to pthread_once
     #
-    LIBS="$LIBS -lpthread $PHP_LIBMEMCACHED_LIBS"
+    LIBS="$LIBS -lpthread"
+    ORIG_CFLAGS="$CFLAGS"
+    CFLAGS="$CFLAGS $INCLUDES"
 
     AC_CACHE_CHECK([whether memcached_instance_st is defined], ac_cv_have_memcached_instance_st, [
       AC_TRY_COMPILE(
@@ -358,7 +355,6 @@ if test "$PHP_MEMCACHED" != "no"; then
     AC_MSG_CHECKING([whether to enable sasl support])
     if test "$PHP_MEMCACHED_SASL" != "no"; then
       AC_MSG_RESULT(yes)
-    
       AC_CHECK_HEADERS([sasl/sasl.h], [ac_cv_have_memc_sasl_h="yes"], [ac_cv_have_memc_sasl_h="no"])
 
       if test "$ac_cv_have_memc_sasl_h" = "yes"; then
@@ -379,6 +375,7 @@ if test "$PHP_MEMCACHED" != "no"; then
         ])
 
         if test "$ac_cv_memc_sasl_support" = "yes"; then
+          PHP_CHECK_LIBRARY(sasl2, sasl_client_init, [PHP_ADD_LIBRARY(sasl2, 1, MEMCACHED_SHARED_LIBADD)])
           AC_DEFINE(HAVE_MEMCACHED_SASL, 1, [Have SASL support])
         else
           AC_MSG_ERROR([no, libmemcached sasl support is not enabled. Run configure with --disable-memcached-sasl to disable this check])
@@ -389,9 +386,6 @@ if test "$PHP_MEMCACHED" != "no"; then
     else
       AC_MSG_RESULT([no])
     fi
-
-    CFLAGS="$ORIG_CFLAGS"
-    LIBS="$ORIG_LIBS"
 
     if test "$ac_cv_have_memcached_instance_st" = "yes"; then
        AC_DEFINE(HAVE_MEMCACHED_INSTANCE_ST, [1], [Whether memcached_instance_st is defined])
@@ -428,9 +422,6 @@ if test "$PHP_MEMCACHED" != "no"; then
     if test "$PHP_MEMCACHED_PROTOCOL" != "no"; then
       AC_MSG_RESULT([enabled])
 
-      ORIG_CFLAGS="$CFLAGS"
-      CFLAGS="$CFLAGS $PHP_LIBMEMCACHED_INCLUDES"
-
       AC_CACHE_CHECK([whether libmemcachedprotocol is usable], ac_cv_have_libmemcachedprotocol, [
         AC_TRY_COMPILE(
           [ #include <libmemcachedprotocol-0.0/handler.h> ],
@@ -441,7 +432,6 @@ if test "$PHP_MEMCACHED" != "no"; then
           [ ac_cv_have_libmemcachedprotocol="no" ]
         )
       ])
-      CFLAGS="$ORIG_CFLAGS"
 
       if test "$ac_cv_have_libmemcachedprotocol" != "yes"; then
         AC_MSG_ERROR([Cannot enable libmemcached protocol])
@@ -468,6 +458,8 @@ if test "$PHP_MEMCACHED" != "no"; then
     else
       AC_MSG_RESULT([disabled])
     fi
+
+    CFLAGS="$ORIG_CFLAGS"
 
     export PKG_CONFIG_PATH="$ORIG_PKG_CONFIG_PATH"
     PHP_SUBST(MEMCACHED_SHARED_LIBADD)
