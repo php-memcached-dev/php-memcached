@@ -16,7 +16,6 @@ env:
     - LIBMEMCACHED_VERSION=0.53
     - LIBMEMCACHED_VERSION=0.49
     - LIBMEMCACHED_VERSION=0.44
-    - LIBMEMCACHED_VERSION=0.40
 
 services:
   - memcached # will start memcached
