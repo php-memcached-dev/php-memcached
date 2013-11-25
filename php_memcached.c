@@ -3509,44 +3509,6 @@ static int php_memc_zval_from_payload(zval *value, const char *payload_in, size_
 	return retval;
 }
 
-static void php_memc_init_globals(zend_php_memcached_globals *php_memcached_globals_p TSRMLS_DC)
-{
-#ifdef HAVE_MEMCACHED_SESSION
-	MEMC_G(sess_locking_enabled) = 1;
-	MEMC_G(sess_binary_enabled) = 1;
-	MEMC_G(sess_consistent_hash_enabled) = 0;
-	MEMC_G(sess_number_of_replicas) = 0;
-	MEMC_G(sess_remove_failed_enabled) = 0;
-	MEMC_G(sess_prefix) = NULL;
-	MEMC_G(sess_lock_wait) = 0;
-	MEMC_G(sess_lock_max_wait) = 0;
-	MEMC_G(sess_lock_expire) = 0;
-	MEMC_G(sess_locked) = 0;
-	MEMC_G(sess_lock_key) = NULL;
-	MEMC_G(sess_lock_key_len) = 0;
-	MEMC_G(sess_randomize_replica_read) = 0;
-	MEMC_G(sess_connect_timeout) = 1000;
-	MEMC_G(sess_sasl_username) = NULL;
-	MEMC_G(sess_sasl_password) = NULL;
-#if HAVE_MEMCACHED_SASL
-	MEMC_G(sess_sasl_data) = 0;
-#endif
-#endif
-	MEMC_G(serializer_name) = NULL;
-	MEMC_G(serializer) = SERIALIZER_DEFAULT;
-	MEMC_G(compression_type) = NULL;
-	MEMC_G(compression_type_real) = COMPRESSION_TYPE_FASTLZ;
-	MEMC_G(compression_factor) = 1.30;
-#if HAVE_MEMCACHED_SASL
-	MEMC_G(use_sasl) = 0;
-#endif
-	MEMC_G(store_retry_count) = 2;
-}
-
-static void php_memc_destroy_globals(zend_php_memcached_globals *php_memcached_globals_p TSRMLS_DC)
-{
-}
-
 PHPAPI
 zend_class_entry *php_memc_get_ce(void)
 {
@@ -4225,13 +4187,43 @@ static const zend_module_dep memcached_deps[] = {
 };
 #endif
 
-zend_module_entry memcached_module_entry = {
-#if ZEND_MODULE_API_NO >= 20050922
-	STANDARD_MODULE_HEADER_EX, NULL,
-	(zend_module_dep*)memcached_deps,
-#else
-	STANDARD_MODULE_HEADER,
+static
+PHP_GINIT_FUNCTION(php_memcached)
+{
+#ifdef HAVE_MEMCACHED_SESSION
+	php_memcached_globals->sess_locking_enabled = 1;
+	php_memcached_globals->sess_binary_enabled = 1;
+	php_memcached_globals->sess_consistent_hash_enabled = 0;
+	php_memcached_globals->sess_number_of_replicas = 0;
+	php_memcached_globals->sess_remove_failed_enabled = 0;
+	php_memcached_globals->sess_prefix = NULL;
+	php_memcached_globals->sess_lock_wait = 0;
+	php_memcached_globals->sess_lock_max_wait = 0;
+	php_memcached_globals->sess_lock_expire = 0;
+	php_memcached_globals->sess_locked = 0;
+	php_memcached_globals->sess_lock_key = NULL;
+	php_memcached_globals->sess_lock_key_len = 0;
+	php_memcached_globals->sess_randomize_replica_read = 0;
+	php_memcached_globals->sess_connect_timeout = 1000;
+	php_memcached_globals->sess_sasl_username = NULL;
+	php_memcached_globals->sess_sasl_password = NULL;
+#if HAVE_MEMCACHED_SASL
+	php_memcached_globals->sess_sasl_data = 0;
 #endif
+#endif
+	php_memcached_globals->serializer_name = NULL;
+	php_memcached_globals->serializer = SERIALIZER_DEFAULT;
+	php_memcached_globals->compression_type = NULL;
+	php_memcached_globals->compression_type_real = COMPRESSION_TYPE_FASTLZ;
+	php_memcached_globals->compression_factor = 1.30;
+#if HAVE_MEMCACHED_SASL
+	php_memcached_globals->use_sasl = 0;
+#endif
+	php_memcached_globals->store_retry_count = 2;
+}
+
+zend_module_entry memcached_module_entry = {
+	STANDARD_MODULE_HEADER,
 	"memcached",
 	NULL,
 	PHP_MINIT(memcached),
@@ -4240,7 +4232,11 @@ zend_module_entry memcached_module_entry = {
 	NULL,
 	PHP_MINFO(memcached),
 	PHP_MEMCACHED_VERSION,
-	STANDARD_MODULE_PROPERTIES
+	PHP_MODULE_GLOBALS(php_memcached),
+	PHP_GINIT(php_memcached),
+	NULL,
+	NULL,
+	STANDARD_MODULE_PROPERTIES_EX
 };
 /* }}} */
 
@@ -4514,13 +4510,6 @@ PHP_MINIT_FUNCTION(memcached)
 
 	php_memc_register_constants(INIT_FUNC_ARGS_PASSTHRU);
 
-#ifdef ZTS
-	ts_allocate_id(&php_memcached_globals_id, sizeof(zend_php_memcached_globals),
-				   (ts_allocate_ctor) php_memc_init_globals, (ts_allocate_dtor) php_memc_destroy_globals);
-#else
-	php_memc_init_globals(&php_memcached_globals TSRMLS_CC);
-#endif
-
 #ifdef HAVE_MEMCACHED_SESSION
 	php_session_register_module(ps_memcached_ptr);
 #endif
@@ -4545,12 +4534,6 @@ PHP_MSHUTDOWN_FUNCTION(memcached)
 	if (MEMC_G(use_sasl)) {
 		sasl_done();
 	}
-#endif
-
-#ifdef ZTS
-	ts_free_id(php_memcached_globals_id);
-#else
-	php_memc_destroy_globals(&php_memcached_globals TSRMLS_CC);
 #endif
 
 	UNREGISTER_INI_ENTRIES();
