@@ -146,9 +146,9 @@ ZEND_BEGIN_MODULE_GLOBALS(php_memcached)
 	zend_bool sess_consistent_hash_enabled;
 	zend_bool sess_binary_enabled;
 
+#if HAVE_MEMCACHED_SASL
 	char *sess_sasl_username;
 	char *sess_sasl_password;
-#if HAVE_MEMCACHED_SASL
 	zend_bool sess_sasl_data;
 #endif
 #endif
