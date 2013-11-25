@@ -452,7 +452,7 @@ static PHP_METHOD(Memcached, __construct)
 				if (plist_key) {
 					efree(plist_key);
 				}
-#if HAVE_LIBMEMCACHED_CHECK_CONFIGURATION
+#ifdef HAVE_LIBMEMCACHED_CHECK_CONFIGURATION
 				if (libmemcached_check_configuration(conn_str, conn_str_len, error_buffer, sizeof(error_buffer)) != MEMCACHED_SUCCESS) {
 					php_error_docref(NULL TSRMLS_CC, E_ERROR, "configuration error %s", error_buffer);
 				} else {
@@ -1159,7 +1159,7 @@ PHP_METHOD(Memcached, setByKey)
 }
 /* }}} */
 
-#if defined(LIBMEMCACHED_VERSION_HEX) && LIBMEMCACHED_VERSION_HEX >= 0x01000002
+#ifdef HAVE_MEMCACHED_TOUCH
 /* {{{ Memcached::touch(string key, [, int expiration ])
    Sets a new expiration for the given key */
 PHP_METHOD(Memcached, touch)
@@ -1496,7 +1496,7 @@ retry:
 										  key_len, payload, payload_len, expiration, flags);
 			}
 			break;
-#ifdef HAVE_LIBMEMCACHED_TOUCH
+#ifdef HAVE_MEMCACHED_TOUCH
 		case MEMC_OP_TOUCH:
 			if (!server_key) {
 				status = memcached_touch(m_obj->memc, key, key_len, expiration);
@@ -2126,7 +2126,7 @@ PHP_METHOD(Memcached, flushBuffers)
 }
 /* }}} */
 
-#if defined(LIBMEMCACHED_VERSION_HEX) && LIBMEMCACHED_VERSION_HEX >= 0x00049000
+#ifdef HAVE_LIBMEMCACHED_CHECK_CONFIGURATION
 /* {{{ Memcached::getLastErrorMessage()
    Returns the last error message that occurred */
 PHP_METHOD(Memcached, getLastErrorMessage)
@@ -2515,14 +2515,19 @@ static int php_memc_set_option(php_memc_t *i_obj, long option, zval *value TSRML
 			/*
 			 * Assume that it's a libmemcached behavior option.
 			 */
-			flag = (memcached_behavior) option;
-			convert_to_long(value);
-
-			if (flag >= 0 && flag < MEMCACHED_BEHAVIOR_MAX) {
-				rc = memcached_behavior_set(m_obj->memc, flag, (uint64_t) Z_LVAL_P(value));
+			if (option < 0) {
+				rc = MEMCACHED_INVALID_ARGUMENTS;
 			}
 			else {
-				rc = MEMCACHED_INVALID_ARGUMENTS;
+				flag = (memcached_behavior) option;
+				convert_to_long(value);
+
+				if (flag < MEMCACHED_BEHAVIOR_MAX) {
+					rc = memcached_behavior_set(m_obj->memc, flag, (uint64_t) Z_LVAL_P(value));
+				}
+				else {
+					rc = MEMCACHED_INVALID_ARGUMENTS;
+				}
 			}
 
 			if (php_memc_handle_error(i_obj, rc TSRMLS_CC) < 0) {
@@ -4124,7 +4129,7 @@ static zend_function_entry memcached_class_methods[] = {
 
 	MEMC_ME(set,                arginfo_set)
 	MEMC_ME(setByKey,           arginfo_setByKey)
-#if HAVE_LIBMEMCACHED_TOUCH
+#ifdef HAVE_MEMCACHED_TOUCH
 	MEMC_ME(touch,              arginfo_touch)
 	MEMC_ME(touchByKey,         arginfo_touchByKey)
 #endif
@@ -4155,10 +4160,9 @@ static zend_function_entry memcached_class_methods[] = {
 	MEMC_ME(addServers,         arginfo_addServers)
 	MEMC_ME(getServerList,      arginfo_getServerList)
 	MEMC_ME(getServerByKey,     arginfo_getServerByKey)
-    MEMC_ME(resetServerList,    arginfo_resetServerList)
-    MEMC_ME(quit,               arginfo_quit)
-    MEMC_ME(flushBuffers,       arginfo_flushBuffers)
-
+	MEMC_ME(resetServerList,    arginfo_resetServerList)
+	MEMC_ME(quit,               arginfo_quit)
+	MEMC_ME(flushBuffers,       arginfo_flushBuffers)
 
 #if defined(LIBMEMCACHED_VERSION_HEX) && LIBMEMCACHED_VERSION_HEX >= 0x00049000
 	MEMC_ME(getLastErrorMessage,		arginfo_getLastErrorMessage)
@@ -4346,7 +4350,7 @@ static void php_memc_register_constants(INIT_FUNC_ARGS)
 	REGISTER_MEMC_CLASS_CONST_LONG(OPT_NUMBER_OF_REPLICAS, MEMCACHED_BEHAVIOR_NUMBER_OF_REPLICAS);
 	REGISTER_MEMC_CLASS_CONST_LONG(OPT_RANDOMIZE_REPLICA_READ, MEMCACHED_BEHAVIOR_RANDOMIZE_REPLICA_READ);
 #endif
-#if defined(HAVE_LIBMEMCACHED_REMOVE_FAILED_SERVERS) && HAVE_LIBMEMCACHED_REMOVE_FAILED_SERVERS
+#ifdef HAVE_MEMCACHED_BEHAVIOR_REMOVE_FAILED_SERVERS
 	REGISTER_MEMC_CLASS_CONST_LONG(OPT_REMOVE_FAILED_SERVERS, MEMCACHED_BEHAVIOR_REMOVE_FAILED_SERVERS);
 #endif
 
