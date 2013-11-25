@@ -50,6 +50,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
 - Added Memcached::setBucket for virtual bucket support
 - Added support for msgpack serialization
 - Memcached::setSaslAuthData returns correct status on success
+- Added support for user-defined flags in set and get operations
  </notes>
  <contents>
   <dir name="/">

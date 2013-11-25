@@ -20,6 +20,7 @@ Version 2.2.0b1
 	* Added Memcached::setBucket for virtual bucket support
 	* Added support for msgpack serialization
 	* Memcached::setSaslAuthData returns correct status on success
+    * Added support for user-defined flags in set and get operations
 
 Version 2.1.0
 -------------
