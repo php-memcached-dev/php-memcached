@@ -293,9 +293,10 @@ PHP_INI_BEGIN()
 	STD_PHP_INI_ENTRY("memcached.sess_randomize_replica_read",	"0",	PHP_INI_ALL, OnUpdateBool,	sess_randomize_replica_read,	zend_php_memcached_globals,	php_memcached_globals)
 	STD_PHP_INI_ENTRY("memcached.sess_remove_failed",	"0",		PHP_INI_ALL, OnUpdateBool,              sess_remove_failed_enabled,	zend_php_memcached_globals,     php_memcached_globals)
 	STD_PHP_INI_ENTRY("memcached.sess_connect_timeout",     "1000",         PHP_INI_ALL, OnUpdateLong, 		sess_connect_timeout,           zend_php_memcached_globals,     php_memcached_globals)
-
+#if HAVE_MEMCACHED_SASL
 	STD_PHP_INI_ENTRY("memcached.sess_sasl_username",		"",	PHP_INI_ALL, OnUpdateString, sess_sasl_username,		zend_php_memcached_globals,	php_memcached_globals)
 	STD_PHP_INI_ENTRY("memcached.sess_sasl_password",		"",	PHP_INI_ALL, OnUpdateString, sess_sasl_password,		zend_php_memcached_globals,	php_memcached_globals)
+#endif
 #endif
 	STD_PHP_INI_ENTRY("memcached.compression_type",		"fastlz",	PHP_INI_ALL, OnUpdateCompressionType, compression_type,		zend_php_memcached_globals,	php_memcached_globals)
 	STD_PHP_INI_ENTRY("memcached.compression_factor",	"1.3",		PHP_INI_ALL, OnUpdateReal, compression_factor,		zend_php_memcached_globals,	php_memcached_globals)
@@ -4205,9 +4206,9 @@ PHP_GINIT_FUNCTION(php_memcached)
 	php_memcached_globals->sess_lock_key_len = 0;
 	php_memcached_globals->sess_randomize_replica_read = 0;
 	php_memcached_globals->sess_connect_timeout = 1000;
+#if HAVE_MEMCACHED_SASL
 	php_memcached_globals->sess_sasl_username = NULL;
 	php_memcached_globals->sess_sasl_password = NULL;
-#if HAVE_MEMCACHED_SASL
 	php_memcached_globals->sess_sasl_data = 0;
 #endif
 #endif
