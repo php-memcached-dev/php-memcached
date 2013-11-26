@@ -28,9 +28,15 @@
 
 #define PHP_MEMCACHED_VERSION "2.2.0b1"
 
-PHPAPI zend_class_entry *php_memc_get_ce(void);
-PHPAPI zend_class_entry *php_memc_get_exception(void);
-PHPAPI zend_class_entry *php_memc_get_exception_base(int root TSRMLS_DC);
+#if defined(PHP_WIN32) && defined(MEMCACHED_EXPORTS)
+#define PHP_MEMCACHED_API __declspec(dllexport)
+#else
+#define PHP_MEMCACHED_API PHPAPI
+#endif
+
+PHP_MEMCACHED_API zend_class_entry *php_memc_get_ce(void);
+PHP_MEMCACHED_API zend_class_entry *php_memc_get_exception(void);
+PHP_MEMCACHED_API zend_class_entry *php_memc_get_exception_base(int root TSRMLS_DC);
 
 extern zend_module_entry memcached_module_entry;
 #define phpext_memcached_ptr &memcached_module_entry

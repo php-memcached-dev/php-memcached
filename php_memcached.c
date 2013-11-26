@@ -3510,19 +3510,19 @@ static int php_memc_zval_from_payload(zval *value, const char *payload_in, size_
 	return retval;
 }
 
-PHPAPI
+PHP_MEMCACHED_API
 zend_class_entry *php_memc_get_ce(void)
 {
 	return memcached_ce;
 }
 
-PHPAPI
+PHP_MEMCACHED_API
 zend_class_entry *php_memc_get_exception(void)
 {
 	return memcached_exception_ce;
 }
 
-PHPAPI
+PHP_MEMCACHED_API
 zend_class_entry *php_memc_get_exception_base(int root TSRMLS_DC)
 {
 #if HAVE_SPL
