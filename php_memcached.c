@@ -3266,7 +3266,7 @@ char *php_memc_zval_to_payload(zval *value, size_t *payload_len, uint32_t *flags
 	/* If we have compression flag, compress the value */
 	if (MEMC_VAL_HAS_FLAG(*flags, MEMC_VAL_COMPRESSED)) {
 		/* status */
-		*payload_len = Z_STRLEN_P(value);
+		*payload_len = pl_len;
 		payload = s_compress_value (compression_type, pl, payload_len, flags TSRMLS_CC);
 	}
 
