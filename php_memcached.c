@@ -3084,9 +3084,10 @@ char *s_compress_value (enum memcached_compression_type compression_type, const 
 
 	/* Store compressed size here */
 	size_t compressed_size = 0;
+    uint32_t plen = *payload_len;
 
 	/* Copy the uin32_t at the beginning */
-	memcpy(buffer, payload_len, sizeof(uint32_t));
+	memcpy(buffer, &plen, sizeof(uint32_t));
 	buffer += sizeof(uint32_t);
 
 	switch (compression_type) {
