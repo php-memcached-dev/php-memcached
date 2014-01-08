@@ -34,5 +34,5 @@ memcached.sess_number_of_replicas => %d => %d
 memcached.sess_prefix => %s => %s
 memcached.sess_randomize_replica_read => %d => %d
 memcached.sess_remove_failed => %d => %d
-memcached.use_sasl => %d => %d
-memcached.store_retry_count => %d => %d
+%rmemcached.use_sasl => %d => %d
+|%rmemcached.store_retry_count => %d => %d
