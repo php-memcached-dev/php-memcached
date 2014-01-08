@@ -31,7 +31,7 @@ array(%d) {
   ["port"]=>
   int(%d)
   ["weight"]=>
-  int(1)
+  int(0)
 }
 array(%d) {
   ["host"]=>
@@ -39,7 +39,7 @@ array(%d) {
   ["port"]=>
   int(%d)
   ["weight"]=>
-  int(1)
+  int(0)
 }
 array(%d) {
   ["host"]=>
@@ -47,7 +47,7 @@ array(%d) {
   ["port"]=>
   int(%d)
   ["weight"]=>
-  int(1)
+  int(0)
 }
 array(%d) {
   ["host"]=>
@@ -55,5 +55,5 @@ array(%d) {
   ["port"]=>
   int(%d)
   ["weight"]=>
-  int(1)
+  int(0)
 }
