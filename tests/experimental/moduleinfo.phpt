@@ -26,6 +26,8 @@ memcached.serializer => %s => %s
 memcached.sess_binary => %d => %d
 memcached.sess_connect_timeout => %d => %d
 memcached.sess_consistent_hash => %d => %d
+memcached.sess_lock_expire => %d => %d
+memcached.sess_lock_max_wait => %d => %d
 memcached.sess_lock_wait => %d => %d
 memcached.sess_locking => %d => %d
 memcached.sess_number_of_replicas => %d => %d
@@ -33,3 +35,4 @@ memcached.sess_prefix => %s => %s
 memcached.sess_randomize_replica_read => %d => %d
 memcached.sess_remove_failed => %d => %d
 memcached.use_sasl => %d => %d
+memcached.store_retry_count => %d => %d
