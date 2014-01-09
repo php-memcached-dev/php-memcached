@@ -153,6 +153,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
     <file role='test' name='sasl_basic.phpt'/>
     <file role='test' name='serializer_php.phpt'/>
     <file role='test' name='set_comp_below_factor.phpt'/>
+    <file role='test' name='getserverbykey.phpt'/>
   </dir>
  </dir>
  </contents>
