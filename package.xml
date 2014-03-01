@@ -21,9 +21,9 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <email>mkoppanen@php.net</email>
   <active>yes</active>
  </lead>
- <date>2013-01-15</date>
+ <date>2013-03-01</date>
  <version>
-  <release>2.2.0b2</release>
+  <release>2.2.0RC1</release>
   <api>2.2.0</api>
  </version>
  <stability>
@@ -134,6 +134,8 @@ http://pear.php.net/dtd/package-2.0.xsd">
     <file role='test' name='testdata.res'/>
     <file role='test' name='config.inc'/>
     <file role='test' name='sasl_basic.phpt'/>
+    <file role='test' name='serializer_php.phpt'/>
+    <file role='test' name='set_comp_below_factor.phpt'/>
     <file role='test' name='getserverbykey.phpt'/>
   </dir>
  </dir>
