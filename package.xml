@@ -21,9 +21,9 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <email>mkoppanen@php.net</email>
   <active>yes</active>
  </lead>
- <date>2013-11-25</date>
+ <date>2013-01-15</date>
  <version>
-  <release>2.2.0b1</release>
+  <release>2.2.0b2</release>
   <api>2.2.0</api>
  </version>
  <stability>
@@ -32,25 +32,8 @@ http://pear.php.net/dtd/package-2.0.xsd">
  </stability>
  <license uri="http://www.php.net/license">PHP</license>
  <notes>
-- Reinstate support for libememcached 0.x series
-- Added SASL support to session handler
-- Added Memcached::flushBuffers as per GH #78
-- Fixes GH #54: Fixed UDP server adding with newer libmemcached
-- Fixed PHP bug #65334: (Segfault if uncompress value failed)
-- Fixes GH #14: get with cas token fails to fetch all results
-- Fixes GH #68: memcached 2.1.0 requires libmemcached 1.0.10
-- Fixes GH #69: compiling on CentOS 6.4 with libmemcached 1.0.17
-- Merged PR #91: More granular session locking support
-- Added session handler settings:
-  * memcached.sess_number_of_replicas
-  * memcached.sess_randomize_replica_read
-  * memcached.sess_remove_failed
-  * memcached.sess_connect_timeout
-- Added support for memcached protocol handlers
-- Added Memcached::setBucket for virtual bucket support
-- Added support for msgpack serialization
-- Memcached::setSaslAuthData returns correct status on success
-- Added support for user-defined flags in set and get operations
+- Fixes incorrect size when compressing serialized objects
+- Fixes endianess of compressed values
  </notes>
  <contents>
   <dir name="/">
