@@ -21,7 +21,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <email>mkoppanen@php.net</email>
   <active>yes</active>
  </lead>
- <date>2013-03-01</date>
+ <date>2013-03-12</date>
  <version>
   <release>2.2.0RC1</release>
   <api>2.2.0</api>
@@ -155,6 +155,15 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <configureoption name="with-libmemcached-dir" default="no" prompt="libmemcached directory"/>
  </extsrcrelease>
  <changelog>
+   <release>
+   <stability><release>beta</release><api>stable</api></stability>
+   <version><release>2.2.0RC1</release><api>2.2.0</api></version>
+   <date>2014-03-12</date>
+   <notes>
+- Fixes incorrect size when compressing serialized objects
+- Fixes endianess of compressed values
+   </notes>
+  </release>
    <release>
    <stability><release>beta</release><api>stable</api></stability>
    <version><release>2.2.0b1</release><api>2.2.0</api></version>
