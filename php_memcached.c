@@ -3734,8 +3734,6 @@ PHP_METHOD(MemcachedServer, run)
 static
 PHP_METHOD(MemcachedServer, on)
 {
-	php_memc_server_t *intern;
-
 	long event;
 	zend_fcall_info fci;
 	zend_fcall_info_cache fci_cache;
@@ -3744,8 +3742,6 @@ PHP_METHOD(MemcachedServer, on)
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "lf!", &event, &fci, &fci_cache) == FAILURE) {
 		return;
 	}
-
-	intern = (php_memc_server_t *) zend_object_store_get_object(getThis() TSRMLS_CC);
 
 	if (event <= MEMC_SERVER_ON_MIN || event >= MEMC_SERVER_ON_MAX) {
 		RETURN_FALSE;
