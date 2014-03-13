@@ -1545,6 +1545,7 @@ retry:
 
 		default:
 			/* not reached */
+			status = 0;
 			assert(0);
 			break;
 	}
