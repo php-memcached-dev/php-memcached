@@ -3286,7 +3286,7 @@ char *php_memc_zval_to_payload(zval *value, size_t *payload_len, uint32_t *flags
 static
 char *s_decompress_value (const char *payload, size_t *payload_len, uint32_t flags TSRMLS_DC)
 {
-	char *buffer;
+	char *buffer = NULL;
 	uint32_t len;
 	unsigned long length;
 	zend_bool decompress_status = 0;
