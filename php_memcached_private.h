@@ -165,7 +165,7 @@ ZEND_BEGIN_MODULE_GLOBALS(php_memcached)
 #endif
 #ifdef HAVE_MEMCACHED_PROTOCOL
 	struct {
-		php_memc_server_cb_t callbacks [14];
+		php_memc_server_cb_t callbacks [MEMC_SERVER_ON_MAX];
 	} server;
 #endif
 	long store_retry_count;
