@@ -702,7 +702,7 @@ static void php_memc_getMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 	uint64_t cas = 0;
 	zval *cas_tokens = NULL;
 	zval *udf_flags = NULL;
-	uint64_t orig_cas_flag;
+	uint64_t orig_cas_flag = 0;
 	zval *value;
 	long get_flags = 0;
 	int i = 0;
@@ -907,7 +907,7 @@ static void php_memc_getDelayed_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_
 	zval **entry = NULL;
 	const char **mkeys = NULL;
 	size_t *mkeys_len = NULL;
-	uint64_t orig_cas_flag;
+	uint64_t orig_cas_flag = 0;
 	zend_fcall_info fci = empty_fcall_info;
 	zend_fcall_info_cache fcc = empty_fcall_info_cache;
 	int i = 0;
