@@ -1393,7 +1393,7 @@ static void php_memc_store_impl(INTERNAL_FUNCTION_PARAMETERS, int op, zend_bool 
 	zval *value;
 	long expiration = 0;
 	long udf_flags = 0;
-	char  *payload;
+	char  *payload = NULL;
 	size_t payload_len;
 	uint32_t flags = 0;
 	uint32_t retry = 0;
@@ -1556,7 +1556,7 @@ retry:
 		RETVAL_TRUE;
 	}
 
-	if (op != MEMC_OP_TOUCH) {
+	if (payload) {
 		efree(payload);
 	}
 }
