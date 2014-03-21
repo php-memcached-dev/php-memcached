@@ -46,6 +46,9 @@ memcached_st *php_memc_create_str (const char *str, size_t str_len);
 #  define HAVE_LIBMEMCACHED_MEMCACHED 1
 #endif
 
+#if defined(LIBMEMCACHED_VERSION_HEX) && LIBMEMCACHED_VERSION_HEX >= 0x01000018
+#  define HAVE_MEMCACHED_BEHAVIOR_SERVER_TIMEOUT_LIMIT 1
+#endif
 
 #ifdef HAVE_MEMCACHED_INSTANCE_ST
 typedef const memcached_instance_st * php_memcached_instance_st;

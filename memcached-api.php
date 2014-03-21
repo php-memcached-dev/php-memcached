@@ -65,6 +65,8 @@ class Memcached {
 
 	const OPT_SERVER_FAILURE_LIMIT;
 
+	const OPT_SERVER_TIMEOUT_LIMIT;
+
 	const OPT_CACHE_LOOKUPS;
 
 	const OPT_AUTO_EJECT_HOSTS;
