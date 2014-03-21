@@ -702,7 +702,7 @@ static void php_memc_getMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 	uint64_t cas = 0;
 	zval *cas_tokens = NULL;
 	zval *udf_flags = NULL;
-	uint64_t orig_cas_flag;
+	uint64_t orig_cas_flag = 0;
 	zval *value;
 	long get_flags = 0;
 	int i = 0;
@@ -907,7 +907,7 @@ static void php_memc_getDelayed_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_
 	zval **entry = NULL;
 	const char **mkeys = NULL;
 	size_t *mkeys_len = NULL;
-	uint64_t orig_cas_flag;
+	uint64_t orig_cas_flag = 0;
 	zend_fcall_info fci = empty_fcall_info;
 	zend_fcall_info_cache fcc = empty_fcall_info_cache;
 	int i = 0;
@@ -1393,7 +1393,7 @@ static void php_memc_store_impl(INTERNAL_FUNCTION_PARAMETERS, int op, zend_bool 
 	zval *value;
 	long expiration = 0;
 	long udf_flags = 0;
-	char  *payload;
+	char  *payload = NULL;
 	size_t payload_len;
 	uint32_t flags = 0;
 	uint32_t retry = 0;
@@ -1545,6 +1545,7 @@ retry:
 
 		default:
 			/* not reached */
+			status = 0;
 			assert(0);
 			break;
 	}
@@ -1556,7 +1557,7 @@ retry:
 		RETVAL_TRUE;
 	}
 
-	if (op != MEMC_OP_TOUCH) {
+	if (payload) {
 		efree(payload);
 	}
 }
@@ -3286,7 +3287,7 @@ char *php_memc_zval_to_payload(zval *value, size_t *payload_len, uint32_t *flags
 static
 char *s_decompress_value (const char *payload, size_t *payload_len, uint32_t flags TSRMLS_DC)
 {
-	char *buffer;
+	char *buffer = NULL;
 	uint32_t len;
 	unsigned long length;
 	zend_bool decompress_status = 0;
@@ -3734,8 +3735,6 @@ PHP_METHOD(MemcachedServer, run)
 static
 PHP_METHOD(MemcachedServer, on)
 {
-	php_memc_server_t *intern;
-
 	long event;
 	zend_fcall_info fci;
 	zend_fcall_info_cache fci_cache;
@@ -3744,8 +3743,6 @@ PHP_METHOD(MemcachedServer, on)
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "lf!", &event, &fci, &fci_cache) == FAILURE) {
 		return;
 	}
-
-	intern = (php_memc_server_t *) zend_object_store_get_object(getThis() TSRMLS_CC);
 
 	if (event <= MEMC_SERVER_ON_MIN || event >= MEMC_SERVER_ON_MAX) {
 		RETURN_FALSE;
