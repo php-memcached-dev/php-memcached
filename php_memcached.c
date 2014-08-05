@@ -339,16 +339,20 @@ char *php_memc_printable_func (zend_fcall_info *fci, zend_fcall_info_cache *fci_
 {
 	char *buffer = NULL;
 
+#if PHP_VERSION_ID >= 50300
 	if (fci->object_ptr) {
 		spprintf (&buffer, 0, "%s::%s", Z_OBJCE_P (fci->object_ptr)->name, fci_cache->function_handler->common.function_name);
 	} else {
+#endif
 		if (Z_TYPE_P (fci->function_name) == IS_OBJECT) {
 			spprintf (&buffer, 0, "%s", Z_OBJCE_P (fci->function_name)->name);
 		}
 		else {
 			spprintf (&buffer, 0, "%s", Z_STRVAL_P (fci->function_name));
 		}
+#if PHP_VERSION_ID >= 50300
 	}
+#endif
 	return buffer;
 }
 
@@ -748,7 +752,11 @@ static void php_memc_getMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 			mkeys_len[i] = Z_STRLEN_PP(entry);
 
 			if (preserve_order) {
+#if PHP_VERSION_ID >= 50300
 				add_assoc_null_ex(return_value, mkeys[i], mkeys_len[i] + 1);
+#else
+				add_assoc_null_ex(return_value, (char*)mkeys[i], mkeys_len[i] + 1);
+#endif
 			}
 			i++;
 		}
@@ -1064,7 +1072,11 @@ PHP_METHOD(Memcached, fetch)
 	}
 
 	array_init(return_value);
+#if PHP_VERSION_ID >= 50300
 	add_assoc_stringl_ex(return_value, ZEND_STRS("key"), res_key, res_key_len, 1);
+#else
+	add_assoc_stringl_ex(return_value, (char*)ZEND_STRS("key"), (char*)res_key, res_key_len, 1);
+#endif
 	add_assoc_zval_ex(return_value, ZEND_STRS("value"), value);
 	if (cas != 0) {
 		/* XXX: also check against ULLONG_MAX or memc_behavior */
@@ -1123,7 +1135,11 @@ PHP_METHOD(Memcached, fetchAll)
 
 		MAKE_STD_ZVAL(entry);
 		array_init(entry);
+#if PHP_VERSION_ID >= 50300
 		add_assoc_stringl_ex(entry, ZEND_STRS("key"), res_key, res_key_len, 1);
+#else
+		add_assoc_stringl_ex(entry, (char*)ZEND_STRS("key"), (char*)res_key, res_key_len, 1);
+#endif
 		add_assoc_zval_ex(entry, ZEND_STRS("value"), value);
 		if (cas != 0) {
 			/* XXX: also check against ULLONG_MAX or memc_behavior */
@@ -3672,7 +3688,11 @@ static int php_memc_do_result_callback(zval *zmemc_obj, zend_fcall_info *fci,
 
 	MAKE_STD_ZVAL(z_result);
 	array_init(z_result);
+#if PHP_VERSION_ID >= 50300
 	add_assoc_stringl_ex(z_result, ZEND_STRS("key"), res_key, res_key_len, 1);
+#else
+	add_assoc_stringl_ex(z_result, (char*)ZEND_STRS("key"), (char*)res_key, res_key_len, 1);
+#endif
 	add_assoc_zval_ex(z_result, ZEND_STRS("value"), value);
 	if (cas != 0) {
 		add_assoc_double_ex(z_result, ZEND_STRS("cas"), (double)cas);
