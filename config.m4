@@ -26,6 +26,9 @@ PHP_ARG_ENABLE(memcached-sasl, whether to enable memcached sasl support,
 PHP_ARG_ENABLE(memcached-protocol, whether to enable memcached protocol support,
 [  --enable-memcached-protocol          Enable memcached protocoll support], no, no)
 
+PHP_ARG_WITH(system-fastlz, wheter to use system FastLZ bibrary,
+[  --with-system-fastlz                 Use system FastLZ bibrary], no, no)
+
 if test -z "$PHP_ZLIB_DIR"; then
 PHP_ARG_WITH(zlib-dir, for ZLIB,
 [  --with-zlib-dir[=DIR]   Set the path to ZLIB install prefix.], no)
@@ -336,7 +339,17 @@ if test "$PHP_MEMCACHED" != "no"; then
       AC_MSG_RESULT([no])
     fi
 
-    PHP_MEMCACHED_FILES="php_memcached.c php_libmemcached_compat.c fastlz/fastlz.c g_fmt.c"
+    PHP_MEMCACHED_FILES="php_memcached.c php_libmemcached_compat.c  g_fmt.c"
+
+    if test "$PHP_SYSTEM_FASTLZ" != "no"; then
+      AC_CHECK_HEADERS([fastlz.h], [ac_cv_have_fastlz="yes"], [ac_cv_have_fastlz="no"])
+      PHP_CHECK_LIBRARY(fastlz, fastlz_compress,
+          [PHP_ADD_LIBRARY(fastlz, 1, MEMCACHED_SHARED_LIBADD)],
+          [AC_MSG_ERROR(FastLZ library not found)])
+    else
+      ac_cv_have_fastlz="no"
+      PHP_MEMCACHED_FILES="${PHP_MEMCACHED_FILES} fastlz/fastlz.c"
+    fi
 
     if test "$PHP_MEMCACHED_SESSION" != "no"; then
       PHP_MEMCACHED_FILES="${PHP_MEMCACHED_FILES} php_memcached_session.c"
@@ -390,8 +403,10 @@ if test "$PHP_MEMCACHED" != "no"; then
     PHP_SUBST(MEMCACHED_SHARED_LIBADD)
 
     PHP_NEW_EXTENSION(memcached, $PHP_MEMCACHED_FILES, $ext_shared,,$SESSION_INCLUDES $IGBINARY_INCLUDES $LIBEVENT_INCLUDES $MSGPACK_INCLUDES)
-    PHP_ADD_BUILD_DIR($ext_builddir/fastlz, 1)
- 
+    if test "ac_cv_have_fastlz" != "yes"; then
+      PHP_ADD_BUILD_DIR($ext_builddir/fastlz, 1)
+    fi
+
     ifdef([PHP_ADD_EXTENSION_DEP],
     [
       PHP_ADD_EXTENSION_DEP(memcached, spl, true)
