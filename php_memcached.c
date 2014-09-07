@@ -30,8 +30,11 @@
 #ifdef HAVE_MEMCACHED_SESSION
 # include "php_memcached_session.h"
 #endif
-
+#ifdef HAVE_FASTLZ_H
+#include <fastlz.h>
+#else
 #include "fastlz/fastlz.h"
+#endif
 #include <zlib.h>
 
 #ifdef HAVE_JSON_API
