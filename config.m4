@@ -26,7 +26,7 @@ PHP_ARG_ENABLE(memcached-sasl, whether to enable memcached sasl support,
 PHP_ARG_ENABLE(memcached-protocol, whether to enable memcached protocol support,
 [  --enable-memcached-protocol          Enable memcached protocoll support], no, no)
 
-PHP_ARG_WITH(system-fastlz, wheter to use system FastLZ bibrary,
+PHP_ARG_WITH(system-fastlz, whether to use system FastLZ bibrary,
 [  --with-system-fastlz                 Use system FastLZ bibrary], no, no)
 
 if test -z "$PHP_ZLIB_DIR"; then
