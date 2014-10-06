@@ -51,7 +51,7 @@ static int php_memc_sess_lock(memcached_st *memc, const char *key TSRMLS_DC)
 	if (lock_expire <= 0) {
 		lock_expire = lock_maxwait;
 	}
-	expiration  = time(NULL) + lock_expire + 1;
+	expiration  = lock_expire + 1;
 	attempts = (unsigned long)((1000000.0 / lock_wait) * lock_maxwait);
 
 	/* Set the number of write retry attempts to the number of replicas times the number of attempts to remove a server */
