@@ -1795,7 +1795,7 @@ static void php_memc_incdec_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key,
 {
 	char *key, *server_key;
 	int   key_len, server_key_len;
-	long  offset = 1;
+	uint64_t  offset = 1;
 	uint64_t value, initial = 0;
 	time_t expiry = 0;
 	memcached_return status;
@@ -1831,9 +1831,9 @@ retry:
 	if ((!by_key && n_args < 3) || (by_key && n_args < 4)) {
 		if (by_key) {
 			if (incr) {
-				status = memcached_increment_by_key(m_obj->memc, server_key, server_key_len, key, key_len, (unsigned int)offset, &value);
+				status = memcached_increment_by_key(m_obj->memc, server_key, server_key_len, key, key_len, offset, &value);
 			} else {
-				status = memcached_decrement_by_key(m_obj->memc, server_key, server_key_len, key, key_len, (unsigned int)offset, &value);
+				status = memcached_decrement_by_key(m_obj->memc, server_key, server_key_len, key, key_len, offset, &value);
 			}
 		} else {
 			if (incr) {
@@ -1849,15 +1849,15 @@ retry:
 		}
 		if (by_key) {
 			if (incr) {
-				status = memcached_increment_with_initial_by_key(m_obj->memc, server_key, server_key_len, key, key_len, (unsigned int)offset, initial, expiry, &value);
+				status = memcached_increment_with_initial_by_key(m_obj->memc, server_key, server_key_len, key, key_len, offset, initial, expiry, &value);
 			} else {
-				status = memcached_decrement_with_initial_by_key(m_obj->memc, server_key, server_key_len, key, key_len, (unsigned int)offset, initial, expiry, &value);
+				status = memcached_decrement_with_initial_by_key(m_obj->memc, server_key, server_key_len, key, key_len, offset, initial, expiry, &value);
 			}
 		} else {
 			if (incr) {
-				status = memcached_increment_with_initial(m_obj->memc, key, key_len, (unsigned int)offset, initial, expiry, &value);
+				status = memcached_increment_with_initial(m_obj->memc, key, key_len, offset, initial, expiry, &value);
 			} else {
-				status = memcached_decrement_with_initial(m_obj->memc, key, key_len, (unsigned int)offset, initial, expiry, &value);
+				status = memcached_decrement_with_initial(m_obj->memc, key, key_len, offset, initial, expiry, &value);
 			}
 		}
 	}
