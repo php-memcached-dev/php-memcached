@@ -1795,7 +1795,11 @@ static void php_memc_incdec_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key,
 {
 	char *key, *server_key;
 	int   key_len, server_key_len;
+#if defined(LIBMEMCACHED_VERSION_HEX) && LIBMEMCACHED_VERSION_HEX >= 0x01000016
 	int64_t  offset = 1;
+#else
+	long offset = 1;
+#endif
 	uint64_t value, initial = 0;
 	time_t expiry = 0;
 	memcached_return status;
@@ -1828,6 +1832,8 @@ static void php_memc_incdec_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key,
 	}
 
 retry:
+#if defined(LIBMEMCACHED_VERSION_HEX) && LIBMEMCACHED_VERSION_HEX >= 0x01000016
+
 	if ((!by_key && n_args < 3) || (by_key && n_args < 4)) {
 		if (by_key) {
 			if (incr) {
@@ -1861,6 +1867,41 @@ retry:
 			}
 		}
 	}
+#else
+	if ((!by_key && n_args < 3) || (by_key && n_args < 4)) {
+	    if (by_key) {
+		if (incr) {
+		    status = memcached_increment_by_key(m_obj->memc, server_key, server_key_len, key, key_len, (unsigned int)offset, &value);
+		} else {
+		    status = memcached_decrement_by_key(m_obj->memc, server_key, server_key_len, key, key_len, (unsigned int)offset, &value);
+		}
+	    } else {
+		if (incr) {
+		    status = memcached_increment(m_obj->memc, key, key_len, (unsigned int)offset, &value);
+		} else {
+		    status = memcached_decrement(m_obj->memc, key, key_len, (unsigned int)offset, &value);
+		}
+	    }
+	} else {
+	    if (!memcached_behavior_get(m_obj->memc, MEMCACHED_BEHAVIOR_BINARY_PROTOCOL)) {
+		php_error_docref(NULL TSRMLS_CC, E_WARNING, "Initial value is only supported with binary protocol");
+		RETURN_FALSE;
+	    }
+	    if (by_key) {
+		if (incr) {
+		    status = memcached_increment_with_initial_by_key(m_obj->memc, server_key, server_key_len, key, key_len, (unsigned int)offset, initial, expiry, &value);
+		} else {
+		    status = memcached_decrement_with_initial_by_key(m_obj->memc, server_key, server_key_len, key, key_len, (unsigned int)offset, initial, expiry, &value);
+		}
+	    } else {
+		if (incr) {
+		    status = memcached_increment_with_initial(m_obj->memc, key, key_len, (unsigned int)offset, initial, expiry, &value);
+		} else {
+		    status = memcached_decrement_with_initial(m_obj->memc, key, key_len, (unsigned int)offset, initial, expiry, &value);
+		}
+	    }
+	}
+#endif
 
 	if (php_memc_handle_error(i_obj, status TSRMLS_CC) < 0) {
 		PHP_MEMC_FAILOVER_RETRY
