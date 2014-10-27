@@ -1795,7 +1795,7 @@ static void php_memc_incdec_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key,
 {
 	char *key, *server_key;
 	int   key_len, server_key_len;
-	uint64_t  offset = 1;
+	int64_t  offset = 1;
 	uint64_t value, initial = 0;
 	time_t expiry = 0;
 	memcached_return status;
