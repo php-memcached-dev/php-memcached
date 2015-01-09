@@ -838,7 +838,7 @@ static void php_memc_getMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 		memcpy (res_key, tmp_key, res_key_len >= MEMCACHED_MAX_KEY ? MEMCACHED_MAX_KEY - 1 : res_key_len);
 		res_key [res_key_len] = '\0';
 
-		MAKE_STD_ZVAL(value);
+		ALLOC_INIT_ZVAL(value);
 
 		if (php_memc_zval_from_payload(value, payload, payload_len, flags, m_obj->serializer TSRMLS_CC) < 0) {
 			zval_ptr_dtor(&value);
@@ -1057,7 +1057,7 @@ PHP_METHOD(Memcached, fetch)
 	res_key_len = memcached_result_key_length(&result);
 	cas         = memcached_result_cas(&result);
 
-	MAKE_STD_ZVAL(value);
+	ALLOC_INIT_ZVAL(value);
 
 	if (php_memc_zval_from_payload(value, payload, payload_len, flags, m_obj->serializer TSRMLS_CC) < 0) {
 		memcached_result_free(&result);
@@ -1114,7 +1114,7 @@ PHP_METHOD(Memcached, fetchAll)
 		res_key_len = memcached_result_key_length(&result);
 		cas         = memcached_result_cas(&result);
 
-		MAKE_STD_ZVAL(value);
+		ALLOC_INIT_ZVAL(value);
 
 		if (php_memc_zval_from_payload(value, payload, payload_len, flags, m_obj->serializer TSRMLS_CC) < 0) {
 			memcached_result_free(&result);
@@ -3663,7 +3663,7 @@ static int php_memc_do_result_callback(zval *zmemc_obj, zend_fcall_info *fci,
 	res_key_len = memcached_result_key_length(result);
 	cas 		= memcached_result_cas(result);
 
-	MAKE_STD_ZVAL(value);
+	ALLOC_INIT_ZVAL(value);
 
 	i_obj = (php_memc_t *) zend_object_store_get_object(zmemc_obj TSRMLS_CC);
 
