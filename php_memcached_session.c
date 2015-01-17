@@ -103,7 +103,8 @@ PS_OPEN_FUNC(memcached)
 	int plist_key_len = 0;
 
 	if (!strncmp((char *)save_path, "PERSISTENT=", sizeof("PERSISTENT=") - 1)) {
-		zend_rsrc_list_entry *le = NULL;
+		zend_resource *le = NULL;
+		zval *le_z = NULL;
 		char *e;
 
 		p = (char *)save_path + sizeof("PERSISTENT=") - 1;
@@ -118,7 +119,9 @@ error:
 			goto error;
 		}
 		plist_key_len++;
-		if (zend_hash_find(&EG(persistent_list), plist_key, plist_key_len, (void *)&le) == SUCCESS) {
+
+		if ((le_z = zend_hash_str_find(&EG(persistent_list), plist_key, plist_key_len)) != NULL) {
+			le = Z_RES_P(le_z);
 			if (le->type == php_memc_sess_list_entry()) {
 				memc_sess = (memcached_sess *) le->ptr;
 				PS_SET_MOD_DATA(memc_sess);
@@ -193,15 +196,19 @@ success:
 			PS_SET_MOD_DATA(memc_sess);
 
 			if (plist_key) {
-				zend_rsrc_list_entry le;
+				zend_resource le;
+				zend_string *tmp_key;
 
 				le.type = php_memc_sess_list_entry();
 				le.ptr = memc_sess;
 
-				if (zend_hash_update(&EG(persistent_list), (char *)plist_key, plist_key_len, (void *)&le, sizeof(le), NULL) == FAILURE) {
+				tmp_key = zend_string_init(plist_key, plist_key_len, 0);
+				if (zend_hash_update_mem(&EG(persistent_list), tmp_key, (void *)&le, sizeof(le)) == NULL) {
+					zend_string_release(tmp_key);
 					efree(plist_key);
 					php_error_docref(NULL TSRMLS_CC, E_ERROR, "could not register persistent entry");
 				}
+				zend_string_release(tmp_key);
 				efree(plist_key);
 			}
 
@@ -294,7 +301,7 @@ PS_READ_FUNC(memcached)
 {
 	char *payload = NULL;
 	size_t payload_len = 0;
-	int key_len = strlen(key);
+	int key_len = key->len;
 	uint32_t flags = 0;
 	memcached_return status;
 	memcached_sess *memc_sess = PS_GET_MOD_DATA();
@@ -308,17 +315,16 @@ PS_READ_FUNC(memcached)
 	}
 
 	if (MEMC_G(sess_locking_enabled)) {
-		if (php_memc_sess_lock(memc_sess->memc_sess, key TSRMLS_CC) < 0) {
+		if (php_memc_sess_lock(memc_sess->memc_sess, key->val) < 0) {
 			php_error_docref(NULL TSRMLS_CC, E_WARNING, "Unable to clear session lock record");
 			return FAILURE;
 		}
 	}
 
-	payload = memcached_get(memc_sess->memc_sess, key, key_len, &payload_len, &flags, &status);
+	payload = memcached_get(memc_sess->memc_sess, key->val, key_len, &payload_len, &flags, &status);
 
 	if (status == MEMCACHED_SUCCESS) {
-		*val = estrndup(payload, payload_len);
-		*vallen = payload_len;
+		*val = zend_string_init(payload, payload_len, 1);
 		free(payload);
 		return SUCCESS;
 	} else {
@@ -328,7 +334,7 @@ PS_READ_FUNC(memcached)
 
 PS_WRITE_FUNC(memcached)
 {
-	int key_len = strlen(key);
+	int key_len = key->len;
 	time_t expiration = 0;
 	long write_try_attempts = 1;
 	memcached_return status;
@@ -352,7 +358,7 @@ PS_WRITE_FUNC(memcached)
 	}
 
 	do {
-		status = memcached_set(memc_sess->memc_sess, key, key_len, val, vallen, expiration, 0);
+		status = memcached_set(memc_sess->memc_sess, key->val, key_len, val->val, val->len, expiration, 0);
 		if (status == MEMCACHED_SUCCESS) {
 			return SUCCESS;
 		} else {
@@ -367,7 +373,7 @@ PS_DESTROY_FUNC(memcached)
 {
 	memcached_sess *memc_sess = PS_GET_MOD_DATA();
 
-	memcached_delete(memc_sess->memc_sess, key, strlen(key), 0);
+	memcached_delete(memc_sess->memc_sess, key->val, key->len, 0);
 	if (MEMC_G(sess_locking_enabled)) {
 		php_memc_sess_unlock(memc_sess->memc_sess TSRMLS_CC);
 	}
