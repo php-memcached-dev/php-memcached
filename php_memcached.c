@@ -324,7 +324,7 @@ static void php_memc_setMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 static void php_memc_delete_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key);
 static void php_memc_deleteMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key);
 static void php_memc_getDelayed_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key);
-static memcached_return php_memc_do_cache_callback(zval *memc_obj, zend_fcall_info *fci, zend_fcall_info_cache *fcc, char *key, size_t key_len, zval *value);
+static memcached_return php_memc_do_cache_callback(zval *memc_obj, zend_fcall_info *fci, zend_fcall_info_cache *fcc, zend_string *key, zval *value);
 static int php_memc_do_result_callback(zval *memc_obj, zend_fcall_info *fci, zend_fcall_info_cache *fcc, memcached_result_st *result);
 static memcached_return php_memc_do_serverlist_callback(const memcached_st *ptr, php_memcached_instance_st instance, void *in_context);
 static memcached_return php_memc_do_stats_callback(const memcached_st *ptr, php_memcached_instance_st instance, void *in_context);
@@ -353,14 +353,14 @@ char *php_memc_printable_func (zend_fcall_info *fci, zend_fcall_info_cache *fci_
 	return buffer;
 }
 
-static zend_bool php_memcached_on_new_callback(zval *object, zend_fcall_info *fci, zend_fcall_info_cache *fci_cache, char *persistent_id, size_t persistent_id_len)
+static zend_bool php_memcached_on_new_callback(zval *object, zend_fcall_info *fci, zend_fcall_info_cache *fci_cache, zend_string *persistent_id)
 {
 	zend_bool ret = 1;
 	zval retval;
 	zval params[2];
 
 	if (persistent_id) {
-		ZVAL_STRINGL(&params[1], persistent_id, persistent_id_len);
+		ZVAL_STR(&params[1], persistent_id);
 	} else {
 		ZVAL_NULL(&params[1]);
 	}
@@ -479,7 +479,7 @@ static PHP_METHOD(Memcached, __construct)
 		i_obj->is_pristine = 1;
 
 		if (fci.size) { /* will be 0 when not available */
-			if (!php_memcached_on_new_callback(object, &fci, &fci_cache, persistent_id->val, persistent_id->len) || EG(exception)) {
+			if (!php_memcached_on_new_callback(object, &fci, &fci_cache, persistent_id) || EG(exception)) {
 				/* error calling or exception thrown from callback */
 				if (plist_key) {
 					zend_string_release(plist_key);
@@ -612,7 +612,7 @@ static void php_memc_get_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 		}
 
 		if (status == MEMCACHED_NOTFOUND && fci.size != 0) {
-			status = php_memc_do_cache_callback(getThis(), &fci, &fcc, key->val, key->len, return_value);
+			status = php_memc_do_cache_callback(getThis(), &fci, &fcc, key, return_value);
 		}
 
 		if (php_memc_handle_error(i_obj, status) < 0) {
@@ -1869,7 +1869,6 @@ PHP_METHOD(Memcached, incrementByKey)
 PHP_METHOD(Memcached, addServer)
 {
 	zend_string *host;
-	int   host_len;
 	long  port, weight = 0;
 	memcached_return status;
 	MEMC_METHOD_INIT_VARS;
@@ -3498,8 +3497,7 @@ zend_class_entry *php_memc_get_exception_base(int root)
 }
 
 static memcached_return php_memc_do_cache_callback(zval *zmemc_obj, zend_fcall_info *fci,
-	zend_fcall_info_cache *fcc, char *key,
-	size_t key_len, zval *value)
+	zend_fcall_info_cache *fcc, zend_string *key, zval *value)
 {
 	char *payload = NULL;
 	size_t payload_len = 0;
@@ -3514,7 +3512,7 @@ static memcached_return php_memc_do_cache_callback(zval *zmemc_obj, zend_fcall_i
 	memcached_return status = MEMCACHED_SUCCESS;
 	int result;
 
-	ZVAL_STRINGL(&z_key, key, key_len);
+	ZVAL_STR(&z_key, key);
 	ZVAL_NULL(value);
 	ZVAL_LONG(&z_expiration, 0);
 
@@ -3545,7 +3543,7 @@ static memcached_return php_memc_do_cache_callback(zval *zmemc_obj, zend_fcall_i
 			if (payload == NULL) {
 				status = (memcached_return)MEMC_RES_PAYLOAD_FAILURE;
 			} else {
-				rc = memcached_set(m_obj->memc, key, key_len, payload, payload_len, expiration, flags);
+				rc = memcached_set(m_obj->memc, key->val, key->len, payload, payload_len, expiration, flags);
 				if (rc == MEMCACHED_SUCCESS || rc == MEMCACHED_BUFFERED) {
 					status = rc;
 				}
@@ -3660,13 +3658,12 @@ PHP_METHOD(MemcachedServer, run)
 {
 	int i;
 	zend_bool rc;
-	char *address;
-	int address_len;
+	zend *address;
 
 	php_memc_server_t *intern;
 	intern = Z_MEMC_OBJ_P(getThis());
 
-	if (zend_parse_parameters(ZEND_NUM_ARGS(), "s", &address, &address_len) == FAILURE) {
+	if (zend_parse_parameters(ZEND_NUM_ARGS(), "S", &address) == FAILURE) {
 		return;
 	}
 

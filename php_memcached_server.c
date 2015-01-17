@@ -779,10 +779,10 @@ evutil_socket_t s_create_listening_socket (const char *spec)
 	return sock;
 }
 
-zend_bool php_memc_proto_handler_run (php_memc_proto_handler_t *handler, const char *address)
+zend_bool php_memc_proto_handler_run (php_memc_proto_handler_t *handler, zend_string *address)
 {
 	struct event *accept_event;
-	evutil_socket_t sock = s_create_listening_socket (address);
+	evutil_socket_t sock = s_create_listening_socket (address->val);
 
 	if (sock == -1) {
 		return 0;
