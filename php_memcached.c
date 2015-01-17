@@ -144,7 +144,7 @@
 
 #if (PHP_MAJOR_VERSION == 5) && (PHP_MINOR_VERSION < 3)
 #define zend_parse_parameters_none()                                        \
-	    zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "")
+	    zend_parse_parameters(ZEND_NUM_ARGS(), "")
 #endif
 
 
@@ -184,7 +184,7 @@ static inline php_memc_t *php_memc_fetch_object(zend_object *obj) {
 	i_obj = Z_MEMC_OBJ_P(object); \
 	m_obj = i_obj->obj; \
 	if (!m_obj) {	\
-		php_error_docref(NULL TSRMLS_CC, E_WARNING, "Memcached constructor was not called");	\
+		php_error_docref(NULL, E_WARNING, "Memcached constructor was not called");	\
 		return;	\
 	}
 
@@ -255,7 +255,7 @@ static PHP_INI_MH(OnUpdateCompressionType)
 	} else {
 		return FAILURE;
 	}
-	return OnUpdateString(entry, new_value, mh_arg1, mh_arg2, mh_arg3, stage TSRMLS_CC);
+	return OnUpdateString(entry, new_value, mh_arg1, mh_arg2, mh_arg3, stage);
 }
 
 static PHP_INI_MH(OnUpdateSerializer)
@@ -282,7 +282,7 @@ static PHP_INI_MH(OnUpdateSerializer)
 		return FAILURE;
 	}
 
-	return OnUpdateString(entry, new_value, mh_arg1, mh_arg2, mh_arg3, stage TSRMLS_CC);
+	return OnUpdateString(entry, new_value, mh_arg1, mh_arg2, mh_arg3, stage);
 }
 
 /* {{{ INI entries */
@@ -320,9 +320,9 @@ PHP_INI_END()
 /****************************************
   Forward declarations
 ****************************************/
-static int php_memc_handle_error(php_memc_t *i_obj, memcached_return status TSRMLS_DC);
-static char *php_memc_zval_to_payload(zval *value, size_t *payload_len, uint32_t *flags, enum memcached_serializer serializer, enum memcached_compression_type compression_type TSRMLS_DC);
-static int php_memc_zval_from_payload(zval *value, const char *payload, size_t payload_len, uint32_t flags, enum memcached_serializer serializer TSRMLS_DC);
+static int php_memc_handle_error(php_memc_t *i_obj, memcached_return status);
+static char *php_memc_zval_to_payload(zval *value, size_t *payload_len, uint32_t *flags, enum memcached_serializer serializer, enum memcached_compression_type compression_type);
+static int php_memc_zval_from_payload(zval *value, const char *payload, size_t payload_len, uint32_t flags, enum memcached_serializer serializer);
 static void php_memc_get_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key);
 static void php_memc_getMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key);
 static void php_memc_store_impl(INTERNAL_FUNCTION_PARAMETERS, int op, zend_bool by_key);
@@ -330,19 +330,19 @@ static void php_memc_setMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 static void php_memc_delete_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key);
 static void php_memc_deleteMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key);
 static void php_memc_getDelayed_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key);
-static memcached_return php_memc_do_cache_callback(zval *memc_obj, zend_fcall_info *fci, zend_fcall_info_cache *fcc, char *key, size_t key_len, zval *value TSRMLS_DC);
-static int php_memc_do_result_callback(zval *memc_obj, zend_fcall_info *fci, zend_fcall_info_cache *fcc, memcached_result_st *result TSRMLS_DC);
+static memcached_return php_memc_do_cache_callback(zval *memc_obj, zend_fcall_info *fci, zend_fcall_info_cache *fcc, char *key, size_t key_len, zval *value);
+static int php_memc_do_result_callback(zval *memc_obj, zend_fcall_info *fci, zend_fcall_info_cache *fcc, memcached_result_st *result);
 static memcached_return php_memc_do_serverlist_callback(const memcached_st *ptr, php_memcached_instance_st instance, void *in_context);
 static memcached_return php_memc_do_stats_callback(const memcached_st *ptr, php_memcached_instance_st instance, void *in_context);
 static memcached_return php_memc_do_version_callback(const memcached_st *ptr, php_memcached_instance_st instance, void *in_context);
-static void php_memc_destroy(struct memc_obj *m_obj, zend_bool persistent TSRMLS_DC);
+static void php_memc_destroy(struct memc_obj *m_obj, zend_bool persistent);
 
 /****************************************
   Method implementations
 ****************************************/
 
 
-char *php_memc_printable_func (zend_fcall_info *fci, zend_fcall_info_cache *fci_cache TSRMLS_DC)
+char *php_memc_printable_func (zend_fcall_info *fci, zend_fcall_info_cache *fci_cache)
 {
 	char *buffer = NULL;
 
@@ -359,7 +359,7 @@ char *php_memc_printable_func (zend_fcall_info *fci, zend_fcall_info_cache *fci_
 	return buffer;
 }
 
-static zend_bool php_memcached_on_new_callback(zval *object, zend_fcall_info *fci, zend_fcall_info_cache *fci_cache, char *persistent_id, size_t persistent_id_len TSRMLS_DC)
+static zend_bool php_memcached_on_new_callback(zval *object, zend_fcall_info *fci, zend_fcall_info_cache *fci_cache, char *persistent_id, size_t persistent_id_len)
 {
 	zend_bool ret = 1;
 	zval retval;
@@ -379,9 +379,9 @@ static zend_bool php_memcached_on_new_callback(zval *object, zend_fcall_info *fc
 	fci->retval         = &retval;
 	fci->no_separation  = 1;
 
-	if (zend_call_function(fci, fci_cache TSRMLS_CC) == FAILURE) {
-		char *buf = php_memc_printable_func (fci, fci_cache TSRMLS_CC);
-		php_error_docref(NULL TSRMLS_CC, E_WARNING, "Failed to invoke 'on_new' callback %s()", buf);
+	if (zend_call_function(fci, fci_cache) == FAILURE) {
+		char *buf = php_memc_printable_func (fci, fci_cache);
+		php_error_docref(NULL, E_WARNING, "Failed to invoke 'on_new' callback %s()", buf);
 		efree (buf);
 		ret = 0;
 	}
@@ -415,7 +415,7 @@ static PHP_METHOD(Memcached, __construct)
 	zend_fcall_info fci = {0};
 	zend_fcall_info_cache fci_cache;
 
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|s!f!s", &persistent_id, &persistent_id_len, &fci, &fci_cache, &conn_str, &conn_str_len) == FAILURE) {
+	if (zend_parse_parameters(ZEND_NUM_ARGS(), "|s!f!s", &persistent_id, &persistent_id_len, &fci, &fci_cache, &conn_str, &conn_str_len) == FAILURE) {
 		ZEND_CTOR_MAKE_NULL();
 		return;
 	}
@@ -445,7 +445,7 @@ static PHP_METHOD(Memcached, __construct)
 			if (plist_key) {
 				zend_string_release(plist_key);
 			}
-			php_error_docref(NULL TSRMLS_CC, E_ERROR, "out of memory: cannot allocate handle");
+			php_error_docref(NULL, E_ERROR, "out of memory: cannot allocate handle");
 			/* not reached */
 		}
 
@@ -458,12 +458,12 @@ static PHP_METHOD(Memcached, __construct)
 				}
 #ifdef HAVE_LIBMEMCACHED_CHECK_CONFIGURATION
 				if (libmemcached_check_configuration(conn_str, conn_str_len, error_buffer, sizeof(error_buffer)) != MEMCACHED_SUCCESS) {
-					php_error_docref(NULL TSRMLS_CC, E_ERROR, "configuration error %s", error_buffer);
+					php_error_docref(NULL, E_ERROR, "configuration error %s", error_buffer);
 				} else {
-					php_error_docref(NULL TSRMLS_CC, E_ERROR, "could not allocate libmemcached structure");
+					php_error_docref(NULL, E_ERROR, "could not allocate libmemcached structure");
 				}
 #else
-				php_error_docref(NULL TSRMLS_CC, E_ERROR, "could not allocate libmemcached structure");
+				php_error_docref(NULL, E_ERROR, "could not allocate libmemcached structure");
 #endif
 				/* not reached */
 			}
@@ -473,7 +473,7 @@ static PHP_METHOD(Memcached, __construct)
 				if (plist_key) {
 					zend_string_release(plist_key);
 				}
-				php_error_docref(NULL TSRMLS_CC, E_ERROR, "could not allocate libmemcached structure");
+				php_error_docref(NULL, E_ERROR, "could not allocate libmemcached structure");
 				/* not reached */
 			}
 		}
@@ -487,7 +487,7 @@ static PHP_METHOD(Memcached, __construct)
 		i_obj->is_pristine = 1;
 
 		if (fci.size) { /* will be 0 when not available */
-			if (!php_memcached_on_new_callback(object, &fci, &fci_cache, persistent_id, persistent_id_len TSRMLS_CC) || EG(exception)) {
+			if (!php_memcached_on_new_callback(object, &fci, &fci_cache, persistent_id, persistent_id_len) || EG(exception)) {
 				/* error calling or exception thrown from callback */
 				if (plist_key) {
 					zend_string_release(plist_key);
@@ -495,7 +495,7 @@ static PHP_METHOD(Memcached, __construct)
 
 				i_obj->obj = NULL;
 				if (is_persistent) {
-					php_memc_destroy(m_obj, is_persistent TSRMLS_CC);
+					php_memc_destroy(m_obj, is_persistent);
 				}
 
 				return;
@@ -512,7 +512,7 @@ static PHP_METHOD(Memcached, __construct)
 				if (plist_key) {
 					zend_string_release(plist_key);
 				}
-				php_error_docref(NULL TSRMLS_CC, E_ERROR, "could not register persistent entry");
+				php_error_docref(NULL, E_ERROR, "could not register persistent entry");
 				/* not reached */
 			}
 		}
@@ -562,12 +562,12 @@ static void php_memc_get_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 	MEMC_METHOD_INIT_VARS;
 
 	if (by_key) {
-		if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ss|f!zz", &server_key,
+		if (zend_parse_parameters(ZEND_NUM_ARGS(), "ss|f!zz", &server_key,
 								  &server_key_len, &key, &key_len, &fci, &fcc, &cas_token, &udf_flags) == FAILURE) {
 			return;
 		}
 	} else {
-		if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|f!zz", &key, &key_len,
+		if (zend_parse_parameters(ZEND_NUM_ARGS(), "s|f!zz", &key, &key_len,
 								  &fci, &fcc, &cas_token, &udf_flags) == FAILURE) {
 			return;
 		}
@@ -600,7 +600,7 @@ static void php_memc_get_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 		memcached_behavior_set(m_obj->memc, MEMCACHED_BEHAVIOR_SUPPORT_CAS, orig_cas_flag);
 	}
 
-	if (php_memc_handle_error(i_obj, status TSRMLS_CC) < 0) {
+	if (php_memc_handle_error(i_obj, status) < 0) {
 		RETURN_FROM_GET;
 	}
 
@@ -622,10 +622,10 @@ static void php_memc_get_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 		}
 
 		if (status == MEMCACHED_NOTFOUND && fci.size != 0) {
-			status = php_memc_do_cache_callback(getThis(), &fci, &fcc, key, key_len, return_value TSRMLS_CC);
+			status = php_memc_do_cache_callback(getThis(), &fci, &fcc, key, key_len, return_value);
 		}
 
-		if (php_memc_handle_error(i_obj, status TSRMLS_CC) < 0) {
+		if (php_memc_handle_error(i_obj, status) < 0) {
 			memcached_result_free(&result);
 			RETURN_FROM_GET;
 		}
@@ -651,7 +651,7 @@ static void php_memc_get_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 		cas     = memcached_result_cas(&result);
 	}
 
-	if (php_memc_zval_from_payload(return_value, payload, payload_len, flags, m_obj->serializer TSRMLS_CC) < 0) {
+	if (php_memc_zval_from_payload(return_value, payload, payload_len, flags, m_obj->serializer) < 0) {
 		memcached_result_free(&result);
 		i_obj->rescode = MEMC_RES_PAYLOAD_FAILURE;
 		RETURN_FROM_GET;
@@ -719,12 +719,12 @@ static void php_memc_getMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 	MEMC_METHOD_INIT_VARS;
 
 	if (by_key) {
-		if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sa/|zlz", &server_key,
+		if (zend_parse_parameters(ZEND_NUM_ARGS(), "sa/|zlz", &server_key,
 								  &server_key_len, &keys, &cas_tokens, &get_flags, &udf_flags) == FAILURE) {
 			return;
 		}
 	} else {
-		if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "a/|zlz", &keys, &cas_tokens, &get_flags, &udf_flags) == FAILURE) {
+		if (zend_parse_parameters(ZEND_NUM_ARGS(), "a/|zlz", &keys, &cas_tokens, &get_flags, &udf_flags) == FAILURE) {
 			return;
 		}
 	}
@@ -777,7 +777,7 @@ static void php_memc_getMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 
 	status = memcached_mget_by_key(m_obj->memc, server_key, server_key_len, mkeys, mkeys_len, i);
 	/* Handle error, but ignore, there might still be some result */
-	php_memc_handle_error(i_obj, status TSRMLS_CC);
+	php_memc_handle_error(i_obj, status);
 
 	/*
 	 * Restore the CAS support flag, but only if we had to turn it on.
@@ -825,7 +825,7 @@ static void php_memc_getMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 
 		if (status != MEMCACHED_SUCCESS) {
 			status = MEMCACHED_SOME_ERRORS;
-			php_memc_handle_error(i_obj, status TSRMLS_CC);
+			php_memc_handle_error(i_obj, status);
 			continue;
 		}
 
@@ -842,11 +842,11 @@ static void php_memc_getMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 		memcpy (res_key, tmp_key, res_key_len >= MEMCACHED_MAX_KEY ? MEMCACHED_MAX_KEY - 1 : res_key_len);
 		res_key [res_key_len] = '\0';
 
-		if (php_memc_zval_from_payload(&value, payload, payload_len, flags, m_obj->serializer TSRMLS_CC) < 0) {
+		if (php_memc_zval_from_payload(&value, payload, payload_len, flags, m_obj->serializer) < 0) {
 			zval_ptr_dtor(&value);
 			if (EG(exception)) {
 				status = MEMC_RES_PAYLOAD_FAILURE;
-				php_memc_handle_error(i_obj, status TSRMLS_CC);
+				php_memc_handle_error(i_obj, status);
 				memcached_quit(m_obj->memc);
 
 				break;
@@ -924,12 +924,12 @@ static void php_memc_getDelayed_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_
 	MEMC_METHOD_INIT_VARS;
 
 	if (by_key) {
-		if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sa/|bf!", &server_key,
+		if (zend_parse_parameters(ZEND_NUM_ARGS(), "sa/|bf!", &server_key,
 								  &server_key_len, &keys, &with_cas, &fci, &fcc) == FAILURE) {
 			return;
 		}
 	} else {
-		if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "a/|bf!", &keys, &with_cas,
+		if (zend_parse_parameters(ZEND_NUM_ARGS(), "a/|bf!", &keys, &with_cas,
 								  &fci, &fcc) == FAILURE) {
 			return;
 		}
@@ -990,7 +990,7 @@ static void php_memc_getDelayed_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_
 
 	efree(mkeys);
 	efree(mkeys_len);
-	if (php_memc_handle_error(i_obj, status TSRMLS_CC) < 0) {
+	if (php_memc_handle_error(i_obj, status) < 0) {
 		zval_dtor(return_value);
 		RETURN_FALSE;
 	}
@@ -1004,7 +1004,7 @@ static void php_memc_getDelayed_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_
 
 		memcached_result_create(m_obj->memc, &result);
 		while ((memcached_fetch_result(m_obj->memc, &result, &status)) != NULL) {
-			if (php_memc_do_result_callback(getThis(), &fci, &fcc, &result TSRMLS_CC) < 0) {
+			if (php_memc_do_result_callback(getThis(), &fci, &fcc, &result) < 0) {
 				status = MEMCACHED_FAILURE;
 				break;
 			}
@@ -1015,7 +1015,7 @@ static void php_memc_getDelayed_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_
 		if (status == MEMCACHED_END) {
 			status = MEMCACHED_SUCCESS;
 		}
-		if (php_memc_handle_error(i_obj, status TSRMLS_CC) < 0) {
+		if (php_memc_handle_error(i_obj, status) < 0) {
 			RETURN_FALSE;
 		}
 	}
@@ -1048,7 +1048,7 @@ PHP_METHOD(Memcached, fetch)
 
 	memcached_result_create(m_obj->memc, &result);
 	if ((memcached_fetch_result(m_obj->memc, &result, &status)) == NULL) {
-		php_memc_handle_error(i_obj, status TSRMLS_CC);
+		php_memc_handle_error(i_obj, status);
 		memcached_result_free(&result);
 		RETURN_FALSE;
 	}
@@ -1060,7 +1060,7 @@ PHP_METHOD(Memcached, fetch)
 	res_key_len = memcached_result_key_length(&result);
 	cas         = memcached_result_cas(&result);
 
-	if (php_memc_zval_from_payload(&value, payload, payload_len, flags, m_obj->serializer TSRMLS_CC) < 0) {
+	if (php_memc_zval_from_payload(&value, payload, payload_len, flags, m_obj->serializer) < 0) {
 		memcached_result_free(&result);
 		zval_ptr_dtor(&value);
 		i_obj->rescode = MEMC_RES_PAYLOAD_FAILURE;
@@ -1115,7 +1115,7 @@ PHP_METHOD(Memcached, fetchAll)
 		res_key_len = memcached_result_key_length(&result);
 		cas         = memcached_result_cas(&result);
 
-		if (php_memc_zval_from_payload(&value, payload, payload_len, flags, m_obj->serializer TSRMLS_CC) < 0) {
+		if (php_memc_zval_from_payload(&value, payload, payload_len, flags, m_obj->serializer) < 0) {
 			memcached_result_free(&result);
 			zval_ptr_dtor(&value);
 			zval_dtor(return_value);
@@ -1138,7 +1138,7 @@ PHP_METHOD(Memcached, fetchAll)
 
 	memcached_result_free(&result);
 
-	if (status != MEMCACHED_END && php_memc_handle_error(i_obj, status TSRMLS_CC) < 0) {
+	if (status != MEMCACHED_END && php_memc_handle_error(i_obj, status) < 0) {
 		zval_dtor(return_value);
 		RETURN_FALSE;
 	}
@@ -1242,12 +1242,12 @@ static void php_memc_setMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 	MEMC_METHOD_INIT_VARS;
 
 	if (by_key) {
-		if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sa|ll", &server_key,
+		if (zend_parse_parameters(ZEND_NUM_ARGS(), "sa|ll", &server_key,
 								  &server_key_len, &entries, &expiration, &udf_flags) == FAILURE) {
 			return;
 		}
 	} else {
-		if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "a|ll", &entries, &expiration, &udf_flags) == FAILURE) {
+		if (zend_parse_parameters(ZEND_NUM_ARGS(), "a|ll", &entries, &expiration, &udf_flags) == FAILURE) {
 			return;
 		}
 	}
@@ -1261,7 +1261,7 @@ static void php_memc_setMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 	 */
 	if (udf_flags > 0) {
 		if ((uint32_t) udf_flags > MEMC_VAL_USER_FLAGS_MAX) {
-			php_error_docref(NULL TSRMLS_CC, E_WARNING, "udf_flags will be limited to %u", MEMC_VAL_USER_FLAGS_MAX);
+			php_error_docref(NULL, E_WARNING, "udf_flags will be limited to %u", MEMC_VAL_USER_FLAGS_MAX);
 		}
 	}
 
@@ -1288,7 +1288,7 @@ static void php_memc_setMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 			MEMC_VAL_SET_USER_FLAGS(flags, ((uint32_t) udf_flags));
 		}
 
-		payload = php_memc_zval_to_payload(entry, &payload_len, &flags, m_obj->serializer, m_obj->compression_type TSRMLS_CC);
+		payload = php_memc_zval_to_payload(entry, &payload_len, &flags, m_obj->serializer, m_obj->compression_type);
 		if (payload == NULL) {
 			i_obj->rescode = MEMC_RES_PAYLOAD_FAILURE;
 			zend_string_release(str_key);
@@ -1304,7 +1304,7 @@ retry:
 			zend_string_release(str_key);
 		}
 
-		if (php_memc_handle_error(i_obj, status TSRMLS_CC) < 0) {
+		if (php_memc_handle_error(i_obj, status) < 0) {
 			PHP_MEMC_FAILOVER_RETRY
 			zend_string_release(str_key);
 			efree(payload);
@@ -1401,33 +1401,33 @@ static void php_memc_store_impl(INTERNAL_FUNCTION_PARAMETERS, int op, zend_bool 
 
 	if (by_key) {
 		if (op == MEMC_OP_APPEND || op == MEMC_OP_PREPEND) {
-			if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "SSS", &server_key, &key, &s_value) == FAILURE) {
+			if (zend_parse_parameters(ZEND_NUM_ARGS(), "SSS", &server_key, &key, &s_value) == FAILURE) {
 				return;
 			}
 			value = &s_zvalue;
 			ZVAL_STR(value, &s_value);
 		} else if (op == MEMC_OP_TOUCH) {
-			if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ss|l", &server_key, &key, &expiration) == FAILURE) {
+			if (zend_parse_parameters(ZEND_NUM_ARGS(), "ss|l", &server_key, &key, &expiration) == FAILURE) {
 				return;
 			}
 		} else {
-			if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ssz|ll", &server_key, &key, &value, &expiration, &udf_flags) == FAILURE) {
+			if (zend_parse_parameters(ZEND_NUM_ARGS(), "ssz|ll", &server_key, &key, &value, &expiration, &udf_flags) == FAILURE) {
 				return;
 			}
 		}
 	} else {
 		if (op == MEMC_OP_APPEND || op == MEMC_OP_PREPEND) {
-			if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "SS", &key, &s_value) == FAILURE) {
+			if (zend_parse_parameters(ZEND_NUM_ARGS(), "SS", &key, &s_value) == FAILURE) {
 				return;
 			}
 			value = &s_zvalue;
 			ZVAL_STR(value, &s_value);
 		} else if (op == MEMC_OP_TOUCH) {
-			if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "S|l", &key, &expiration) == FAILURE) {
+			if (zend_parse_parameters(ZEND_NUM_ARGS(), "S|l", &key, &expiration) == FAILURE) {
 				return;
 			}
 		} else {
-			if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "Sz|ll", &key, &value, &expiration, &udf_flags) == FAILURE) {
+			if (zend_parse_parameters(ZEND_NUM_ARGS(), "Sz|ll", &key, &value, &expiration, &udf_flags) == FAILURE) {
 				return;
 			}
 		}
@@ -1448,7 +1448,7 @@ static void php_memc_store_impl(INTERNAL_FUNCTION_PARAMETERS, int op, zend_bool 
 		 * append/prepend new data, and store it again.
 		 */
 		if (op == MEMC_OP_APPEND || op == MEMC_OP_PREPEND) {
-			php_error_docref(NULL TSRMLS_CC, E_WARNING, "cannot append/prepend with compression turned on");
+			php_error_docref(NULL, E_WARNING, "cannot append/prepend with compression turned on");
 			return;
 		}
 		MEMC_VAL_SET_FLAG(flags, MEMC_VAL_COMPRESSED);
@@ -1460,7 +1460,7 @@ static void php_memc_store_impl(INTERNAL_FUNCTION_PARAMETERS, int op, zend_bool 
 	 */
 	if (udf_flags > 0) {
 		if ((uint32_t) udf_flags > MEMC_VAL_USER_FLAGS_MAX) {
-			php_error_docref(NULL TSRMLS_CC, E_WARNING, "udf_flags will be limited to %u", MEMC_VAL_USER_FLAGS_MAX);
+			php_error_docref(NULL, E_WARNING, "udf_flags will be limited to %u", MEMC_VAL_USER_FLAGS_MAX);
 		}
 		MEMC_VAL_SET_USER_FLAGS(flags, ((uint32_t) udf_flags));
 	}
@@ -1468,11 +1468,11 @@ static void php_memc_store_impl(INTERNAL_FUNCTION_PARAMETERS, int op, zend_bool 
 	if (op == MEMC_OP_TOUCH) {
 #if defined(LIBMEMCACHED_VERSION_HEX) && LIBMEMCACHED_VERSION_HEX < 0x01000016
 		if (memcached_behavior_get(m_obj->memc, MEMCACHED_BEHAVIOR_BINARY_PROTOCOL)) {
-			php_error_docref(NULL TSRMLS_CC, E_WARNING, "using touch command with binary protocol is not recommended with libmemcached versions below 1.0.16");
+			php_error_docref(NULL, E_WARNING, "using touch command with binary protocol is not recommended with libmemcached versions below 1.0.16");
 		}
 #endif
 	} else {
-		payload = php_memc_zval_to_payload(value, &payload_len, &flags, m_obj->serializer, m_obj->compression_type TSRMLS_CC);
+		payload = php_memc_zval_to_payload(value, &payload_len, &flags, m_obj->serializer, m_obj->compression_type);
 		if (payload == NULL) {
 			i_obj->rescode = MEMC_RES_PAYLOAD_FAILURE;
 			RETURN_FALSE;
@@ -1541,7 +1541,7 @@ retry:
 			break;
 	}
 
-	if (php_memc_handle_error(i_obj, status TSRMLS_CC) < 0) {
+	if (php_memc_handle_error(i_obj, status) < 0) {
 		PHP_MEMC_FAILOVER_RETRY
 		RETVAL_FALSE;
 	} else {
@@ -1571,12 +1571,12 @@ static void php_memc_cas_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 	MEMC_METHOD_INIT_VARS;
 
 	if (by_key) {
-		if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "dSSz|ll", &cas_d, &server_key, &key,
+		if (zend_parse_parameters(ZEND_NUM_ARGS(), "dSSz|ll", &cas_d, &server_key, &key,
 								  &value, &expiration, &udf_flags) == FAILURE) {
 			return;
 		}
 	} else {
-		if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "dSz|ll", &cas_d, &key, &value,
+		if (zend_parse_parameters(ZEND_NUM_ARGS(), "dSz|ll", &cas_d, &key, &value,
 								  &expiration, &udf_flags) == FAILURE) {
 			return;
 		}
@@ -1602,12 +1602,12 @@ static void php_memc_cas_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 	 */
 	if (udf_flags > 0) {
 		if ((uint32_t) udf_flags > MEMC_VAL_USER_FLAGS_MAX) {
-			php_error_docref(NULL TSRMLS_CC, E_WARNING, "udf_flags will be limited to %u", MEMC_VAL_USER_FLAGS_MAX);
+			php_error_docref(NULL, E_WARNING, "udf_flags will be limited to %u", MEMC_VAL_USER_FLAGS_MAX);
 		}
 		MEMC_VAL_SET_USER_FLAGS(flags, ((uint32_t) udf_flags));
 	}
 
-	payload = php_memc_zval_to_payload(value, &payload_len, &flags, m_obj->serializer, m_obj->compression_type TSRMLS_CC);
+	payload = php_memc_zval_to_payload(value, &payload_len, &flags, m_obj->serializer, m_obj->compression_type);
 	if (payload == NULL) {
 		i_obj->rescode = MEMC_RES_PAYLOAD_FAILURE;
 		RETURN_FALSE;
@@ -1619,7 +1619,7 @@ static void php_memc_cas_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 		status = memcached_cas(m_obj->memc, key.val, key.len, payload, payload_len, expiration, flags, cas);
 	}
 	efree(payload);
-	if (php_memc_handle_error(i_obj, status TSRMLS_CC) < 0) {
+	if (php_memc_handle_error(i_obj, status) < 0) {
 		RETURN_FALSE;
 	}
 
@@ -1687,12 +1687,12 @@ static void php_memc_delete_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 	MEMC_METHOD_INIT_VARS;
 
 	if (by_key) {
-		if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ss|l", &server_key,
+		if (zend_parse_parameters(ZEND_NUM_ARGS(), "ss|l", &server_key,
 								  &server_key_len, &key, &key_len, &expiration) == FAILURE) {
 			return;
 		}
 	} else {
-		if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|l", &key, &key_len,
+		if (zend_parse_parameters(ZEND_NUM_ARGS(), "s|l", &key, &key_len,
 								  &expiration) == FAILURE) {
 			return;
 		}
@@ -1711,7 +1711,7 @@ static void php_memc_delete_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 	status = memcached_delete_by_key(m_obj->memc, server_key, server_key_len, key,
 									 key_len, expiration);
 
-	if (php_memc_handle_error(i_obj, status TSRMLS_CC) < 0) {
+	if (php_memc_handle_error(i_obj, status) < 0) {
 		RETURN_FALSE;
 	}
 
@@ -1731,11 +1731,11 @@ static void php_memc_deleteMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by
 	MEMC_METHOD_INIT_VARS;
 
 	if (by_key) {
-		if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "Sa/|l", &server_key, &entries, &expiration) == FAILURE) {
+		if (zend_parse_parameters(ZEND_NUM_ARGS(), "Sa/|l", &server_key, &entries, &expiration) == FAILURE) {
 			return;
 		}
 	} else {
-		if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "a/|l", &entries, &expiration) == FAILURE) {
+		if (zend_parse_parameters(ZEND_NUM_ARGS(), "a/|l", &entries, &expiration) == FAILURE) {
 			return;
 		}
 	}
@@ -1760,7 +1760,7 @@ static void php_memc_deleteMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by
 		}
 
 
-		if (php_memc_handle_error(i_obj, status TSRMLS_CC) < 0) {
+		if (php_memc_handle_error(i_obj, status) < 0) {
 			add_assoc_long(return_value, Z_STRVAL_P(entry), status);
 		} else {
 			add_assoc_bool(return_value, Z_STRVAL_P(entry), 1);
@@ -1785,11 +1785,11 @@ static void php_memc_incdec_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key,
 	MEMC_METHOD_INIT_VARS;
 
 	if (!by_key) {
-		if (zend_parse_parameters(n_args TSRMLS_CC, "S|lll", &key, &offset, &initial, &expiry) == FAILURE) {
+		if (zend_parse_parameters(n_args, "S|lll", &key, &offset, &initial, &expiry) == FAILURE) {
 			return;
 		}
 	} else {
-		if (zend_parse_parameters(n_args TSRMLS_CC, "SS|lll", &server_key, &key, &offset, &initial, &expiry) == FAILURE) {
+		if (zend_parse_parameters(n_args, "SS|lll", &server_key, &key, &offset, &initial, &expiry) == FAILURE) {
 			return;
 		}
 	}
@@ -1803,7 +1803,7 @@ static void php_memc_incdec_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key,
 	}
 
 	if (offset < 0) {
-		php_error_docref(NULL TSRMLS_CC, E_WARNING, "offset has to be > 0");
+		php_error_docref(NULL, E_WARNING, "offset has to be > 0");
 		RETURN_FALSE;
 	}
 
@@ -1824,7 +1824,7 @@ retry:
 		}
 	} else {
 		if (!memcached_behavior_get(m_obj->memc, MEMCACHED_BEHAVIOR_BINARY_PROTOCOL)) {
-			php_error_docref(NULL TSRMLS_CC, E_WARNING, "Initial value is only supported with binary protocol");
+			php_error_docref(NULL, E_WARNING, "Initial value is only supported with binary protocol");
 			RETURN_FALSE;
 		}
 		if (by_key) {
@@ -1842,7 +1842,7 @@ retry:
 		}
 	}
 
-	if (php_memc_handle_error(i_obj, status TSRMLS_CC) < 0) {
+	if (php_memc_handle_error(i_obj, status) < 0) {
 		PHP_MEMC_FAILOVER_RETRY
 		RETURN_FALSE;
 	}
@@ -1893,7 +1893,7 @@ PHP_METHOD(Memcached, addServer)
 	memcached_return status;
 	MEMC_METHOD_INIT_VARS;
 
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sl|l", &host, &host_len,
+	if (zend_parse_parameters(ZEND_NUM_ARGS(), "sl|l", &host, &host_len,
 							  &port, &weight) == FAILURE) {
 		return;
 	}
@@ -1913,7 +1913,7 @@ PHP_METHOD(Memcached, addServer)
 	status = memcached_server_add_with_weight(m_obj->memc, host, port, weight);
 #endif
 
-	if (php_memc_handle_error(i_obj, status TSRMLS_CC) < 0) {
+	if (php_memc_handle_error(i_obj, status) < 0) {
 		RETURN_FALSE;
 	}
 
@@ -1935,7 +1935,7 @@ PHP_METHOD(Memcached, addServers)
 	memcached_return status;
 	MEMC_METHOD_INIT_VARS;
 
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "a/", &servers) == FAILURE) {
+	if (zend_parse_parameters(ZEND_NUM_ARGS(), "a/", &servers) == FAILURE) {
 		return;
 	}
 
@@ -1944,7 +1944,7 @@ PHP_METHOD(Memcached, addServers)
 
 	ZEND_HASH_FOREACH_VAL (Z_ARRVAL_P(servers), entry) {
 		if (Z_TYPE_P(entry) != IS_ARRAY) {
-			php_error_docref(NULL TSRMLS_CC, E_WARNING, "server list entry #%d is not an array", i+1);
+			php_error_docref(NULL, E_WARNING, "server list entry #%d is not an array", i+1);
 			i++;
 			continue;
 		}
@@ -1956,7 +1956,7 @@ PHP_METHOD(Memcached, addServers)
 
 			/* Check that we have a host */
 			if ((z_host = zend_hash_get_current_data_ex(Z_ARRVAL_P(entry), &pos)) == NULL) {
-				php_error_docref(NULL TSRMLS_CC, E_WARNING, "could not get server host for entry #%d", i+1);
+				php_error_docref(NULL, E_WARNING, "could not get server host for entry #%d", i+1);
 				i++;
 				continue;
 			}
@@ -1964,7 +1964,7 @@ PHP_METHOD(Memcached, addServers)
 			/* Check that we have a port */
 			if (zend_hash_move_forward_ex(Z_ARRVAL_P(entry), &pos) == FAILURE ||
 			    (z_port = zend_hash_get_current_data_ex(Z_ARRVAL_P(entry), &pos)) == NULL) {
-				php_error_docref(NULL TSRMLS_CC, E_WARNING, "could not get server port for entry #%d", i+1);
+				php_error_docref(NULL, E_WARNING, "could not get server port for entry #%d", i+1);
 				i++;
 				continue;
 			}
@@ -1977,7 +1977,7 @@ PHP_METHOD(Memcached, addServers)
 				/* Try to get weight */
 				if (zend_hash_move_forward_ex(Z_ARRVAL_P(entry), &pos) == FAILURE ||
 					(z_weight = zend_hash_get_current_data_ex(Z_ARRVAL_P(entry), &pos)) == NULL) {
-					php_error_docref(NULL TSRMLS_CC, E_WARNING, "could not get server weight for entry #%d", i+1);
+					php_error_docref(NULL, E_WARNING, "could not get server weight for entry #%d", i+1);
 				}
 
 				convert_to_long_ex(z_weight);
@@ -1987,19 +1987,19 @@ PHP_METHOD(Memcached, addServers)
 			list = memcached_server_list_append_with_weight(list, Z_STRVAL_P(z_host),
 				Z_LVAL_P(z_port), weight, &status);
 
-			if (php_memc_handle_error(i_obj, status TSRMLS_CC) == 0) {
+			if (php_memc_handle_error(i_obj, status) == 0) {
 				i++;
 				continue;
 			}
 		}
 		i++;
 		/* catch-all for all errors */
-		php_error_docref(NULL TSRMLS_CC, E_WARNING, "could not add entry #%d to the server list", i+1);
+		php_error_docref(NULL, E_WARNING, "could not add entry #%d to the server list", i+1);
 	} ZEND_HASH_FOREACH_END();
 
 	status = memcached_server_push(m_obj->memc, list);
 	memcached_server_list_free(list);
-	if (php_memc_handle_error(i_obj, status TSRMLS_CC) < 0) {
+	if (php_memc_handle_error(i_obj, status) < 0) {
 		RETURN_FALSE;
 	}
 
@@ -2037,7 +2037,7 @@ PHP_METHOD(Memcached, getServerByKey)
 	memcached_return error;
 	MEMC_METHOD_INIT_VARS;
 
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "S", &server_key) == FAILURE) {
+	if (zend_parse_parameters(ZEND_NUM_ARGS(), "S", &server_key) == FAILURE) {
 		return;
 	}
 
@@ -2051,7 +2051,7 @@ PHP_METHOD(Memcached, getServerByKey)
 
 	server_instance = memcached_server_by_key(m_obj->memc, server_key.val, server_key.len, &error);
 	if (server_instance == NULL) {
-		php_memc_handle_error(i_obj, error TSRMLS_CC);
+		php_memc_handle_error(i_obj, error);
 		RETURN_FALSE;
 	}
 
@@ -2208,7 +2208,7 @@ PHP_METHOD(Memcached, getStats)
 	}
 
 	stats = memcached_stat(m_obj->memc, NULL, &status);
-	php_memc_handle_error(i_obj, status TSRMLS_CC);
+	php_memc_handle_error(i_obj, status);
 	if (stats == NULL) {
 		RETURN_FALSE;
 	} else if (status != MEMCACHED_SUCCESS && status != MEMCACHED_SOME_ERRORS) {
@@ -2246,7 +2246,7 @@ PHP_METHOD(Memcached, getVersion)
 	array_init(return_value);
 
 	status = memcached_version(m_obj->memc);
-	if (php_memc_handle_error(i_obj, status TSRMLS_CC) < 0) {
+	if (php_memc_handle_error(i_obj, status) < 0) {
 		zval_dtor(return_value);
 		RETURN_FALSE;
 	}
@@ -2280,7 +2280,7 @@ PHP_METHOD(Memcached, getAllKeys)
 
 	array_init(return_value);
 	rc = memcached_dump(m_obj->memc, callback, return_value, 1);
-	if (php_memc_handle_error(i_obj, rc TSRMLS_CC) < 0) {
+	if (php_memc_handle_error(i_obj, rc) < 0) {
 		zval_dtor(return_value);
 		RETURN_FALSE;
 	}
@@ -2295,7 +2295,7 @@ static PHP_METHOD(Memcached, flush)
 	memcached_return status;
 	MEMC_METHOD_INIT_VARS;
 
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|l", &delay) == FAILURE) {
+	if (zend_parse_parameters(ZEND_NUM_ARGS(), "|l", &delay) == FAILURE) {
 		return;
 	}
 
@@ -2303,7 +2303,7 @@ static PHP_METHOD(Memcached, flush)
 	i_obj->rescode = MEMCACHED_SUCCESS;
 
 	status = memcached_flush(m_obj->memc, delay);
-	if (php_memc_handle_error(i_obj, status TSRMLS_CC) < 0) {
+	if (php_memc_handle_error(i_obj, status) < 0) {
 		RETURN_FALSE;
 	}
 
@@ -2320,7 +2320,7 @@ static PHP_METHOD(Memcached, getOption)
 	memcached_behavior flag;
 	MEMC_METHOD_INIT_VARS;
 
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "l", &option) == FAILURE) {
+	if (zend_parse_parameters(ZEND_NUM_ARGS(), "l", &option) == FAILURE) {
 		return;
 	}
 
@@ -2361,7 +2361,7 @@ static PHP_METHOD(Memcached, getOption)
 		case MEMCACHED_BEHAVIOR_SOCKET_SEND_SIZE:
 		case MEMCACHED_BEHAVIOR_SOCKET_RECV_SIZE:
 			if (memcached_server_count(m_obj->memc) == 0) {
-				php_error_docref(NULL TSRMLS_CC, E_WARNING, "no servers defined");
+				php_error_docref(NULL, E_WARNING, "no servers defined");
 				return;
 			}
 
@@ -2376,7 +2376,7 @@ static PHP_METHOD(Memcached, getOption)
 }
 /* }}} */
 
-static int php_memc_set_option(php_memc_t *i_obj, long option, zval *value TSRMLS_DC)
+static int php_memc_set_option(php_memc_t *i_obj, long option, zval *value)
 {
 	memcached_return rc = MEMCACHED_FAILURE;
 	memcached_behavior flag;
@@ -2423,7 +2423,7 @@ static int php_memc_set_option(php_memc_t *i_obj, long option, zval *value TSRML
 			}
 			if (memcached_callback_set(m_obj->memc, MEMCACHED_CALLBACK_PREFIX_KEY, key) == MEMCACHED_BAD_KEY_PROVIDED) {
 				i_obj->rescode = MEMCACHED_INVALID_ARGUMENTS;
-				php_error_docref(NULL TSRMLS_CC, E_WARNING, "bad key provided");
+				php_error_docref(NULL, E_WARNING, "bad key provided");
 				return 0;
 			}
 		}
@@ -2435,8 +2435,8 @@ static int php_memc_set_option(php_memc_t *i_obj, long option, zval *value TSRML
 			convert_to_long(value);
 			rc = memcached_behavior_set(m_obj->memc, flag, (uint64_t) Z_LVAL_P(value));
 
-			if (php_memc_handle_error(i_obj, rc TSRMLS_CC) < 0) {
-				php_error_docref(NULL TSRMLS_CC, E_WARNING, "error setting memcached option: %s", memcached_strerror (m_obj->memc, rc));
+			if (php_memc_handle_error(i_obj, rc) < 0) {
+				php_error_docref(NULL, E_WARNING, "error setting memcached option: %s", memcached_strerror (m_obj->memc, rc));
 				return 0;
 			}
 
@@ -2485,7 +2485,7 @@ static int php_memc_set_option(php_memc_t *i_obj, long option, zval *value TSRML
 			} else {
 				m_obj->serializer = SERIALIZER_PHP;
 				i_obj->rescode = MEMCACHED_INVALID_ARGUMENTS;
-				php_error_docref(NULL TSRMLS_CC, E_WARNING, "invalid serializer provided");
+				php_error_docref(NULL, E_WARNING, "invalid serializer provided");
 				return 0;
 			}
 			break;
@@ -2515,8 +2515,8 @@ static int php_memc_set_option(php_memc_t *i_obj, long option, zval *value TSRML
 				}
 			}
 
-			if (php_memc_handle_error(i_obj, rc TSRMLS_CC) < 0) {
-				php_error_docref(NULL TSRMLS_CC, E_WARNING, "error setting memcached option: %s", memcached_strerror (m_obj->memc, rc));
+			if (php_memc_handle_error(i_obj, rc) < 0) {
+				php_error_docref(NULL, E_WARNING, "error setting memcached option: %s", memcached_strerror (m_obj->memc, rc));
 				return 0;
 			}
 			break;
@@ -2525,7 +2525,7 @@ static int php_memc_set_option(php_memc_t *i_obj, long option, zval *value TSRML
 }
 
 static
-uint32_t *s_zval_to_uint32_array (zval *input, size_t *num_elements TSRMLS_DC)
+uint32_t *s_zval_to_uint32_array (zval *input, size_t *num_elements)
 {
 	zval *pzval;
 	uint32_t *retval;
@@ -2557,7 +2557,7 @@ uint32_t *s_zval_to_uint32_array (zval *input, size_t *num_elements TSRMLS_DC)
 		}
 
 		if (value < 0) {
-			php_error_docref(NULL TSRMLS_CC, E_WARNING, "the map must contain positive integers");
+			php_error_docref(NULL, E_WARNING, "the map must contain positive integers");
 			efree (retval);
 			*num_elements = 0;
 			return NULL;
@@ -2583,35 +2583,35 @@ PHP_METHOD(Memcached, setBucket)
 	memcached_return rc;
 	MEMC_METHOD_INIT_VARS;
 
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "aa!l", &zserver_map, &zforward_map, &replicas) == FAILURE) {
+	if (zend_parse_parameters(ZEND_NUM_ARGS(), "aa!l", &zserver_map, &zforward_map, &replicas) == FAILURE) {
 		return;
 	}
 
 	MEMC_METHOD_FETCH_OBJECT;
 
 	if (zend_hash_num_elements (Z_ARRVAL_P(zserver_map)) == 0) {
-		php_error_docref(NULL TSRMLS_CC, E_WARNING, "server map cannot be empty");
+		php_error_docref(NULL, E_WARNING, "server map cannot be empty");
 		RETURN_FALSE;
 	}
 
 	if (zforward_map && zend_hash_num_elements (Z_ARRVAL_P(zserver_map)) != zend_hash_num_elements (Z_ARRVAL_P(zforward_map))) {
-		php_error_docref(NULL TSRMLS_CC, E_WARNING, "forward_map length must match the server_map length");
+		php_error_docref(NULL, E_WARNING, "forward_map length must match the server_map length");
 		RETURN_FALSE;
 	}
 
 	if (replicas < 0) {
-		php_error_docref(NULL TSRMLS_CC, E_WARNING, "replicas must be larger than zero");
+		php_error_docref(NULL, E_WARNING, "replicas must be larger than zero");
 		RETURN_FALSE;
 	}
 
-	server_map = s_zval_to_uint32_array (zserver_map, &server_map_len TSRMLS_CC);
+	server_map = s_zval_to_uint32_array (zserver_map, &server_map_len);
 
 	if (!server_map) {
 		RETURN_FALSE;
 	}
 
 	if (zforward_map) {
-		forward_map = s_zval_to_uint32_array (zforward_map, &forward_map_len TSRMLS_CC);
+		forward_map = s_zval_to_uint32_array (zforward_map, &forward_map_len);
 
 		if (!forward_map) {
 			efree (server_map);
@@ -2621,7 +2621,7 @@ PHP_METHOD(Memcached, setBucket)
 
 	rc = memcached_bucket_set (m_obj->memc, server_map, forward_map, (uint32_t) server_map_len, replicas);
 
-	if (php_memc_handle_error(i_obj, rc TSRMLS_CC) < 0) {
+	if (php_memc_handle_error(i_obj, rc) < 0) {
 		retval = 0;;
 	}
 
@@ -2646,7 +2646,7 @@ static PHP_METHOD(Memcached, setOptions)
 
 	MEMC_METHOD_INIT_VARS;
 
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "a", &options) == FAILURE) {
+	if (zend_parse_parameters(ZEND_NUM_ARGS(), "a", &options) == FAILURE) {
 		return;
 	}
 
@@ -2654,13 +2654,13 @@ static PHP_METHOD(Memcached, setOptions)
 
 	ZEND_HASH_FOREACH_KEY_VAL(Z_ARRVAL_P(options), key_index, key, value) {
 		if (key) {
-			php_error_docref(NULL TSRMLS_CC, E_WARNING, "invalid configuration option");
+			php_error_docref(NULL, E_WARNING, "invalid configuration option");
 			ok = 0;
 		} else {
 			zval copy;
 			ZVAL_DUP(&copy, value);
 
-			if (!php_memc_set_option(i_obj, (long) key_index, &copy TSRMLS_CC)) {
+			if (!php_memc_set_option(i_obj, (long) key_index, &copy)) {
 				ok = 0;
 			}
 
@@ -2680,13 +2680,13 @@ static PHP_METHOD(Memcached, setOption)
 	zval *value;
 	MEMC_METHOD_INIT_VARS;
 
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "lz/", &option, &value) == FAILURE) {
+	if (zend_parse_parameters(ZEND_NUM_ARGS(), "lz/", &option, &value) == FAILURE) {
 		return;
 	}
 
 	MEMC_METHOD_FETCH_OBJECT;
 
-	RETURN_BOOL(php_memc_set_option(i_obj, option, value TSRMLS_CC));
+	RETURN_BOOL(php_memc_set_option(i_obj, option, value));
 }
 /* }}} */
 
@@ -2699,25 +2699,25 @@ static PHP_METHOD(Memcached, setSaslAuthData)
 	memcached_return status;
 	zend_string user, pass;
 
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "SS", &user, &pass) == FAILURE) {
+	if (zend_parse_parameters(ZEND_NUM_ARGS(), "SS", &user, &pass) == FAILURE) {
 		return;
 	}
 
 	if (!MEMC_G(use_sasl)) {
-		php_error_docref(NULL TSRMLS_CC, E_WARNING, "SASL support (memcached.use_sasl) isn't enabled in php.ini");
+		php_error_docref(NULL, E_WARNING, "SASL support (memcached.use_sasl) isn't enabled in php.ini");
 		RETURN_FALSE;
 	}
 
 	MEMC_METHOD_FETCH_OBJECT;
 
 	if (!memcached_behavior_get(m_obj->memc, MEMCACHED_BEHAVIOR_BINARY_PROTOCOL)) {
-		php_error_docref(NULL TSRMLS_CC, E_WARNING, "SASL is only supported with binary protocol");
+		php_error_docref(NULL, E_WARNING, "SASL is only supported with binary protocol");
 		RETURN_FALSE;
 	}
 	m_obj->has_sasl_data = 1;
 	status = memcached_set_sasl_auth_data(m_obj->memc, user.val, pass.val);
 
-	if (php_memc_handle_error(i_obj, status TSRMLS_CC) < 0) {
+	if (php_memc_handle_error(i_obj, status) < 0) {
 		RETURN_FALSE;
 	}
 	RETURN_TRUE;
@@ -2814,7 +2814,7 @@ static PHP_METHOD(Memcached, isPristine)
 ****************************************/
 
 /* {{{ constructor/destructor */
-static void php_memc_destroy(struct memc_obj *m_obj, zend_bool persistent TSRMLS_DC)
+static void php_memc_destroy(struct memc_obj *m_obj, zend_bool persistent)
 {
 #if HAVE_MEMCACHED_SASL
 	if (m_obj->has_sasl_data) {
@@ -2845,7 +2845,7 @@ zend_object *php_memc_new(zend_class_entry *ce)
 {
 	php_memc_t *i_obj = ecalloc(1, sizeof(php_memc_t) + sizeof(zval) * (ce->default_properties_count - 1));
     
-	zend_object_std_init(&i_obj->zo, ce TSRMLS_CC);
+	zend_object_std_init(&i_obj->zo, ce);
 	object_properties_init(&i_obj->zo, ce);
 
 	i_obj->zo.handlers = &memcached_object_handlers;
@@ -2855,20 +2855,20 @@ zend_object *php_memc_new(zend_class_entry *ce)
 
 #ifdef HAVE_MEMCACHED_PROTOCOL
 static
-void php_memc_server_free_storage(php_memc_server_t *intern TSRMLS_DC)
+void php_memc_server_free_storage(php_memc_server_t *intern)
 {
-	zend_object_std_dtor(&intern->zo TSRMLS_CC);
+	zend_object_std_dtor(&intern->zo);
 	efree (intern);
 }
 
-zend_object_value php_memc_server_new(zend_class_entry *ce TSRMLS_DC)
+zend_object_value php_memc_server_new(zend_class_entry *ce)
 {
 	zend_object_value retval;
 	php_memc_server_t *intern;
 	zval *tmp;
 
 	intern = ecalloc(1, sizeof(php_memc_server_t));
-	zend_object_std_init (&intern->zo, ce TSRMLS_CC);
+	zend_object_std_init (&intern->zo, ce);
 #if PHP_VERSION_ID >= 50400
 	object_properties_init( (zend_object *) intern, ce);
 #else
@@ -2877,7 +2877,7 @@ zend_object_value php_memc_server_new(zend_class_entry *ce TSRMLS_DC)
 
 	intern->handler = php_memc_proto_handler_new ();
 
-	retval.handle = zend_objects_store_put(intern, (zend_objects_store_dtor_t)zend_objects_destroy_object, (zend_objects_free_object_storage_t)php_memc_server_free_storage, NULL TSRMLS_CC);
+	retval.handle = zend_objects_store_put(intern, (zend_objects_store_dtor_t)zend_objects_destroy_object, (zend_objects_free_object_storage_t)php_memc_server_free_storage, NULL);
 	retval.handlers = &memcached_server_object_handlers;
 
 	return retval;
@@ -2990,7 +2990,7 @@ static memcached_return php_memc_do_version_callback(const memcached_st *ptr, ph
 	return MEMCACHED_SUCCESS;
 }
 
-static int php_memc_handle_error(php_memc_t *i_obj, memcached_return status TSRMLS_DC)
+static int php_memc_handle_error(php_memc_t *i_obj, memcached_return status)
 {
 	int result = 0;
 
@@ -3037,7 +3037,7 @@ static int php_memc_handle_error(php_memc_t *i_obj, memcached_return status TSRM
 }
 
 static
-char *s_compress_value (enum memcached_compression_type compression_type, const char *payload, size_t *payload_len, uint32_t *flags TSRMLS_DC)
+char *s_compress_value (enum memcached_compression_type compression_type, const char *payload, size_t *payload_len, uint32_t *flags)
 {
 	/* status */
 	zend_bool compress_status = 0;
@@ -3077,7 +3077,7 @@ char *s_compress_value (enum memcached_compression_type compression_type, const 
 	*payload_len = compressed_size + sizeof(uint32_t);
 
 	if (!compress_status) {
-		php_error_docref(NULL TSRMLS_CC, E_WARNING, "could not compress value");
+		php_error_docref(NULL, E_WARNING, "could not compress value");
 		MEMC_VAL_DEL_FLAG(*flags, MEMC_VAL_COMPRESSED);
 
 		efree (buffer);
@@ -3095,7 +3095,7 @@ char *s_compress_value (enum memcached_compression_type compression_type, const 
 }
 
 static
-zend_bool s_serialize_value (enum memcached_serializer serializer, zval *value, smart_str *buf, uint32_t *flags TSRMLS_DC)
+zend_bool s_serialize_value (enum memcached_serializer serializer, zval *value, smart_str *buf, uint32_t *flags)
 {
 	switch (serializer) {
 
@@ -3104,8 +3104,8 @@ zend_bool s_serialize_value (enum memcached_serializer serializer, zval *value, 
 		*/
 #ifdef HAVE_MEMCACHED_IGBINARY
 		case SERIALIZER_IGBINARY:
-			if (igbinary_serialize((uint8_t **) &buf->c, &buf->len, value TSRMLS_CC) != 0) {
-				php_error_docref(NULL TSRMLS_CC, E_WARNING, "could not serialize value with igbinary");
+			if (igbinary_serialize((uint8_t **) &buf->c, &buf->len, value) != 0) {
+				php_error_docref(NULL, E_WARNING, "could not serialize value with igbinary");
 				return 0;
 			}
 			MEMC_VAL_SET_TYPE(*flags, MEMC_VAL_IS_IGBINARY);
@@ -3120,9 +3120,9 @@ zend_bool s_serialize_value (enum memcached_serializer serializer, zval *value, 
 		case SERIALIZER_JSON_ARRAY:
 		{
 #if HAVE_JSON_API_5_2
-			php_json_encode(buf, value TSRMLS_CC);
+			php_json_encode(buf, value);
 #elif HAVE_JSON_API_5_3
-			php_json_encode(buf, value, 0 TSRMLS_CC); /* options */
+			php_json_encode(buf, value, 0); /* options */
 #endif
 			MEMC_VAL_SET_TYPE(*flags, MEMC_VAL_IS_JSON);
 		}
@@ -3134,9 +3134,9 @@ zend_bool s_serialize_value (enum memcached_serializer serializer, zval *value, 
 		*/
 #ifdef HAVE_MEMCACHED_MSGPACK
 		case SERIALIZER_MSGPACK:
-			php_msgpack_serialize(buf, value TSRMLS_CC);
+			php_msgpack_serialize(buf, value);
 			if (!buf->c) {
-				php_error_docref(NULL TSRMLS_CC, E_WARNING, "could not serialize value with msgpack");
+				php_error_docref(NULL, E_WARNING, "could not serialize value with msgpack");
 				return 0;
 			}
 			MEMC_VAL_SET_TYPE(*flags, MEMC_VAL_IS_MSGPACK);
@@ -3154,7 +3154,7 @@ zend_bool s_serialize_value (enum memcached_serializer serializer, zval *value, 
 			PHP_VAR_SERIALIZE_DESTROY(var_hash);
 
 			if (!buf->s) {
-				php_error_docref(NULL TSRMLS_CC, E_WARNING, "could not serialize value");
+				php_error_docref(NULL, E_WARNING, "could not serialize value");
 				return 0;
 			}
 			MEMC_VAL_SET_TYPE(*flags, MEMC_VAL_IS_SERIALIZED);
@@ -3170,7 +3170,7 @@ zend_bool s_serialize_value (enum memcached_serializer serializer, zval *value, 
 }
 
 static
-char *php_memc_zval_to_payload(zval *value, size_t *payload_len, uint32_t *flags, enum memcached_serializer serializer, enum memcached_compression_type compression_type TSRMLS_DC)
+char *php_memc_zval_to_payload(zval *value, size_t *payload_len, uint32_t *flags, enum memcached_serializer serializer, enum memcached_compression_type compression_type)
 {
 	const char *pl;
 	size_t pl_len = 0;
@@ -3216,7 +3216,7 @@ char *php_memc_zval_to_payload(zval *value, size_t *payload_len, uint32_t *flags
 			break;
 
 		default:
-			if (!s_serialize_value (serializer, value, &buf, flags TSRMLS_CC)) {
+			if (!s_serialize_value (serializer, value, &buf, flags)) {
 				smart_str_free (&buf);
 				return NULL;
 			}
@@ -3234,7 +3234,7 @@ char *php_memc_zval_to_payload(zval *value, size_t *payload_len, uint32_t *flags
 	if (MEMC_VAL_HAS_FLAG(*flags, MEMC_VAL_COMPRESSED)) {
 		/* status */
 		*payload_len = pl_len;
-		payload = s_compress_value (compression_type, pl, payload_len, flags TSRMLS_CC);
+		payload = s_compress_value (compression_type, pl, payload_len, flags);
 	}
 
 	/* If compression failed or value is below threshold we just use plain value */
@@ -3250,7 +3250,7 @@ char *php_memc_zval_to_payload(zval *value, size_t *payload_len, uint32_t *flags
 }
 
 static
-char *s_decompress_value (const char *payload, size_t *payload_len, uint32_t flags TSRMLS_DC)
+char *s_decompress_value (const char *payload, size_t *payload_len, uint32_t flags)
 {
 	char *buffer = NULL;
 	uint32_t len;
@@ -3291,7 +3291,7 @@ char *s_decompress_value (const char *payload, size_t *payload_len, uint32_t fla
 	}
 
 	if (!decompress_status) {
-		php_error_docref(NULL TSRMLS_CC, E_WARNING, "could not decompress value");
+		php_error_docref(NULL, E_WARNING, "could not decompress value");
 		efree(buffer);
 		return NULL;
 	}
@@ -3301,7 +3301,7 @@ char *s_decompress_value (const char *payload, size_t *payload_len, uint32_t fla
 }
 
 static
-zend_bool s_unserialize_value (enum memcached_serializer serializer, int val_type, zval *value, const char *payload, size_t payload_len TSRMLS_DC)
+zend_bool s_unserialize_value (enum memcached_serializer serializer, int val_type, zval *value, const char *payload, size_t payload_len)
 {
 	switch (val_type) {
 		case MEMC_VAL_IS_SERIALIZED:
@@ -3310,10 +3310,10 @@ zend_bool s_unserialize_value (enum memcached_serializer serializer, int val_typ
 			php_unserialize_data_t var_hash;
 
 			PHP_VAR_UNSERIALIZE_INIT(var_hash);
-			if (!php_var_unserialize(value, (const unsigned char **)&payload_tmp, (const unsigned char *)payload_tmp + payload_len, &var_hash TSRMLS_CC)) {
+			if (!php_var_unserialize(value, (const unsigned char **)&payload_tmp, (const unsigned char *)payload_tmp + payload_len, &var_hash)) {
 				ZVAL_FALSE(value);
 				PHP_VAR_UNSERIALIZE_DESTROY(var_hash);
-				php_error_docref(NULL TSRMLS_CC, E_WARNING, "could not unserialize value");
+				php_error_docref(NULL, E_WARNING, "could not unserialize value");
 				return 0;
 			}
 			PHP_VAR_UNSERIALIZE_DESTROY(var_hash);
@@ -3322,14 +3322,14 @@ zend_bool s_unserialize_value (enum memcached_serializer serializer, int val_typ
 
 		case MEMC_VAL_IS_IGBINARY:
 #ifdef HAVE_MEMCACHED_IGBINARY
-			if (igbinary_unserialize((uint8_t *)payload, payload_len, &value TSRMLS_CC)) {
+			if (igbinary_unserialize((uint8_t *)payload, payload_len, &value)) {
 				ZVAL_FALSE(value);
-				php_error_docref(NULL TSRMLS_CC, E_WARNING, "could not unserialize value with igbinary");
+				php_error_docref(NULL, E_WARNING, "could not unserialize value with igbinary");
 				return 0;
 			}
 #else
 			ZVAL_FALSE(value);
-			php_error_docref(NULL TSRMLS_CC, E_WARNING, "could not unserialize value, no igbinary support");
+			php_error_docref(NULL, E_WARNING, "could not unserialize value, no igbinary support");
 			return 0;
 #endif
 			break;
@@ -3337,23 +3337,23 @@ zend_bool s_unserialize_value (enum memcached_serializer serializer, int val_typ
 		case MEMC_VAL_IS_JSON:
 #ifdef HAVE_JSON_API
 # if HAVE_JSON_API_5_2
-			php_json_decode(value, payload, payload_len, (serializer == SERIALIZER_JSON_ARRAY) TSRMLS_CC);
+			php_json_decode(value, payload, payload_len, (serializer == SERIALIZER_JSON_ARRAY));
 # elif HAVE_JSON_API_5_3
-			php_json_decode(value, payload, payload_len, (serializer == SERIALIZER_JSON_ARRAY), JSON_PARSER_DEFAULT_DEPTH TSRMLS_CC);
+			php_json_decode(value, payload, payload_len, (serializer == SERIALIZER_JSON_ARRAY), JSON_PARSER_DEFAULT_DEPTH);
 # endif
 #else
 			ZVAL_FALSE(value);
-			php_error_docref(NULL TSRMLS_CC, E_WARNING, "could not unserialize value, no json support");
+			php_error_docref(NULL, E_WARNING, "could not unserialize value, no json support");
 			return 0;
 #endif
 			break;
 
         case MEMC_VAL_IS_MSGPACK:
 #ifdef HAVE_MEMCACHED_MSGPACK
-			php_msgpack_unserialize(value, payload, payload_len TSRMLS_CC);
+			php_msgpack_unserialize(value, payload, payload_len);
 #else
 			ZVAL_FALSE(value);
-			php_error_docref(NULL TSRMLS_CC, E_WARNING, "could not unserialize value, no msgpack support");
+			php_error_docref(NULL, E_WARNING, "could not unserialize value, no msgpack support");
 			return 0;
 #endif
  			break;
@@ -3362,7 +3362,7 @@ zend_bool s_unserialize_value (enum memcached_serializer serializer, int val_typ
 }
 
 /* The caller MUST free the payload */
-static int php_memc_zval_from_payload(zval *value, const char *payload_in, size_t payload_len, uint32_t flags, enum memcached_serializer serializer TSRMLS_DC)
+static int php_memc_zval_from_payload(zval *value, const char *payload_in, size_t payload_len, uint32_t flags, enum memcached_serializer serializer)
 {
 	/*
 	   A NULL payload is completely valid if length is 0, it is simply empty.
@@ -3373,7 +3373,7 @@ static int php_memc_zval_from_payload(zval *value, const char *payload_in, size_
 
 	if (payload_in == NULL && payload_len > 0) {
 		ZVAL_FALSE(value);
-		php_error_docref(NULL TSRMLS_CC, E_WARNING,
+		php_error_docref(NULL, E_WARNING,
 			"Could not handle non-existing value of length %zu", payload_len);
 		return -1;
 	} else if (payload_in == NULL) {
@@ -3386,7 +3386,7 @@ static int php_memc_zval_from_payload(zval *value, const char *payload_in, size_
 	}
 
 	if (MEMC_VAL_HAS_FLAG(flags, MEMC_VAL_COMPRESSED)) {
-		char *datas = s_decompress_value (payload_in, &payload_len, flags TSRMLS_CC);
+		char *datas = s_decompress_value (payload_in, &payload_len, flags);
 		if (!datas) {
 			ZVAL_FALSE(value);
 			return -1;
@@ -3413,7 +3413,7 @@ static int php_memc_zval_from_payload(zval *value, const char *payload_in, size_
 			char conv_buf [128];
 
 			if (payload_len >= 128) {
-				php_error_docref(NULL TSRMLS_CC, E_WARNING, "could not read long value, too big");
+				php_error_docref(NULL, E_WARNING, "could not read long value, too big");
 				retval = -1;
 			}
 			else {
@@ -3431,7 +3431,7 @@ static int php_memc_zval_from_payload(zval *value, const char *payload_in, size_
 			char conv_buf [128];
 
 			if (payload_len >= 128) {
-				php_error_docref(NULL TSRMLS_CC, E_WARNING, "could not read double value, too big");
+				php_error_docref(NULL, E_WARNING, "could not read double value, too big");
 				retval = -1;
 			}
 			else {
@@ -3459,14 +3459,14 @@ static int php_memc_zval_from_payload(zval *value, const char *payload_in, size_
 		case MEMC_VAL_IS_IGBINARY:
 		case MEMC_VAL_IS_JSON:
 		case MEMC_VAL_IS_MSGPACK:
-			if (!s_unserialize_value (serializer, MEMC_VAL_GET_TYPE(flags), value, pl, payload_len TSRMLS_CC)) {
+			if (!s_unserialize_value (serializer, MEMC_VAL_GET_TYPE(flags), value, pl, payload_len)) {
 				retval = -1;
 			}
 			break;
 
 		default:
 			ZVAL_FALSE(value);
-			php_error_docref(NULL TSRMLS_CC, E_WARNING, "unknown payload type");
+			php_error_docref(NULL, E_WARNING, "unknown payload type");
 			retval = -1;
 			break;
 	}
@@ -3490,7 +3490,7 @@ zend_class_entry *php_memc_get_exception(void)
 }
 
 PHP_MEMCACHED_API
-zend_class_entry *php_memc_get_exception_base(int root TSRMLS_DC)
+zend_class_entry *php_memc_get_exception_base(int root)
 {
 #if HAVE_SPL
 	if (!root) {
@@ -3513,13 +3513,13 @@ zend_class_entry *php_memc_get_exception_base(int root TSRMLS_DC)
 #if (PHP_MAJOR_VERSION == 5) && (PHP_MINOR_VERSION < 2)
 	return zend_exception_get_default();
 #else
-	return zend_exception_get_default(TSRMLS_C);
+	return zend_exception_get_default();
 #endif
 }
 
 static memcached_return php_memc_do_cache_callback(zval *zmemc_obj, zend_fcall_info *fci,
 	zend_fcall_info_cache *fcc, char *key,
-	size_t key_len, zval *value TSRMLS_DC)
+	size_t key_len, zval *value)
 {
 	char *payload = NULL;
 	size_t payload_len = 0;
@@ -3547,7 +3547,7 @@ static memcached_return php_memc_do_cache_callback(zval *zmemc_obj, zend_fcall_i
 	fci->params = params;
 	fci->param_count = 4;
 
-	result = zend_call_function(fci, fcc TSRMLS_CC);
+	result = zend_call_function(fci, fcc);
 	if (result == SUCCESS && Z_TYPE(retval) != IS_UNDEF) {
 		i_obj = (php_memc_t *) Z_OBJ_P(zmemc_obj);
 		struct memc_obj *m_obj = i_obj->obj;
@@ -3561,7 +3561,7 @@ static memcached_return php_memc_do_cache_callback(zval *zmemc_obj, zend_fcall_i
 
 			expiration = Z_LVAL(z_expiration);
 
-			payload = php_memc_zval_to_payload(value, &payload_len, &flags, m_obj->serializer, m_obj->compression_type TSRMLS_CC);
+			payload = php_memc_zval_to_payload(value, &payload_len, &flags, m_obj->serializer, m_obj->compression_type);
 			if (payload == NULL) {
 				status = (memcached_return)MEMC_RES_PAYLOAD_FAILURE;
 			} else {
@@ -3581,7 +3581,7 @@ static memcached_return php_memc_do_cache_callback(zval *zmemc_obj, zend_fcall_i
 		if (result == FAILURE) {
 			zval_ptr_dtor(&z_key);
 			zval_ptr_dtor(&z_expiration);
-			php_error_docref(NULL TSRMLS_CC, E_WARNING, "could not invoke cache callback");
+			php_error_docref(NULL, E_WARNING, "could not invoke cache callback");
 		}
 		status = MEMCACHED_FAILURE;
 		zval_dtor(value);
@@ -3600,7 +3600,7 @@ static memcached_return php_memc_do_cache_callback(zval *zmemc_obj, zend_fcall_i
 
 static int php_memc_do_result_callback(zval *zmemc_obj, zend_fcall_info *fci,
 	zend_fcall_info_cache *fcc,
-	memcached_result_st *result TSRMLS_DC)
+	memcached_result_st *result)
 {
 	const char *res_key = NULL;
 	size_t res_key_len = 0;
@@ -3646,8 +3646,8 @@ static int php_memc_do_result_callback(zval *zmemc_obj, zend_fcall_info *fci,
 		add_assoc_long_ex(&z_result, ZEND_STRL("flags"), MEMC_VAL_GET_USER_FLAGS(flags));
 	}
 
-	if (zend_call_function(fci, fcc TSRMLS_CC) == FAILURE) {
-		php_error_docref(NULL TSRMLS_CC, E_WARNING, "could not invoke result callback");
+	if (zend_call_function(fci, fcc) == FAILURE) {
+		php_error_docref(NULL, E_WARNING, "could not invoke result callback");
 		rc = -1;
 	}
 
@@ -3686,7 +3686,7 @@ PHP_METHOD(MemcachedServer, run)
 	php_memc_server_t *intern;
 	intern = Z_MEMC_OBJ_P(getThis());
 
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &address, &address_len) == FAILURE) {
+	if (zend_parse_parameters(ZEND_NUM_ARGS(), "s", &address, &address_len) == FAILURE) {
 		return;
 	}
 
@@ -3707,7 +3707,7 @@ PHP_METHOD(MemcachedServer, on)
 	zend_fcall_info_cache fci_cache;
 	zend_bool rc = 0;
 
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "lf!", &event, &fci, &fci_cache) == FAILURE) {
+	if (zend_parse_parameters(ZEND_NUM_ARGS(), "lf!", &event, &fci, &fci_cache) == FAILURE) {
 		return;
 	}
 
@@ -4209,9 +4209,9 @@ zend_module_entry memcached_module_entry = {
 /* {{{ php_memc_register_constants */
 static void php_memc_register_constants(INIT_FUNC_ARGS)
 {
-	#define REGISTER_MEMC_CLASS_CONST_LONG(name, value) zend_declare_class_constant_long(php_memc_get_ce() , ZEND_STRS( #name ) - 1, value TSRMLS_CC)
-	#define REGISTER_MEMC_CLASS_CONST_BOOL(name, value) zend_declare_class_constant_bool(php_memc_get_ce() , ZEND_STRS( #name ) - 1, value TSRMLS_CC)
-	#define REGISTER_MEMC_CLASS_CONST_NULL(name) zend_declare_class_constant_null(php_memc_get_ce() , ZEND_STRS( #name ) - 1 TSRMLS_CC)
+	#define REGISTER_MEMC_CLASS_CONST_LONG(name, value) zend_declare_class_constant_long(php_memc_get_ce() , ZEND_STRS( #name ) - 1, value)
+	#define REGISTER_MEMC_CLASS_CONST_BOOL(name, value) zend_declare_class_constant_bool(php_memc_get_ce() , ZEND_STRS( #name ) - 1, value)
+	#define REGISTER_MEMC_CLASS_CONST_NULL(name) zend_declare_class_constant_null(php_memc_get_ce() , ZEND_STRS( #name ) - 1)
 
 	/*
 	 * Class options
@@ -4461,7 +4461,7 @@ PHP_MINIT_FUNCTION(memcached)
 	le_memc_sess = zend_register_list_destructors_ex(NULL, php_memc_sess_dtor, "Memcached  Sessions persistent connection", module_number);
 
 	INIT_CLASS_ENTRY(ce, "Memcached", memcached_class_methods);
-	memcached_ce = zend_register_internal_class(&ce TSRMLS_CC);
+	memcached_ce = zend_register_internal_class(&ce);
 	memcached_ce->create_object = php_memc_new;
 
 #ifdef HAVE_MEMCACHED_PROTOCOL
@@ -4469,12 +4469,12 @@ PHP_MINIT_FUNCTION(memcached)
 	memcached_server_object_handlers.clone_obj = NULL;
 
 	INIT_CLASS_ENTRY(ce, "MemcachedServer", memcached_server_class_methods);
-	memcached_server_ce = zend_register_internal_class(&ce TSRMLS_CC);
+	memcached_server_ce = zend_register_internal_class(&ce);
 	memcached_server_ce->create_object = php_memc_server_new;
 #endif
 
 	INIT_CLASS_ENTRY(ce, "MemcachedException", NULL);
-	memcached_exception_ce = zend_register_internal_class_ex(&ce, php_memc_get_exception_base(0 TSRMLS_CC));
+	memcached_exception_ce = zend_register_internal_class_ex(&ce, php_memc_get_exception_base(0));
 	/* TODO
 	 * possibly declare custom exception property here
 	 */
@@ -4489,7 +4489,7 @@ PHP_MINIT_FUNCTION(memcached)
 #if HAVE_MEMCACHED_SASL
 	if (MEMC_G(use_sasl)) {
 		if (sasl_client_init(NULL) != SASL_OK) {
-			php_error_docref(NULL TSRMLS_CC, E_ERROR, "Failed to initialize SASL library");
+			php_error_docref(NULL, E_ERROR, "Failed to initialize SASL library");
 			return FAILURE;
 		}
 	}
