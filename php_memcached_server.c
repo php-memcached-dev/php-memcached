@@ -60,7 +60,7 @@ typedef struct {
 } php_memc_client_t;
 
 static
-long s_invoke_php_callback (php_memc_server_cb_t *cb, zval ***params, ssize_t param_count TSRMLS_DC)
+long s_invoke_php_callback (php_memc_server_cb_t *cb, zval ***params, ssize_t param_count)
 {
 	long retval = PROTOCOL_BINARY_RESPONSE_UNKNOWN_COMMAND;
 	zval *retval_ptr = NULL;
@@ -72,9 +72,9 @@ long s_invoke_php_callback (php_memc_server_cb_t *cb, zval ***params, ssize_t pa
 	cb->fci.no_separation  = 1;
 	cb->fci.retval_ptr_ptr = &retval_ptr;
 
-	if (zend_call_function(&(cb->fci), &(cb->fci_cache) TSRMLS_CC) == FAILURE) {
-		char *buf = php_memc_printable_func (&(cb->fci), &(cb->fci_cache) TSRMLS_CC);
-		php_error_docref(NULL TSRMLS_CC, E_WARNING, "Failed to invoke callback %s()", buf);
+	if (zend_call_function(&(cb->fci), &(cb->fci_cache)) == FAILURE) {
+		char *buf = php_memc_printable_func (&(cb->fci), &(cb->fci_cache));
+		php_error_docref(NULL, E_WARNING, "Failed to invoke callback %s()", buf);
 		efree (buf);
 	}
 	if (retval_ptr) {
@@ -91,10 +91,8 @@ protocol_binary_response_status s_add_handler(const void *cookie, const void *ke
                                               uint32_t data_len, uint32_t flags, uint32_t exptime, uint64_t *result_cas)
 {
 	protocol_binary_response_status retval = PROTOCOL_BINARY_RESPONSE_UNKNOWN_COMMAND;
-	zval *zcookie, *zkey, *zvalue, *zflags, *zexptime, *zresult_cas;
-	zval **params [6];
-
-	TSRMLS_FETCH();
+	zval zcookie, zkey, zvalue, zflags, zexptime, zresult_cas;
+	zval params[6];
 
 	if (!MEMC_HAS_CB(MEMC_SERVER_ON_ADD)) {
 		return retval;
@@ -102,32 +100,29 @@ protocol_binary_response_status s_add_handler(const void *cookie, const void *ke
 
 	MEMC_MAKE_ZVAL_COOKIE(zcookie, cookie);
 
-	MAKE_STD_ZVAL(zkey);
-	ZVAL_STRINGL(zkey, key, key_len, 1);
+	ZVAL_STRINGL(&zkey, key, key_len);
+	ZVAL_STRINGL(&zvalue, data, data_len);
+	ZVAL_LONG(&zflags, flags);
+	ZVAL_LONG(&zexptime, exptime);
+	ZVAL_NULL(&zresult_cas);
 
-	MAKE_STD_ZVAL(zvalue);
-	ZVAL_STRINGL(zvalue, data, data_len, 1);
+	ZVAL_COPY(&params[0], &zcookie);
+	ZVAL_COPY(&params[1], &zkey);
+	ZVAL_COPY(&params[2], &zvalue);
+	ZVAL_COPY(&params[3], &zflags);
+	ZVAL_COPY(&params[4], &zexptime);
+	ZVAL_COPY(&params[5], &zresult_cas);
 
-	MAKE_STD_ZVAL(zflags);
-	ZVAL_LONG(zflags, flags);
-
-	MAKE_STD_ZVAL(zexptime);
-	ZVAL_LONG(zexptime, exptime);
-
-	MAKE_STD_ZVAL(zresult_cas);
-	ZVAL_NULL(zresult_cas);
-
-	params [0] = &zcookie;
-	params [1] = &zkey;
-	params [2] = &zvalue;
-	params [3] = &zflags;
-	params [4] = &zexptime;
-	params [5] = &zresult_cas;
-
-	retval = s_invoke_php_callback (&MEMC_GET_CB(MEMC_SERVER_ON_ADD), params, 6 TSRMLS_CC);
+	retval = s_invoke_php_callback (&MEMC_GET_CB(MEMC_SERVER_ON_ADD), params, 6);
 
 	MEMC_MAKE_RESULT_CAS(zresult_cas, *result_cas);
 
+	zval_ptr_dtor(&params[0]);
+	zval_ptr_dtor(&params[1]);
+	zval_ptr_dtor(&params[2]);
+	zval_ptr_dtor(&params[3]);
+	zval_ptr_dtor(&params[4]);
+	zval_ptr_dtor(&params[5]);
 	zval_ptr_dtor (&zcookie);
 	zval_ptr_dtor (&zkey);
 	zval_ptr_dtor (&zvalue);
@@ -143,10 +138,8 @@ protocol_binary_response_status s_append_prepend_handler (php_memc_event_t event
                                                           const void *data, uint32_t data_len, uint64_t cas, uint64_t *result_cas)
 {
 	protocol_binary_response_status retval = PROTOCOL_BINARY_RESPONSE_UNKNOWN_COMMAND;
-	zval *zcookie, *zkey, *zvalue, *zcas, *zresult_cas;
-	zval **params [5];
-
-	TSRMLS_FETCH();
+	zval zcookie, zkey, zvalue, zcas, zresult_cas;
+	zval params[5];
 
 	if (!MEMC_HAS_CB(event)) {
 		return retval;
@@ -154,28 +147,26 @@ protocol_binary_response_status s_append_prepend_handler (php_memc_event_t event
 
 	MEMC_MAKE_ZVAL_COOKIE(zcookie, cookie);
 
-	MAKE_STD_ZVAL(zkey);
-	ZVAL_STRINGL(zkey, key, key_len, 1);
+	ZVAL_STRINGL(&zkey, key, key_len);
+	ZVAL_STRINGL(&zvalue, data, data_len);
+	ZVAL_DOUBLE(&zcas, cas);
+	ZVAL_NULL(&zresult_cas);
 
-	MAKE_STD_ZVAL(zvalue);
-	ZVAL_STRINGL(zvalue, data, data_len, 1);
+	ZVAL_COPY(&params[0], &zcookie);
+	ZVAL_COPY(&params[1], &zkey);
+	ZVAL_COPY(&params[2], &zvalue);
+	ZVAL_COPY(&params[3], &zcas);
+	ZVAL_COPY(&params[4], &zresult_cas);
 
-	MAKE_STD_ZVAL(zcas);
-	ZVAL_DOUBLE(zcas, cas);
-
-	MAKE_STD_ZVAL(zresult_cas);
-	ZVAL_NULL(zresult_cas);
-
-	params [0] = &zcookie;
-	params [1] = &zkey;
-	params [2] = &zvalue;
-	params [3] = &zcas;
-	params [4] = &zresult_cas;
-
-	retval = s_invoke_php_callback (&MEMC_GET_CB(event), params, 5 TSRMLS_CC);
+	retval = s_invoke_php_callback (&MEMC_GET_CB(event), params, 5);
 
 	MEMC_MAKE_RESULT_CAS(zresult_cas, *result_cas);
 
+	zval_ptr_dtor(&params[0]);
+	zval_ptr_dtor(&params[1]);
+	zval_ptr_dtor(&params[2]);
+	zval_ptr_dtor(&params[3]);
+	zval_ptr_dtor(&params[4]);
 	zval_ptr_dtor (&zcookie);
 	zval_ptr_dtor (&zkey);
 	zval_ptr_dtor (&zvalue);
@@ -206,10 +197,8 @@ protocol_binary_response_status s_incr_decr_handler (php_memc_event_t event, con
                                                      uint64_t initial, uint32_t expiration, uint64_t *result, uint64_t *result_cas)
 {
 	protocol_binary_response_status retval = PROTOCOL_BINARY_RESPONSE_UNKNOWN_COMMAND;
-	zval *zcookie, *zkey, *zdelta, *zinital, *zexpiration, *zresult, *zresult_cas;
-	zval **params [7];
-
-	TSRMLS_FETCH();
+	zval zcookie, zkey, zdelta, zinital, zexpiration, zresult, zresult_cas;
+	zval params[7];
 
 	if (!MEMC_HAS_CB(event)) {
 		return retval;
@@ -217,41 +206,37 @@ protocol_binary_response_status s_incr_decr_handler (php_memc_event_t event, con
 
 	MEMC_MAKE_ZVAL_COOKIE(zcookie, cookie);
 
-	MAKE_STD_ZVAL(zkey);
-	ZVAL_STRINGL(zkey, key, key_len, 1);
+	ZVAL_STRINGL(&zkey, key, key_len);
+	ZVAL_LONG(&zdelta, (long) delta);
+	ZVAL_LONG(&zinital, (long) initial);
+	ZVAL_LONG(&zexpiration, (long) expiration);
+	ZVAL_LONG(&zresult, 0);
+	ZVAL_NULL(&zresult_cas);
 
-	MAKE_STD_ZVAL(zdelta);
-	ZVAL_LONG(zdelta, (long) delta);
+	ZVAL_COPY(&params[0], &zcookie);
+	ZVAL_COPY(&params[1], &zkey);
+	ZVAL_COPY(&params[2], &zdelta);
+	ZVAL_COPY(&params[3], &zinital);
+	ZVAL_COPY(&params[4], &zexpiration);
+	ZVAL_COPY(&params[5], &zresult);
+	ZVAL_COPY(&params[6], &zresult_cas);
 
-	MAKE_STD_ZVAL(zinital);
-	ZVAL_LONG(zinital, (long) initial);
+	retval = s_invoke_php_callback (&MEMC_GET_CB(event), params, 7);
 
-	MAKE_STD_ZVAL(zexpiration);
-	ZVAL_LONG(zexpiration, (long) expiration);
-
-	MAKE_STD_ZVAL(zresult);
-	ZVAL_LONG(zresult, 0);
-
-	MAKE_STD_ZVAL(zresult_cas);
-	ZVAL_NULL(zresult_cas);
-
-	params [0] = &zcookie;
-	params [1] = &zkey;
-	params [2] = &zdelta;
-	params [3] = &zinital;
-	params [4] = &zexpiration;
-	params [5] = &zresult;
-	params [6] = &zresult_cas;
-
-	retval = s_invoke_php_callback (&MEMC_GET_CB(event), params, 7 TSRMLS_CC);
-
-	if (Z_TYPE_P(zresult) != IS_LONG) {
-		convert_to_long (zresult);
+	if (Z_TYPE(zresult) != IS_LONG) {
+		convert_to_long (&zresult);
 	}
-	*result = (uint64_t) Z_LVAL_P(zresult);
+	*result = (uint64_t) Z_LVAL(zresult);
 
 	MEMC_MAKE_RESULT_CAS(zresult_cas, *result_cas);
 
+	zval_ptr_dtor(&params[0]);
+	zval_ptr_dtor(&params[1]);
+	zval_ptr_dtor(&params[2]);
+	zval_ptr_dtor(&params[3]);
+	zval_ptr_dtor(&params[4]);
+	zval_ptr_dtor(&params[5]);
+	zval_ptr_dtor(&params[6]);
 	zval_ptr_dtor (&zcookie);
 	zval_ptr_dtor (&zkey);
 	zval_ptr_dtor (&zdelta);
@@ -284,10 +269,8 @@ protocol_binary_response_status s_delete_handler (const void *cookie, const void
                                                   uint16_t key_len, uint64_t cas)
 {
 	protocol_binary_response_status retval = PROTOCOL_BINARY_RESPONSE_UNKNOWN_COMMAND;
-	zval *zcookie, *zkey, *zcas;
-	zval **params [3];
-
-	TSRMLS_FETCH();
+	zval zcookie, zkey, zcas;
+	zval params[3];
 
 	if (!MEMC_HAS_CB(MEMC_SERVER_ON_DELETE)) {
 		return retval;
@@ -295,21 +278,21 @@ protocol_binary_response_status s_delete_handler (const void *cookie, const void
 
 	MEMC_MAKE_ZVAL_COOKIE(zcookie, cookie);
 
-	MAKE_STD_ZVAL(zkey);
-	ZVAL_STRINGL(zkey, key, key_len, 1);
+	ZVAL_STRINGL(&zkey, key, key_len);
+	ZVAL_DOUBLE(&zcas, (double) cas);
 
-	MAKE_STD_ZVAL(zcas);
-	ZVAL_DOUBLE(zcas, (double) cas);
+	ZVAL_COPY(&params[0], &zcookie);
+	ZVAL_COPY(&params[1], &zkey);
+	ZVAL_COPY(&params[2], &zcas);
+	
+	retval = s_invoke_php_callback (&MEMC_GET_CB(MEMC_SERVER_ON_DELETE), params, 3);
 
-	params [0] = &zcookie;
-	params [1] = &zkey;
-	params [2] = &zcas;
-
-	retval = s_invoke_php_callback (&MEMC_GET_CB(MEMC_SERVER_ON_DELETE), params, 3 TSRMLS_CC);
-
-	zval_ptr_dtor (&zcookie);
-	zval_ptr_dtor (&zkey);
-	zval_ptr_dtor (&zcas);
+	zval_ptr_dtor(&params[0]);
+	zval_ptr_dtor(&params[1]);
+	zval_ptr_dtor(&params[2]);
+	zval_ptr_dtor(&zcookie);
+	zval_ptr_dtor(&zkey);
+	zval_ptr_dtor(&zcas);
 	return retval;
 }
 
@@ -317,10 +300,8 @@ static
 protocol_binary_response_status s_flush_handler(const void *cookie, uint32_t when)
 {
 	protocol_binary_response_status retval = PROTOCOL_BINARY_RESPONSE_UNKNOWN_COMMAND;
-	zval *zcookie, *zwhen;
-	zval **params [2];
-
-	TSRMLS_FETCH();
+	zval zcookie, zwhen;
+	zval params[2];
 
 	if (!MEMC_HAS_CB(MEMC_SERVER_ON_FLUSH)) {
 		return retval;
@@ -328,16 +309,15 @@ protocol_binary_response_status s_flush_handler(const void *cookie, uint32_t whe
 
 	MEMC_MAKE_ZVAL_COOKIE(zcookie, cookie);
 
-	MAKE_STD_ZVAL(zwhen);
-	ZVAL_LONG(zwhen, (long) when);
+	ZVAL_COPY(&params[0], &zcookie);
+	ZVAL_COPY(&params[1], &zwhen)
 
-	params [0] = &zcookie;
-	params [1] = &zwhen;
+	retval = s_invoke_php_callback (&MEMC_GET_CB(MEMC_SERVER_ON_FLUSH), params, 2);
 
-	retval = s_invoke_php_callback (&MEMC_GET_CB(MEMC_SERVER_ON_FLUSH), params, 2 TSRMLS_CC);
-
-	zval_ptr_dtor (&zcookie);
-	zval_ptr_dtor (&zwhen);
+	zval_ptr_dtor(&params[0]);
+	zval_ptr_dtor(&params[1]);
+	zval_ptr_dtor(&zcookie);
+	zval_ptr_dtor(&zwhen);
 	return retval;
 }
 
@@ -346,10 +326,8 @@ protocol_binary_response_status s_get_handler (const void *cookie, const void *k
                                                memcached_binary_protocol_get_response_handler response_handler)
 {
 	protocol_binary_response_status retval = PROTOCOL_BINARY_RESPONSE_UNKNOWN_COMMAND;
-	zval *zcookie, *zkey, *zvalue, *zflags, *zresult_cas;
-	zval **params [5];
-
-	TSRMLS_FETCH();
+	zval zcookie, zkey, zvalue, zflags, zresult_cas;
+	zval params[5];
 
 	if (!MEMC_HAS_CB(MEMC_SERVER_ON_GET)) {
 		return retval;
@@ -357,52 +335,50 @@ protocol_binary_response_status s_get_handler (const void *cookie, const void *k
 
 	MEMC_MAKE_ZVAL_COOKIE(zcookie, cookie);
 
-	MAKE_STD_ZVAL(zkey);
-	ZVAL_STRINGL(zkey, key, key_len, 1);
+	ZVAL_COPY(&params[0], &zcookie);
+	ZVAL_COPY(&params[1], &zkey);
+	ZVAL_COPY(&params[2], &zvalue);
+	ZVAL_COPY(&params[3], &zflags);
+	ZVAL_COPY(&params[4], &zresult_cas);
 
-	MAKE_STD_ZVAL(zvalue);
-	ZVAL_NULL(zvalue);
-
-	MAKE_STD_ZVAL(zflags);
-	ZVAL_NULL(zflags);
-
-	MAKE_STD_ZVAL(zresult_cas);
-	ZVAL_NULL(zresult_cas);
-
-	params [0] = &zcookie;
-	params [1] = &zkey;
-	params [2] = &zvalue;
-	params [3] = &zflags;
-	params [4] = &zresult_cas;
-
-	retval = s_invoke_php_callback (&MEMC_GET_CB(MEMC_SERVER_ON_GET), params, 5 TSRMLS_CC);
+	retval = s_invoke_php_callback (&MEMC_GET_CB(MEMC_SERVER_ON_GET), params, 5);
 
 	/* Succeeded in getting the key */
 	if (retval == PROTOCOL_BINARY_RESPONSE_SUCCESS) {
 		uint32_t flags = 0;
 		uint64_t result_cas = 0;
 
-		if (Z_TYPE_P (zvalue) == IS_NULL) {
-			zval_ptr_dtor (&zcookie);
-			zval_ptr_dtor (&zkey);
-			zval_ptr_dtor (&zvalue);
-			zval_ptr_dtor (&zflags);
-			zval_ptr_dtor (&zresult_cas);
+		if (Z_TYPE(zvalue) == IS_NULL) {
+			zval_ptr_dtor(&params[0]);
+			zval_ptr_dtor(&params[1]);
+			zval_ptr_dtor(&params[2]);
+			zval_ptr_dtor(&params[3]);
+			zval_ptr_dtor(&params[4]);
+			zval_ptr_dtor(&zcookie);
+			zval_ptr_dtor(&zkey);
+			zval_ptr_dtor(&zvalue);
+			zval_ptr_dtor(&zflags);
+			zval_ptr_dtor(&zresult_cas);
 			return PROTOCOL_BINARY_RESPONSE_KEY_ENOENT;
 		}
 
-		if (Z_TYPE_P (zvalue) != IS_STRING) {
-			convert_to_string (zvalue);
+		if (Z_TYPE(zvalue) != IS_STRING) {
+			convert_to_string (&zvalue);
 		}
 
-		if (Z_TYPE_P (zflags) == IS_LONG) {
-			flags = Z_LVAL_P (zflags);
+		if (Z_TYPE(zflags) == IS_LONG) {
+			flags = Z_LVAL(zflags);
 		}
 
 		MEMC_MAKE_RESULT_CAS(zresult_cas, result_cas);
-		retval = response_handler(cookie, key, key_len, Z_STRVAL_P(zvalue), Z_STRLEN_P(zvalue), flags, result_cas);
+		retval = response_handler(cookie, key, key_len, Z_STRVAL(zvalue), Z_STRLEN(zvalue), flags, result_cas);
 	}
 
+	zval_ptr_dtor(&params[0]);
+	zval_ptr_dtor(&params[1]);
+	zval_ptr_dtor(&params[2]);
+	zval_ptr_dtor(&params[3]);
+	zval_ptr_dtor(&params[4]);
 	zval_ptr_dtor (&zcookie);
 	zval_ptr_dtor (&zkey);
 	zval_ptr_dtor (&zvalue);
@@ -415,10 +391,8 @@ static
 protocol_binary_response_status s_noop_handler(const void *cookie)
 {
 	protocol_binary_response_status retval = PROTOCOL_BINARY_RESPONSE_UNKNOWN_COMMAND;
-	zval *zcookie;
-	zval **params [1];
-
-	TSRMLS_FETCH();
+	zval zcookie;
+	zval params[1];
 
 	if (!MEMC_HAS_CB(MEMC_SERVER_ON_NOOP)) {
 		return retval;
@@ -426,10 +400,11 @@ protocol_binary_response_status s_noop_handler(const void *cookie)
 
 	MEMC_MAKE_ZVAL_COOKIE(zcookie, cookie);
 
-	params [0] = &zcookie;
+	ZVAL_COPY(&params[0], &zcookie);
 
-	retval = s_invoke_php_callback (&MEMC_GET_CB(MEMC_SERVER_ON_NOOP), params, 1 TSRMLS_CC);
+	retval = s_invoke_php_callback (&MEMC_GET_CB(MEMC_SERVER_ON_NOOP), params, 1);
 
+	zval_ptr_dtor(&params[0]);
 	zval_ptr_dtor (&zcookie);
 	return retval;
 }
@@ -437,11 +412,9 @@ protocol_binary_response_status s_noop_handler(const void *cookie)
 static
 protocol_binary_response_status s_quit_handler(const void *cookie)
 {
-	zval **params [1];
+	zval params[1];
 	protocol_binary_response_status retval = PROTOCOL_BINARY_RESPONSE_UNKNOWN_COMMAND;
-	zval *zcookie;
-
-	TSRMLS_FETCH();
+	zval zcookie;
 
 	if (!MEMC_HAS_CB(MEMC_SERVER_ON_QUIT)) {
 		return retval;
@@ -449,9 +422,11 @@ protocol_binary_response_status s_quit_handler(const void *cookie)
 
 	MEMC_MAKE_ZVAL_COOKIE(zcookie, cookie);
 
-	params [0] = &zcookie;
-	retval = s_invoke_php_callback (&MEMC_GET_CB(MEMC_SERVER_ON_QUIT), params, 1 TSRMLS_CC);
+	ZVAL_COPY(&params[0], &zcookie);
 
+	retval = s_invoke_php_callback (&MEMC_GET_CB(MEMC_SERVER_ON_QUIT), params, 1);
+
+	zval_ptr_dtor(&params[0]);
 	zval_ptr_dtor (&zcookie);
 	return retval;
 }
@@ -463,10 +438,8 @@ protocol_binary_response_status s_set_replace_handler (php_memc_event_t event, c
                                                        uint32_t data_len, uint32_t flags, uint32_t expiration, uint64_t cas, uint64_t *result_cas)
 {
 	protocol_binary_response_status retval = PROTOCOL_BINARY_RESPONSE_UNKNOWN_COMMAND;
-	zval *zcookie, *zkey, *zdata, *zflags, *zexpiration, *zcas, *zresult_cas;
-	zval **params [7];
-
-	TSRMLS_FETCH();
+	zval zcookie, zkey, zdata, zflags, zexpiration, zcas, zresult_cas;
+	zval params[7];
 
 	if (!MEMC_HAS_CB(event)) {
 		return retval;
@@ -474,36 +447,32 @@ protocol_binary_response_status s_set_replace_handler (php_memc_event_t event, c
 
 	MEMC_MAKE_ZVAL_COOKIE(zcookie, cookie);
 
-	MAKE_STD_ZVAL(zkey);
-	ZVAL_STRINGL(zkey, key, key_len, 1);
+	ZVAL_STRINGL(&zkey, key, key_len);
+	ZVAL_STRINGL(&zdata, ((char *) data), (int) data_len);
+	ZVAL_LONG(&zflags, (long) flags);
+	ZVAL_LONG(&zexpiration, (long) expiration);
+	ZVAL_DOUBLE(&zcas, (double) cas);
+	ZVAL_NULL(&zresult_cas);
 
-	MAKE_STD_ZVAL(zdata);
-	ZVAL_STRINGL(zdata, ((char *) data), (int) data_len, 1);
+	ZVAL_COPY(&params[0], &zcookie);
+	ZVAL_COPY(&params[1], &zkey);
+	ZVAL_COPY(&params[2], &zdata);
+	ZVAL_COPY(&params[3], &zflags);
+	ZVAL_COPY(&params[4], &zexpiration);
+	ZVAL_COPY(&params[5], &zcas);
+	ZVAL_COPY(&params[6], &zresult_cas);
 
-	MAKE_STD_ZVAL(zflags);
-	ZVAL_LONG(zflags, (long) flags);
-
-	MAKE_STD_ZVAL(zexpiration);
-	ZVAL_LONG(zexpiration, (long) expiration);
-
-	MAKE_STD_ZVAL(zcas);
-	ZVAL_DOUBLE(zcas, (double) cas);
-
-	MAKE_STD_ZVAL(zresult_cas);
-	ZVAL_NULL(zresult_cas);
-
-	params [0] = &zcookie;
-	params [1] = &zkey;
-	params [2] = &zdata;
-	params [3] = &zflags;
-	params [4] = &zexpiration;
-	params [5] = &zcas;
-	params [6] = &zresult_cas;
-
-	retval = s_invoke_php_callback (&MEMC_GET_CB(event), params, 7 TSRMLS_CC);
+	retval = s_invoke_php_callback (&MEMC_GET_CB(event), params, 7);
 
 	MEMC_MAKE_RESULT_CAS(zresult_cas, *result_cas);
 
+	zval_ptr_dtor(&params[0]);
+	zval_ptr_dtor(&params[1]);
+	zval_ptr_dtor(&params[2]);
+	zval_ptr_dtor(&params[3]);
+	zval_ptr_dtor(&params[4]);
+	zval_ptr_dtor(&params[5]);
+	zval_ptr_dtor(&params[6]);
 	zval_ptr_dtor (&zcookie);
 	zval_ptr_dtor (&zkey);
 	zval_ptr_dtor (&zdata);
@@ -535,11 +504,9 @@ static
 protocol_binary_response_status s_stat_handler (const void *cookie, const void *key, uint16_t key_len,
                                                 memcached_binary_protocol_stat_response_handler response_handler)
 {
-	zval **params [3];
+	zval params[3];
 	protocol_binary_response_status retval = PROTOCOL_BINARY_RESPONSE_UNKNOWN_COMMAND;
-	zval *zcookie, *zkey, *zbody;
-
-	TSRMLS_FETCH();
+	zval zcookie, zkey, zbody;
 
 	if (!MEMC_HAS_CB(MEMC_SERVER_ON_STAT)) {
 		return retval;
@@ -547,29 +514,30 @@ protocol_binary_response_status s_stat_handler (const void *cookie, const void *
 
 	MEMC_MAKE_ZVAL_COOKIE(zcookie, cookie);
 
-	MAKE_STD_ZVAL(zkey);
-	ZVAL_STRINGL(zkey, key, key_len, 1);
+	ZVAL_STRINGL(&zkey, key, key_len);
+	ZVAL_NULL(&zbody);
 
-	MAKE_STD_ZVAL(zbody);
-	ZVAL_NULL(zbody);
+	ZVAL_COPY(&params[0], &zcookie);
+	ZVAL_COPY(&params[1], &zkey);
+	ZVAL_COPY(&params[2], &zbody);
 
-	params [0] = &zcookie;
-	params [1] = &zkey;
-	params [2] = &zbody;
-
-	retval = s_invoke_php_callback (&MEMC_GET_CB(MEMC_SERVER_ON_STAT), params, 3 TSRMLS_CC);
+	retval = s_invoke_php_callback (&MEMC_GET_CB(MEMC_SERVER_ON_STAT), params, 3);
 
 	if (retval == PROTOCOL_BINARY_RESPONSE_SUCCESS) {
-		if (Z_TYPE_P (zbody) == IS_NULL) {
+		if (Z_TYPE(zbody) == IS_NULL) {
 			retval = response_handler(cookie, NULL, 0, NULL, 0);
 		}
 		else {
-			if (Z_TYPE_P (zbody) != IS_STRING) {
-				convert_to_string (zbody);
+			if (Z_TYPE(zbody) != IS_STRING) {
+				convert_to_string(&zbody);
 			}
-			retval = response_handler(cookie, key, key_len, Z_STRVAL_P (zbody), (uint32_t) Z_STRLEN_P (zbody));
+			retval = response_handler(cookie, key, key_len, Z_STRVAL(zbody), (uint32_t) Z_STRLEN(zbody));
 		}
 	}
+
+	zval_ptr_dtor(&params[0]);
+	zval_ptr_dtor(&params[1]);
+	zval_ptr_dtor(&params[2]);
 	zval_ptr_dtor (&zcookie);
 	zval_ptr_dtor (&zkey);
 	zval_ptr_dtor (&zbody);
@@ -580,11 +548,9 @@ static
 protocol_binary_response_status s_version_handler (const void *cookie,
                                                    memcached_binary_protocol_version_response_handler response_handler)
 {
-	zval **params [2];
+	zval params[2];
 	protocol_binary_response_status retval = PROTOCOL_BINARY_RESPONSE_UNKNOWN_COMMAND;
-	zval *zcookie, *zversion;
-
-	TSRMLS_FETCH();
+	zval zcookie, zversion;
 
 	if (!MEMC_HAS_CB(MEMC_SERVER_ON_VERSION)) {
 		return retval;
@@ -592,21 +558,23 @@ protocol_binary_response_status s_version_handler (const void *cookie,
 
 	MEMC_MAKE_ZVAL_COOKIE(zcookie, cookie);
 
-	MAKE_STD_ZVAL(zversion);
-	ZVAL_NULL(zversion);
+	ZVAL_NULL(&zversion);
 
-	params [0] = &zcookie;
-	params [1] = &zversion;
+	ZVAL_COPY(&params[0], &zcookie);
+	ZVAL_COPY(&params[1], &zversion);
 
-	retval = s_invoke_php_callback (&MEMC_GET_CB(MEMC_SERVER_ON_VERSION), params, 2 TSRMLS_CC);
+	retval = s_invoke_php_callback (&MEMC_GET_CB(MEMC_SERVER_ON_VERSION), params, 2);
 
 	if (retval == PROTOCOL_BINARY_RESPONSE_SUCCESS) {
-		if (Z_TYPE_P (zversion) != IS_STRING) {
-			convert_to_string (zversion);
+		if (Z_TYPE(zversion) != IS_STRING) {
+			convert_to_string(&zversion);
 		}
 
 		retval = response_handler (cookie, Z_STRVAL_P(zversion), (uint32_t) Z_STRLEN_P(zversion));
 	}
+
+	zval_ptr_dtor(&params[0]);
+	zval_ptr_dtor(&params[1]);
 	zval_ptr_dtor (&zcookie);
 	zval_ptr_dtor (&zversion);
 	return retval;
@@ -623,36 +591,33 @@ void s_handle_memcached_event (evutil_socket_t fd, short what, void *arg)
 	php_memc_client_t *client = (php_memc_client_t *) arg;
 	memcached_protocol_event_t events;
 
-	TSRMLS_FETCH();
-
 	if (!client->on_connect_invoked) {
 		if (MEMC_HAS_CB(MEMC_SERVER_ON_CONNECT)) {
-			zval *zremoteip, *zremoteport;
-			zval **params [2];
+			zval zremoteip, zremoteport;
+			zval params[2];
 			protocol_binary_response_status retval;
 
 			struct sockaddr_in addr_in;
 			socklen_t addr_in_len = sizeof(addr_in);
 
-			MAKE_STD_ZVAL(zremoteip);
-			MAKE_STD_ZVAL(zremoteport);
-
 			if (getpeername (fd, (struct sockaddr *) &addr_in, &addr_in_len) == 0) {
-				ZVAL_STRING(zremoteip, inet_ntoa (addr_in.sin_addr), 1);
-				ZVAL_LONG(zremoteport, ntohs (addr_in.sin_port));
+				ZVAL_STRING(&zremoteip, inet_ntoa (addr_in.sin_addr), 1);
+				ZVAL_LONG(&zremoteport, ntohs (addr_in.sin_port));
 			} else {
-				php_error_docref(NULL TSRMLS_CC, E_WARNING, "getpeername failed: %s", strerror (errno));
-				ZVAL_NULL(zremoteip);
-				ZVAL_NULL(zremoteport);
+				php_error_docref(NULL, E_WARNING, "getpeername failed: %s", strerror (errno));
+				ZVAL_NULL(&zremoteip);
+				ZVAL_NULL(&zremoteport);
 			}
 
-			params [0] = &zremoteip;
-			params [1] = &zremoteport;
+			ZVAL_COPY(&params[0], &zremoteip);
+			ZVAL_COPY(&params[1], &zremoteport);
 
-			retval = s_invoke_php_callback (&MEMC_GET_CB(MEMC_SERVER_ON_CONNECT), params, 2 TSRMLS_CC);
+			retval = s_invoke_php_callback (&MEMC_GET_CB(MEMC_SERVER_ON_CONNECT), params, 2);
 
-			zval_ptr_dtor (&zremoteip);
-			zval_ptr_dtor (&zremoteport);
+			zval_ptr_dtor(&params[0]);
+			zval_ptr_dtor(&params[1]);
+			zval_ptr_dtor(&zremoteip);
+			zval_ptr_dtor(&zremoteport);
 
 			if (retval != PROTOCOL_BINARY_RESPONSE_SUCCESS) {
 				memcached_protocol_client_destroy (client->protocol_client);
@@ -683,7 +648,7 @@ void s_handle_memcached_event (evutil_socket_t fd, short what, void *arg)
 
 	rc = event_base_once (client->event_base, fd, flags, s_handle_memcached_event, client, NULL);
 	if (rc != 0) {
-		php_error_docref (NULL TSRMLS_CC, E_WARNING, "Failed to schedule events");
+		php_error_docref (NULL, E_WARNING, "Failed to schedule events");
 	}
 }
 
@@ -698,14 +663,12 @@ void s_accept_cb (evutil_socket_t fd, short what, void *arg)
 
 	php_memc_proto_handler_t *handler = (php_memc_proto_handler_t *) arg;
 
-	TSRMLS_FETCH();
-
 	/* Accept the connection */
 	addr_len = sizeof (addr);
 	sock     = accept (fd, (struct sockaddr *) &addr, &addr_len);
 
 	if (sock == -1) {
-		php_error_docref (NULL TSRMLS_CC, E_WARNING, "Failed to accept the client: %s", strerror (errno));
+		php_error_docref (NULL, E_WARNING, "Failed to accept the client: %s", strerror (errno));
 		return;
 	}
 
@@ -715,7 +678,7 @@ void s_accept_cb (evutil_socket_t fd, short what, void *arg)
 	client->on_connect_invoked = 0;
 
 	if (!client->protocol_client) {
-		php_error_docref (NULL TSRMLS_CC, E_WARNING, "Failed to allocate protocol client");
+		php_error_docref (NULL, E_WARNING, "Failed to allocate protocol client");
 		efree (client);
 		evutil_closesocket (sock);
 		return;
@@ -725,7 +688,7 @@ void s_accept_cb (evutil_socket_t fd, short what, void *arg)
 	rc = event_base_once (handler->event_base, sock, EV_READ, s_handle_memcached_event, client, NULL);
 
 	if (rc != 0) {
-		php_error_docref (NULL TSRMLS_CC, E_WARNING, "Failed to add event for client");
+		php_error_docref (NULL, E_WARNING, "Failed to add event for client");
 		memcached_protocol_client_destroy (client->protocol_client);
 		efree (client);
 		evutil_closesocket (sock);
@@ -771,59 +734,55 @@ evutil_socket_t s_create_listening_socket (const char *spec)
 
 	int rc;
 
-	TSRMLS_FETCH();
-
 	addr_len = sizeof (struct sockaddr);
 	rc = evutil_parse_sockaddr_port (spec, (struct sockaddr *) &addr, &addr_len);
 	if (rc != 0) {
-		php_error_docref(NULL TSRMLS_CC, E_WARNING, "Failed to parse bind address");
+		php_error_docref(NULL, E_WARNING, "Failed to parse bind address");
 		return -1;
 	}
 
 	sock = socket (AF_INET, SOCK_STREAM, 0);
 	if (sock < 0) {
-		php_error_docref(NULL TSRMLS_CC, E_WARNING, "socket failed: %s", strerror (errno));
+		php_error_docref(NULL, E_WARNING, "socket failed: %s", strerror (errno));
 		return -1;
 	}
 
 	rc = bind (sock, (struct sockaddr *) &addr, addr_len);
 	if (rc < 0) {
-		php_error_docref(NULL TSRMLS_CC, E_WARNING, "bind failed: %s", strerror (errno));
+		php_error_docref(NULL, E_WARNING, "bind failed: %s", strerror (errno));
 		return -1;
 	}
 
 	rc = listen (sock, 1024);
 	if (rc < 0) {
-		php_error_docref(NULL TSRMLS_CC, E_WARNING, "listen failed: %s", strerror (errno));
+		php_error_docref(NULL, E_WARNING, "listen failed: %s", strerror (errno));
 		return -1;
 	}
 
 	rc = evutil_make_socket_nonblocking (sock);
 	if (rc != 0) {
-		php_error_docref(NULL TSRMLS_CC, E_WARNING, "failed to make socket non-blocking: %s", strerror (errno));
+		php_error_docref(NULL, E_WARNING, "failed to make socket non-blocking: %s", strerror (errno));
 		return -1;
 	}
 
 	rc = evutil_make_listen_socket_reuseable (sock);
 	if (rc != 0) {
-		php_error_docref(NULL TSRMLS_CC, E_WARNING, "failed to make socket reuseable: %s", strerror (errno));
+		php_error_docref(NULL, E_WARNING, "failed to make socket reuseable: %s", strerror (errno));
 		return -1;
 	}
 
 	rc = evutil_make_socket_closeonexec (sock);
 	if (rc != 0) {
-		php_error_docref(NULL TSRMLS_CC, E_WARNING, "failed to make socket closeonexec: %s", strerror (errno));
+		php_error_docref(NULL, E_WARNING, "failed to make socket closeonexec: %s", strerror (errno));
 		return -1;
 	}
 	return sock;
 }
 
-zend_bool php_memc_proto_handler_run (php_memc_proto_handler_t *handler, const char *address)
+zend_bool php_memc_proto_handler_run (php_memc_proto_handler_t *handler, zend_string *address)
 {
 	struct event *accept_event;
-	evutil_socket_t sock = s_create_listening_socket (address);
-
-	TSRMLS_FETCH();
+	evutil_socket_t sock = s_create_listening_socket (address->val);
 
 	if (sock == -1) {
 		return 0;
@@ -831,22 +790,22 @@ zend_bool php_memc_proto_handler_run (php_memc_proto_handler_t *handler, const c
 
 	handler->event_base = event_base_new();
 	if (!handler->event_base) {
-		php_error_docref(NULL TSRMLS_CC, E_ERROR, "failed to allocate memory: %s", strerror (errno));
+		php_error_docref(NULL, E_ERROR, "failed to allocate memory: %s", strerror (errno));
 	}
 	accept_event = event_new (handler->event_base, sock, EV_READ | EV_PERSIST, s_accept_cb, handler);
 	if (!accept_event) {
-		php_error_docref(NULL TSRMLS_CC, E_ERROR, "failed to allocate memory: %s", strerror (errno));
+		php_error_docref(NULL, E_ERROR, "failed to allocate memory: %s", strerror (errno));
 	}
 	event_add (accept_event, NULL);
 
 	switch (event_base_dispatch (handler->event_base)) {
 		case -1:
-			php_error_docref(NULL TSRMLS_CC, E_ERROR, "event_base_dispatch() failed: %s", strerror (errno));
+			php_error_docref(NULL, E_ERROR, "event_base_dispatch() failed: %s", strerror (errno));
 			return 0;
 		break;
 
 		case 1:
-			php_error_docref(NULL TSRMLS_CC, E_ERROR, "no events registered");
+			php_error_docref(NULL, E_ERROR, "no events registered");
 			return 0;
 		break;
 
@@ -866,3 +825,10 @@ void php_memc_proto_handler_destroy (php_memc_proto_handler_t **ptr)
 	efree (handler);
 	*ptr = NULL;
 }
+/*
+ * Local variables:
+ * tab-width: 4
+ * c-basic-offset: 4
+ * End:
+ * vim: noet sw=4 ts=4 fdm=marker:
+ */

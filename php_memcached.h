@@ -36,7 +36,7 @@
 
 PHP_MEMCACHED_API zend_class_entry *php_memc_get_ce(void);
 PHP_MEMCACHED_API zend_class_entry *php_memc_get_exception(void);
-PHP_MEMCACHED_API zend_class_entry *php_memc_get_exception_base(int root TSRMLS_DC);
+PHP_MEMCACHED_API zend_class_entry *php_memc_get_exception_base(int root);
 
 extern zend_module_entry memcached_module_entry;
 #define phpext_memcached_ptr &memcached_module_entry
