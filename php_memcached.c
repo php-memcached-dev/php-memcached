@@ -2861,12 +2861,8 @@ zend_object_value php_memc_server_new(zend_class_entry *ce)
 	zval *tmp;
 
 	intern = ecalloc(1, sizeof(php_memc_server_t));
-	zend_object_std_init (&intern->zo, ce);
-#if PHP_VERSION_ID >= 50400
-	object_properties_init( (zend_object *) intern, ce);
-#else
-	zend_hash_copy(intern->zo.properties, &ce->default_properties, (copy_ctor_func_t) zval_add_ref, (void *) &tmp, sizeof(zval *));
-#endif
+	zend_object_std_init(&intern->zo, ce);
+	object_properties_init(&intern->zo, ce);
 
 	intern->handler = php_memc_proto_handler_new ();
 
