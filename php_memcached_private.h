@@ -41,7 +41,7 @@
 #include <ext/standard/info.h>
 #include <zend_extensions.h>
 #include <zend_exceptions.h>
-#include <ext/standard/php_smart_str.h>
+#include <ext/standard/php_smart_string.h>
 #include <ext/standard/php_var.h>
 #include <ext/standard/basic_functions.h>
 

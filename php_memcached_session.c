@@ -27,7 +27,7 @@ ps_module ps_mod_memcached = {
 	PS_MOD(memcached)
 };
 
-static int php_memc_sess_lock(memcached_st *memc, const char *key TSRMLS_DC)
+static int php_memc_sess_lock(memcached_st *memc, const char *key)
 {
 	char *lock_key = NULL;
 	int lock_key_len = 0;
@@ -72,7 +72,7 @@ static int php_memc_sess_lock(memcached_st *memc, const char *key TSRMLS_DC)
 				write_retry_attempts--;
 				continue;
 			}
-			php_error_docref(NULL TSRMLS_CC, E_WARNING, "Write of lock failed");
+			php_error_docref(NULL, E_WARNING, "Write of lock failed");
 			break;
 		}
 
@@ -85,7 +85,7 @@ static int php_memc_sess_lock(memcached_st *memc, const char *key TSRMLS_DC)
 	return -1;
 }
 
-static void php_memc_sess_unlock(memcached_st *memc TSRMLS_DC)
+static void php_memc_sess_unlock(memcached_st *memc)
 {
 	if (MEMC_G(sess_locked)) {
 		memcached_delete(memc, MEMC_G(sess_lock_key), MEMC_G(sess_lock_key_len), 0);
@@ -103,13 +103,14 @@ PS_OPEN_FUNC(memcached)
 	int plist_key_len = 0;
 
 	if (!strncmp((char *)save_path, "PERSISTENT=", sizeof("PERSISTENT=") - 1)) {
-		zend_rsrc_list_entry *le = NULL;
+		zend_resource *le = NULL;
+		zval *le_z = NULL;
 		char *e;
 
 		p = (char *)save_path + sizeof("PERSISTENT=") - 1;
 		if (!*p) {
 error:
-			php_error_docref(NULL TSRMLS_CC, E_WARNING, "Invalid persistent id for session storage");
+			php_error_docref(NULL, E_WARNING, "Invalid persistent id for session storage");
 			return FAILURE;
 		}
 		if ((e = strchr(p, ' '))) {
@@ -118,7 +119,9 @@ error:
 			goto error;
 		}
 		plist_key_len++;
-		if (zend_hash_find(&EG(persistent_list), plist_key, plist_key_len, (void *)&le) == SUCCESS) {
+
+		if ((le_z = zend_hash_str_find(&EG(persistent_list), plist_key, plist_key_len)) != NULL) {
+			le = Z_RES_P(le_z);
 			if (le->type == php_memc_sess_list_entry()) {
 				memc_sess = (memcached_sess *) le->ptr;
 				PS_SET_MOD_DATA(memc_sess);
@@ -146,7 +149,7 @@ error:
 							efree(plist_key);
 						}
 						memcached_free(memc_sess->memc_sess);
-						php_error_docref(NULL TSRMLS_CC, E_WARNING, "failed to enable memcached consistent hashing");
+						php_error_docref(NULL, E_WARNING, "failed to enable memcached consistent hashing");
 						return FAILURE;
 					}
 				}
@@ -160,7 +163,7 @@ error:
 						efree(plist_key);
 					}
 					memcached_free(memc_sess->memc_sess);
-					php_error_docref(NULL TSRMLS_CC, E_WARNING, "bad memcached key prefix in memcached.sess_prefix");
+					php_error_docref(NULL, E_WARNING, "bad memcached key prefix in memcached.sess_prefix");
 					return FAILURE;
 				}
 
@@ -169,10 +172,10 @@ error:
 				}
 			} else {
 				memcached_server_list_free(servers);
-				php_error_docref(NULL TSRMLS_CC, E_WARNING, "could not allocate libmemcached structure");
+				php_error_docref(NULL, E_WARNING, "could not allocate libmemcached structure");
 			}
 		} else {
-			php_error_docref(NULL TSRMLS_CC, E_WARNING, "failed to parse session.save_path");
+			php_error_docref(NULL, E_WARNING, "failed to parse session.save_path");
 		}
 	} else {
 		memc_sess->memc_sess = php_memc_create_str(p, strlen(p));
@@ -180,12 +183,12 @@ error:
 #ifdef HAVE_LIBMEMCACHED_CHECK_CONFIGURATION
 			char error_buffer[1024];
 			if (libmemcached_check_configuration(p, strlen(p), error_buffer, sizeof(error_buffer)) != MEMCACHED_SUCCESS) {
-				php_error_docref(NULL TSRMLS_CC, E_WARNING, "session.save_path configuration error %s", error_buffer);
+				php_error_docref(NULL, E_WARNING, "session.save_path configuration error %s", error_buffer);
 			} else {
-				php_error_docref(NULL TSRMLS_CC, E_WARNING, "failed to initialize memcached session storage");
+				php_error_docref(NULL, E_WARNING, "failed to initialize memcached session storage");
 			}
 #else
-			php_error_docref(NULL TSRMLS_CC, E_WARNING, "failed to initialize memcached session storage");
+			php_error_docref(NULL, E_WARNING, "failed to initialize memcached session storage");
 #endif
 
 		} else {
@@ -193,21 +196,25 @@ success:
 			PS_SET_MOD_DATA(memc_sess);
 
 			if (plist_key) {
-				zend_rsrc_list_entry le;
+				zend_resource le;
+				zend_string *tmp_key;
 
 				le.type = php_memc_sess_list_entry();
 				le.ptr = memc_sess;
 
-				if (zend_hash_update(&EG(persistent_list), (char *)plist_key, plist_key_len, (void *)&le, sizeof(le), NULL) == FAILURE) {
+				tmp_key = zend_string_init(plist_key, plist_key_len, 0);
+				if (zend_hash_update_mem(&EG(persistent_list), tmp_key, (void *)&le, sizeof(le)) == NULL) {
+					zend_string_release(tmp_key);
 					efree(plist_key);
-					php_error_docref(NULL TSRMLS_CC, E_ERROR, "could not register persistent entry");
+					php_error_docref(NULL, E_ERROR, "could not register persistent entry");
 				}
+				zend_string_release(tmp_key);
 				efree(plist_key);
 			}
 
 			if (MEMC_G(sess_binary_enabled)) {
 				if (memcached_behavior_set(memc_sess->memc_sess, MEMCACHED_BEHAVIOR_BINARY_PROTOCOL, (uint64_t) 1) == MEMCACHED_FAILURE) {
-					php_error_docref(NULL TSRMLS_CC, E_WARNING, "failed to set memcached session binary protocol");
+					php_error_docref(NULL, E_WARNING, "failed to set memcached session binary protocol");
 					return FAILURE;
 				}
 			}
@@ -220,11 +227,11 @@ success:
 				if (MEMC_G(sess_sasl_username) && MEMC_G(sess_sasl_password)) {
 					/* Force binary protocol */
 					if (memcached_behavior_set(memc_sess->memc_sess, MEMCACHED_BEHAVIOR_BINARY_PROTOCOL, (uint64_t) 1) == MEMCACHED_FAILURE) {
-						php_error_docref(NULL TSRMLS_CC, E_WARNING, "failed to set memcached session binary protocol");
+						php_error_docref(NULL, E_WARNING, "failed to set memcached session binary protocol");
 						return FAILURE;
 					}
 					if (memcached_set_sasl_auth_data(memc_sess->memc_sess, MEMC_G(sess_sasl_username), MEMC_G(sess_sasl_password)) == MEMCACHED_FAILURE) {
-						php_error_docref(NULL TSRMLS_CC, E_WARNING, "failed to set memcached session sasl credentials");
+						php_error_docref(NULL, E_WARNING, "failed to set memcached session sasl credentials");
 						return FAILURE;
 					}
 					MEMC_G(sess_sasl_data) = 1;
@@ -235,23 +242,23 @@ success:
 #endif
 			if (MEMC_G(sess_number_of_replicas) > 0) {
 				if (memcached_behavior_set(memc_sess->memc_sess, MEMCACHED_BEHAVIOR_NUMBER_OF_REPLICAS, (uint64_t) MEMC_G(sess_number_of_replicas)) == MEMCACHED_FAILURE) {
-					php_error_docref(NULL TSRMLS_CC, E_WARNING, "failed to set memcached session number of replicas");
+					php_error_docref(NULL, E_WARNING, "failed to set memcached session number of replicas");
 					return FAILURE;
 				}
 				if (memcached_behavior_set(memc_sess->memc_sess, MEMCACHED_BEHAVIOR_RANDOMIZE_REPLICA_READ, (uint64_t) MEMC_G(sess_randomize_replica_read)) == MEMCACHED_FAILURE) {
-					php_error_docref(NULL TSRMLS_CC, E_WARNING, "failed to set memcached session randomize replica read");
+					php_error_docref(NULL, E_WARNING, "failed to set memcached session randomize replica read");
 				}
 			}
 
 			if (memcached_behavior_set(memc_sess->memc_sess, MEMCACHED_BEHAVIOR_CONNECT_TIMEOUT, (uint64_t) MEMC_G(sess_connect_timeout)) == MEMCACHED_FAILURE) {
-				php_error_docref(NULL TSRMLS_CC, E_WARNING, "failed to set memcached connection timeout");
+				php_error_docref(NULL, E_WARNING, "failed to set memcached connection timeout");
 				return FAILURE;
 			}
 #ifdef HAVE_MEMCACHED_BEHAVIOR_REMOVE_FAILED_SERVERS
 			/* Allow libmemcached remove failed servers */
 			if (MEMC_G(sess_remove_failed_enabled)) {
 				if (memcached_behavior_set(memc_sess->memc_sess, MEMCACHED_BEHAVIOR_REMOVE_FAILED_SERVERS, (uint64_t) 1) == MEMCACHED_FAILURE) {
-					php_error_docref(NULL TSRMLS_CC, E_WARNING, "failed to set: remove failed servers");
+					php_error_docref(NULL, E_WARNING, "failed to set: remove failed servers");
 					return FAILURE;
 				}
 			}
@@ -272,7 +279,7 @@ PS_CLOSE_FUNC(memcached)
 	memcached_sess *memc_sess = PS_GET_MOD_DATA();
 
 	if (MEMC_G(sess_locking_enabled)) {
-		php_memc_sess_unlock(memc_sess->memc_sess TSRMLS_CC);
+		php_memc_sess_unlock(memc_sess->memc_sess);
 	}
 	if (memc_sess->memc_sess) {
 		if (!memc_sess->is_persistent) {
@@ -294,7 +301,7 @@ PS_READ_FUNC(memcached)
 {
 	char *payload = NULL;
 	size_t payload_len = 0;
-	int key_len = strlen(key);
+	int key_len = key->len;
 	uint32_t flags = 0;
 	memcached_return status;
 	memcached_sess *memc_sess = PS_GET_MOD_DATA();
@@ -302,23 +309,22 @@ PS_READ_FUNC(memcached)
 
 	key_length = strlen(MEMC_G(sess_prefix)) + key_len + 5; // prefix + "lock."
 	if (!key_length || key_length >= MEMCACHED_MAX_KEY) {
-		php_error_docref(NULL TSRMLS_CC, E_WARNING, "The session id is too long or contains illegal characters");
+		php_error_docref(NULL, E_WARNING, "The session id is too long or contains illegal characters");
 		PS(invalid_session_id) = 1;
 		return FAILURE;
 	}
 
 	if (MEMC_G(sess_locking_enabled)) {
-		if (php_memc_sess_lock(memc_sess->memc_sess, key TSRMLS_CC) < 0) {
-			php_error_docref(NULL TSRMLS_CC, E_WARNING, "Unable to clear session lock record");
+		if (php_memc_sess_lock(memc_sess->memc_sess, key->val) < 0) {
+			php_error_docref(NULL, E_WARNING, "Unable to clear session lock record");
 			return FAILURE;
 		}
 	}
 
-	payload = memcached_get(memc_sess->memc_sess, key, key_len, &payload_len, &flags, &status);
+	payload = memcached_get(memc_sess->memc_sess, key->val, key_len, &payload_len, &flags, &status);
 
 	if (status == MEMCACHED_SUCCESS) {
-		*val = estrndup(payload, payload_len);
-		*vallen = payload_len;
+		*val = zend_string_init(payload, payload_len, 1);
 		free(payload);
 		return SUCCESS;
 	} else {
@@ -328,7 +334,7 @@ PS_READ_FUNC(memcached)
 
 PS_WRITE_FUNC(memcached)
 {
-	int key_len = strlen(key);
+	int key_len = key->len;
 	time_t expiration = 0;
 	long write_try_attempts = 1;
 	memcached_return status;
@@ -337,7 +343,7 @@ PS_WRITE_FUNC(memcached)
 
 	key_length = strlen(MEMC_G(sess_prefix)) + key_len + 5; // prefix + "lock."
 	if (!key_length || key_length >= MEMCACHED_MAX_KEY) {
-		php_error_docref(NULL TSRMLS_CC, E_WARNING, "The session id is too long or contains illegal characters");
+		php_error_docref(NULL, E_WARNING, "The session id is too long or contains illegal characters");
 		PS(invalid_session_id) = 1;
 		return FAILURE;
 	}
@@ -352,7 +358,7 @@ PS_WRITE_FUNC(memcached)
 	}
 
 	do {
-		status = memcached_set(memc_sess->memc_sess, key, key_len, val, vallen, expiration, 0);
+		status = memcached_set(memc_sess->memc_sess, key->val, key_len, val->val, val->len, expiration, 0);
 		if (status == MEMCACHED_SUCCESS) {
 			return SUCCESS;
 		} else {
@@ -367,9 +373,9 @@ PS_DESTROY_FUNC(memcached)
 {
 	memcached_sess *memc_sess = PS_GET_MOD_DATA();
 
-	memcached_delete(memc_sess->memc_sess, key, strlen(key), 0);
+	memcached_delete(memc_sess->memc_sess, key->val, key->len, 0);
 	if (MEMC_G(sess_locking_enabled)) {
-		php_memc_sess_unlock(memc_sess->memc_sess TSRMLS_CC);
+		php_memc_sess_unlock(memc_sess->memc_sess);
 	}
 
 	return SUCCESS;
