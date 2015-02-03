@@ -580,7 +580,7 @@ static void php_memc_get_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 	/*
 		* Enable CAS support, but only if it is currently disabled.
 		*/
-	if (cas_token && Z_IS_REF(cas_token) && orig_cas_flag == 0) {
+	if (cas_token && Z_ISREF_P(cas_token) && orig_cas_flag == 0) {
 		memcached_behavior_set(m_obj->memc, MEMCACHED_BEHAVIOR_SUPPORT_CAS, 1);
 	}
 
@@ -589,7 +589,7 @@ static void php_memc_get_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 	} else {
 		status = memcached_mget(m_obj->memc, keys, key_lens, 1);
 	}
-	if (cas_token && Z_IS_REF(cas_token) && orig_cas_flag == 0) {
+	if (cas_token && Z_ISREF_P(cas_token) && orig_cas_flag == 0) {
 		memcached_behavior_set(m_obj->memc, MEMCACHED_BEHAVIOR_SUPPORT_CAS, orig_cas_flag);
 	}
 
@@ -760,7 +760,7 @@ static void php_memc_getMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 	/*
 	 * Enable CAS support, but only if it is currently disabled.
 	 */
-	if (cas_tokens && Z_IS_REF(cas_tokens)) {
+	if (cas_tokens && Z_ISREF_P(cas_tokens)) {
 		orig_cas_flag = memcached_behavior_get(m_obj->memc, MEMCACHED_BEHAVIOR_SUPPORT_CAS);
 		if (orig_cas_flag == 0) {
 			memcached_behavior_set(m_obj->memc, MEMCACHED_BEHAVIOR_SUPPORT_CAS, 1);
@@ -778,7 +778,7 @@ static void php_memc_getMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 	/*
 	 * Restore the CAS support flag, but only if we had to turn it on.
 	 */
-	if (cas_tokens && Z_IS_REF(cas_tokens) && orig_cas_flag == 0) {
+	if (cas_tokens && Z_ISREF_P(cas_tokens) && orig_cas_flag == 0) {
 		memcached_behavior_set(m_obj->memc, MEMCACHED_BEHAVIOR_SUPPORT_CAS, orig_cas_flag);
 	}
 
@@ -790,7 +790,7 @@ static void php_memc_getMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 	 * returned as doubles, because we cannot store potential 64-bit values in longs.
 	 */
 	if (cas_tokens) {
-		if (Z_IS_REF(cas_tokens)) {
+		if (Z_ISREF_P(cas_tokens)) {
 			/* cas_tokens was passed by reference, we'll create an array for it. */
 			ZVAL_DEREF(cas_tokens);
 			SEPARATE_ZVAL(cas_tokens);
