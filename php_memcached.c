@@ -3517,7 +3517,7 @@ static memcached_return php_memc_do_cache_callback(zval *zmemc_obj, zend_fcall_i
 	zval retval;
 	zval z_key;
 	zval z_val;
-	zval z_expiration;
+	zval *expiration, z_expiration;
 
 	uint32_t flags = 0;
 	memcached_return rc;
@@ -3527,41 +3527,37 @@ static memcached_return php_memc_do_cache_callback(zval *zmemc_obj, zend_fcall_i
 
 	ZVAL_STR(&z_key, key);
 	ZVAL_NULL(&z_val);
-	ZVAL_NEW_REF(value, &z_val);
-	ZVAL_NEW_REF(&z_expiration, &z_val);
+	ZVAL_NEW_REF(&z_val, value);
+	ZVAL_NEW_REF(&z_expiration, value);
 	ZVAL_LONG(Z_REFVAL(z_expiration), 0);
 
 	ZVAL_COPY(&params[0], zmemc_obj);
 	ZVAL_COPY(&params[1], &z_key);
-	ZVAL_COPY(&params[2], value);
-	ZVAL_COPY(&params[3], &z_expiration);
+	ZVAL_COPY_VALUE(&params[2], &z_val);
+	ZVAL_COPY_VALUE(&params[3], &z_expiration);
 
 	fci->retval = &retval;
 	fci->params = params;
 	fci->param_count = 4;
 
 	result = zend_call_function(fci, fcc);
-	ZVAL_UNREF(value);
-	ZVAL_UNREF(&z_expiration);
+	ZVAL_DUP(value, Z_REFVAL(z_val));
+	expiration = Z_REFVAL(z_expiration);
 	if (result == SUCCESS && Z_TYPE(retval) != IS_UNDEF) {
 		struct memc_obj *m_obj;
 		i_obj = Z_MEMC_OBJ_P(zmemc_obj)
 		m_obj = i_obj->obj;
 
 		if (zend_is_true(&retval)) {
-			time_t expiration;
+			time_t expir;
 
-			if (Z_TYPE(z_expiration) != IS_LONG) {
-				convert_to_long(&z_expiration);
-			}
-
-			expiration = Z_LVAL(z_expiration);
+			expir = zval_get_long(expiration);
 
 			payload = php_memc_zval_to_payload(value, &payload_len, &flags, m_obj->serializer, m_obj->compression_type);
 			if (payload == NULL) {
 				status = (memcached_return)MEMC_RES_PAYLOAD_FAILURE;
 			} else {
-				rc = memcached_set(m_obj->memc, key->val, key->len, payload, payload_len, expiration, flags);
+				rc = memcached_set(m_obj->memc, key->val, key->len, payload, payload_len, expir, flags);
 				if (rc == MEMCACHED_SUCCESS || rc == MEMCACHED_BUFFERED) {
 					status = rc;
 				}
@@ -3575,8 +3571,6 @@ static memcached_return php_memc_do_cache_callback(zval *zmemc_obj, zend_fcall_i
 
 	} else {
 		if (result == FAILURE) {
-			zval_ptr_dtor(&z_key);
-			zval_ptr_dtor(&z_expiration);
 			php_error_docref(NULL, E_WARNING, "could not invoke cache callback");
 		}
 		status = MEMCACHED_FAILURE;
@@ -3589,6 +3583,7 @@ static memcached_return php_memc_do_cache_callback(zval *zmemc_obj, zend_fcall_i
 	}
 
 	zval_ptr_dtor(&z_key);
+	zval_ptr_dtor(&z_val);
 	zval_ptr_dtor(&z_expiration);
 
 	return status;
