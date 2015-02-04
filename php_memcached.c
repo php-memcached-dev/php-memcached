@@ -2548,16 +2548,9 @@ uint32_t *s_zval_to_uint32_array (zval *input, size_t *num_elements)
 
 		if (Z_TYPE_P(pzval) == IS_LONG) {
 			value = Z_LVAL_P(pzval);
-		}
-		else {
-			zval *tmp_zval, *tmp_pzval;
-			tmp_zval = pzval;
-			zval_copy_ctor(tmp_zval);
-			tmp_pzval = tmp_zval;
-			convert_to_long(tmp_pzval);
-
-			value = (Z_LVAL_P(tmp_pzval) > 0) ? Z_LVAL_P(tmp_pzval) : 0;
-			zval_dtor(tmp_pzval);
+		} else {
+			value = zval_get_long(pzval);
+			value = value > 0? value : 0;
 		}
 
 		if (value < 0) {
