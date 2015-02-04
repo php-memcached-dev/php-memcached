@@ -310,7 +310,6 @@ PS_READ_FUNC(memcached)
 	key_length = strlen(MEMC_G(sess_prefix)) + key_len + 5; // prefix + "lock."
 	if (!key_length || key_length >= MEMCACHED_MAX_KEY) {
 		php_error_docref(NULL, E_WARNING, "The session id is too long or contains illegal characters");
-		PS(invalid_session_id) = 1;
 		return FAILURE;
 	}
 
@@ -344,7 +343,6 @@ PS_WRITE_FUNC(memcached)
 	key_length = strlen(MEMC_G(sess_prefix)) + key_len + 5; // prefix + "lock."
 	if (!key_length || key_length >= MEMCACHED_MAX_KEY) {
 		php_error_docref(NULL, E_WARNING, "The session id is too long or contains illegal characters");
-		PS(invalid_session_id) = 1;
 		return FAILURE;
 	}
 
