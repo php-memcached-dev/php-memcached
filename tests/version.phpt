@@ -13,6 +13,6 @@ echo "OK" . PHP_EOL;
 --EXPECTF--
 array(1) {
   ["%s:%d"]=>
-  string(6) "%d.%d.%d"
+  string(%d) "%d.%d.%d"
 }
 OK

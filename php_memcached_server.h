@@ -33,7 +33,7 @@ php_memc_proto_handler_t *php_memc_proto_handler_new ();
 
 void php_memc_proto_handler_destroy (php_memc_proto_handler_t **ptr);
 
-zend_bool php_memc_proto_handler_run (php_memc_proto_handler_t *h, const char *address);
+zend_bool php_memc_proto_handler_run (php_memc_proto_handler_t *h, zend_string *address);
 
 #endif
 
