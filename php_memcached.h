@@ -21,7 +21,6 @@
 
 #include "php.h"
 #include "main/php_config.h"
-#include "Zend/zend_smart_str.h"
 
 #ifdef HAVE_CONFIG_H
 # include "config.h"
