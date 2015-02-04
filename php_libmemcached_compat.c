@@ -50,3 +50,4 @@ memcached_st *php_memc_create_str (const char *str, size_t str_len)
 	return memc;
 #endif
 }
+
