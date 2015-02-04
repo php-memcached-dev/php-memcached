@@ -546,6 +546,7 @@ static void php_memc_get_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 	size_t key_lens[1] = { 0 };
 	zval *cas_token = NULL;
 	zval *udf_flags = NULL;
+	uint64_t orig_cas_flag;
 	zend_fcall_info fci = empty_fcall_info;
 	zend_fcall_info_cache fcc = empty_fcall_info_cache;
 	memcached_result_st result;
@@ -575,7 +576,6 @@ static void php_memc_get_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 	keys[0] = key->val;
 	key_lens[0] = key->len;
 
-	uint64_t orig_cas_flag;
 	orig_cas_flag = memcached_behavior_get(m_obj->memc, MEMCACHED_BEHAVIOR_SUPPORT_CAS);
 
 	/*
@@ -612,6 +612,8 @@ static void php_memc_get_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 			* ourselves.
 			*/
 		if (cas_token) {
+			ZVAL_DEREF(cas_token);
+			zval_ptr_dtor(cas_token);
 			ZVAL_DOUBLE(cas_token, 0.0);
 		}
 
@@ -653,8 +655,7 @@ static void php_memc_get_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 
 	if (cas_token) {
 		ZVAL_DEREF(cas_token);
-		SEPARATE_ZVAL(cas_token);
-		zval_dtor(cas_token);
+		zval_ptr_dtor(cas_token);
 		ZVAL_DOUBLE(cas_token, (double)cas);
 	}
 
@@ -2839,7 +2840,7 @@ static void php_memc_free_storage(zend_object *obj)
 
 zend_object *php_memc_new(zend_class_entry *ce)
 {
-	php_memc_t *i_obj = ecalloc(1, sizeof(php_memc_t) + sizeof(zval) * (ce->default_properties_count - 1));
+	php_memc_t *i_obj = ecalloc(1, sizeof(php_memc_t) + zend_object_properties_size(ce));
     
 	zend_object_std_init(&i_obj->zo, ce);
 	object_properties_init(&i_obj->zo, ce);
