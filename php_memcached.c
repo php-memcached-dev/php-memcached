@@ -2927,7 +2927,7 @@ static memcached_return php_memc_do_stats_callback(const memcached_st *ptr, php_
 	int hostport_len;
 	struct callbackContext* context = (struct callbackContext*) in_context;
 	zval entry;
-	hostport_len = spprintf(&hostport, 0, "%s:%d", memcached_server_name(instance), memcached_server_port(instance) - 1);
+	hostport_len = spprintf(&hostport, 0, "%s:%d", memcached_server_name(instance), memcached_server_port(instance));
 
 	array_init(&entry);
 
