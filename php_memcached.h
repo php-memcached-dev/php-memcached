@@ -20,6 +20,7 @@
 #define PHP_MEMCACHED_H
 
 #include "php.h"
+#include "Zend/zend_smart_str.h"
 #include "main/php_config.h"
 
 #ifdef HAVE_CONFIG_H
