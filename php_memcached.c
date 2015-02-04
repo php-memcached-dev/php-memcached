@@ -1699,7 +1699,7 @@ static void php_memc_delete_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 		if (zend_parse_parameters(ZEND_NUM_ARGS(), "S|l", &key, &expiration) == FAILURE) {
 			return;
 		}
-		server_key = zend_string_copy(key);
+		server_key = key;
 	}
 
 	MEMC_METHOD_FETCH_OBJECT;
