@@ -2760,11 +2760,9 @@ static PHP_METHOD(Memcached, getResultMessage)
 		case MEMCACHED_CONNECTION_SOCKET_CREATE_FAILURE:
 		case MEMCACHED_UNKNOWN_READ_FAILURE:
 			if (i_obj->memc_errno) {
-				char *str;
-				int str_len;
-				str_len = spprintf(&str, 0, "%s: %s", memcached_strerror(m_obj->memc, (memcached_return)i_obj->rescode),
-					strerror(i_obj->memc_errno));
-				RETURN_STRINGL(str, str_len);
+				zend_string *str = strpprintf(0, "%s: %s",
+						memcached_strerror(m_obj->memc, (memcached_return)i_obj->rescode), strerror(i_obj->memc_errno));
+				RETURN_STR(str);
 			}
 			/* Fall through */
 		default:
