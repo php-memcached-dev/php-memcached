@@ -24,7 +24,7 @@ extern ZEND_DECLARE_MODULE_GLOBALS(php_memcached)
 #define MEMC_SESS_LOCK_EXPIRATION 30
 
 ps_module ps_mod_memcached = {
-	PS_MOD(memcached)
+	PS_MOD_UPDATE_TIMESTAMP(memcached)
 };
 
 static int php_memc_sess_lock(memcached_st *memc, const char *key)
@@ -346,8 +346,8 @@ PS_WRITE_FUNC(memcached)
 		return FAILURE;
 	}
 
-	if (PS(gc_maxlifetime) > 0) {
-		expiration = PS(gc_maxlifetime);
+	if (maxlifetime > 0) {
+		expiration = maxlifetime;
 	}
 
 	/* Set the number of write retry attempts to the number of replicas times the number of attempts to remove a server plus the initial write */
@@ -381,6 +381,62 @@ PS_DESTROY_FUNC(memcached)
 
 PS_GC_FUNC(memcached)
 {
+	return SUCCESS;
+}
+
+PS_CREATE_SID_FUNC(memcached)
+{
+	zend_string *sid;
+	int maxfail = 3;
+	memcached_sess *memc_sess = PS_GET_MOD_DATA();
+
+	do {
+		sid = php_session_create_id((void**)&memc_sess);
+		if (!sid) {
+			if (--maxfail < 0) {
+				return NULL;
+			} else {
+				continue;
+			}
+		}
+		/* Check collision */
+		/* FIXME: mod_data(memc_sess) should not be NULL (User handler could be NULL) */
+		if (memc_sess && memcached_exist(memc_sess->memc_sess, sid->val, sid->len) == MEMCACHED_SUCCESS) {
+			if (sid) {
+				zend_string_release(sid);
+				sid = NULL;
+			}
+			if (--maxfail < 0) {
+				return NULL;
+			}
+		}
+	} while(!sid);
+
+	return sid;
+}
+
+PS_VALIDATE_SID_FUNC(memcached)
+{
+	memcached_sess *memc_sess = PS_GET_MOD_DATA();
+
+	if (memcached_exist(memc_sess->memc_sess, key->val, key->len) == MEMCACHED_SUCCESS) {
+		return SUCCESS;
+	} else {
+		return FAILURE;
+	}
+}
+
+PS_UPDATE_TIMESTAMP_FUNC(memcached)
+{
+	memcached_sess *memc_sess = PS_GET_MOD_DATA();
+	time_t expiration = 0;
+
+	if (maxlifetime > 0) {
+		expiration = maxlifetime;
+	}
+	if (memcached_touch(memc_sess->memc_sess, key->val, key->len, expiration) == MEMCACHED_FAILURE) {
+		return FAILURE;
+	}
 	return SUCCESS;
 }
 /* }}} */
