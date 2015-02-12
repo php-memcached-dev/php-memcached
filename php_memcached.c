@@ -1299,14 +1299,8 @@ static void php_memc_setMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 retry:
 		if (!by_key) {
 			status = memcached_set(m_obj->memc, str_key->val, str_key->len, payload, payload_len, expiration, flags);
-			if (!skey) {
-				zend_string_release(str_key);
-			}
 		} else {
 			status = memcached_set_by_key(m_obj->memc, server_key->val, server_key->len, str_key->val, str_key->len, payload, payload_len, expiration, flags);
-			if (!skey) {
-				zend_string_release(str_key);
-			}
 		}
 
 		if (php_memc_handle_error(i_obj, status) < 0) {
