@@ -321,7 +321,11 @@ PS_READ_FUNC(memcached)
 		*vallen = payload_len;
 		free(payload);
 		return SUCCESS;
-	} else {
+	} else if (status == MEMCACHED_NOTFOUND) {
+		/* this is okey, session may not be in memcached yet */
+		return FAILURE;
+        } else {
+		php_error_docref(NULL TSRMLS_CC, E_WARNING, "error getting session from memcached: %s", memcached_last_error_message(memc_sess->memc_sess));
 		return FAILURE;
 	}
 }
@@ -356,6 +360,7 @@ PS_WRITE_FUNC(memcached)
 		if (status == MEMCACHED_SUCCESS) {
 			return SUCCESS;
 		} else {
+			php_error_docref(NULL TSRMLS_CC, E_WARNING, "error saving session to memcached: %s", memcached_last_error_message(memc_sess->memc_sess));
 			write_try_attempts--;
 		}
 	} while (write_try_attempts > 0);
