@@ -29,6 +29,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 #include <php.h>
 #include <php_main.h>
 
@@ -189,6 +190,7 @@ typedef struct {
 } memcached_sess;
 
 int php_memc_sess_list_entry(void);
+int php_memc_valid_key(char *);
 
 char *php_memc_printable_func (zend_fcall_info *fci, zend_fcall_info_cache *fci_cache TSRMLS_DC);
 

@@ -397,6 +397,21 @@ static int php_memc_list_entry(void)
 	return le_memc;
 }
 
+static int php_memc_valid_key(char *key)
+{
+  if (!*key) {
+    return 0;
+  }
+
+  for ( ; *key; ++key) {
+    if (iscntrl(*key) || isspace(*key)) {
+      return 0;
+    }
+  }
+
+  return 1;
+}
+
 /* {{{ Memcached::__construct([string persistent_id[, callback on_new[, string connection_str]]]))
    Creates a Memcached object, optionally using persistent memcache connection */
 static PHP_METHOD(Memcached, __construct)
@@ -576,7 +591,7 @@ static void php_memc_get_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 	MEMC_METHOD_FETCH_OBJECT;
 	i_obj->rescode = MEMCACHED_SUCCESS;
 
-	if (key_len == 0 || strchr(key, ' ')) {
+	if (key_len == 0 || !php_memc_valid_key(key)) {
 		i_obj->rescode = MEMCACHED_BAD_KEY_PROVIDED;
 		RETURN_FROM_GET;
 	}
@@ -1448,7 +1463,7 @@ static void php_memc_store_impl(INTERNAL_FUNCTION_PARAMETERS, int op, zend_bool 
 	MEMC_METHOD_FETCH_OBJECT;
 	i_obj->rescode = MEMCACHED_SUCCESS;
 
-	if (key_len == 0 || strchr(key, ' ')) {
+	if (key_len == 0 || !php_memc_valid_key(key)) {
 		i_obj->rescode = MEMCACHED_BAD_KEY_PROVIDED;
 		RETURN_FALSE;
 	}
@@ -1599,7 +1614,7 @@ static void php_memc_cas_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 	MEMC_METHOD_FETCH_OBJECT;
 	i_obj->rescode = MEMCACHED_SUCCESS;
 
-	if (key_len == 0 || strchr(key, ' ')) {
+	if (key_len == 0 || !php_memc_valid_key(key)) {
 		i_obj->rescode = MEMCACHED_BAD_KEY_PROVIDED;
 		RETURN_FALSE;
 	}
@@ -1717,7 +1732,7 @@ static void php_memc_delete_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 	MEMC_METHOD_FETCH_OBJECT;
 	i_obj->rescode = MEMCACHED_SUCCESS;
 
-	if (key_len == 0 || strchr(key, ' ')) {
+	if (key_len == 0 || !php_memc_valid_key(key)) {
 		i_obj->rescode = MEMCACHED_BAD_KEY_PROVIDED;
 		RETURN_FALSE;
 	}
@@ -1817,7 +1832,7 @@ static void php_memc_incdec_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key,
 	MEMC_METHOD_FETCH_OBJECT;
 	i_obj->rescode = MEMCACHED_SUCCESS;
 
-	if (key_len == 0 || strchr(key, ' ')) {
+	if (key_len == 0 || !php_memc_valid_key(key)) {
 		i_obj->rescode = MEMCACHED_BAD_KEY_PROVIDED;
 		RETURN_FALSE;
 	}
@@ -4482,6 +4497,7 @@ int php_memc_sess_list_entry(void)
 {
 	return le_memc_sess;
 }
+
 
 /* {{{ PHP_MINIT_FUNCTION */
 PHP_MINIT_FUNCTION(memcached)
