@@ -24,5 +24,5 @@ session_write_close();
 echo "OK";
 
 --EXPECTF--
-Warning: ini_set(): memcached.sess_prefix cannot contain whitespace characters in %s on line %d
+Warning: ini_set(): memcached.sess_prefix cannot contain whitespace or control characters in %s on line %d
 OK

@@ -202,15 +202,28 @@ static inline php_memc_object_t *php_memc_fetch_object(zend_object *obj) {
 	}                                                                                 \
 	memc_user_data = (php_memc_user_data_t *) memcached_get_user_data(intern->memc);
 
-#define MEMC_CHECK_KEY(intern, key)                      \
-	if (UNEXPECTED(ZSTR_LEN(key) == 0 ||                 \
-		ZSTR_LEN(key) > MEMC_OBJECT_KEY_MAX_LENGTH ||    \
-		(memcached_behavior_get(intern->memc,            \
-				MEMCACHED_BEHAVIOR_BINARY_PROTOCOL) ?    \
-		strchr(ZSTR_VAL(key), '\n') :                    \
-		strchr(ZSTR_VAL(key), ' ')))) {                  \
-		intern->rescode = MEMCACHED_BAD_KEY_PROVIDED;    \
-		RETURN_FALSE;                                    \
+static
+zend_bool s_memc_valid_key_binary(const char *key)
+{
+	return strchr(key, '\n') == NULL;
+}
+
+static
+zend_bool s_memc_valid_key_ascii(const char *key)
+{
+	while (*key && !iscntrl(*key) && !isspace(*key)) ++key;
+	return *key == '\0';
+}
+
+#define MEMC_CHECK_KEY(intern, key)                                               \
+	if (UNEXPECTED(ZSTR_LEN(key) == 0 ||                                          \
+		ZSTR_LEN(key) > MEMC_OBJECT_KEY_MAX_LENGTH ||                             \
+		(memcached_behavior_get(intern->memc, MEMCACHED_BEHAVIOR_BINARY_PROTOCOL) \
+				? !s_memc_valid_key_binary(ZSTR_VAL(key))                         \
+				: !s_memc_valid_key_ascii(ZSTR_VAL(key))                          \
+		))) {                                                                     \
+		intern->rescode = MEMCACHED_BAD_KEY_PROVIDED;                             \
+		RETURN_FALSE;                                                             \
 	}
 
 #ifdef HAVE_MEMCACHED_PROTOCOL
@@ -307,16 +320,12 @@ static
 PHP_INI_MH(OnUpdateSessionPrefixString)
 {
 	if (new_value && ZSTR_LEN(new_value) > 0) {
-		char *ptr = ZSTR_VAL(new_value);
-
-		while (*ptr != '\0') {
-			if (isspace (*ptr++)) {
-				php_error_docref(NULL, E_WARNING, "memcached.sess_prefix cannot contain whitespace characters");
-				return FAILURE;
-			}
-		}
 		if (ZSTR_LEN(new_value) > MEMCACHED_MAX_KEY) {
 			php_error_docref(NULL, E_WARNING, "memcached.sess_prefix too long (max: %d)", MEMCACHED_MAX_KEY - 1);
+			return FAILURE;
+		}
+		if (!s_memc_valid_key_ascii(ZSTR_VAL(new_value))) {
+			php_error_docref(NULL, E_WARNING, "memcached.sess_prefix cannot contain whitespace or control characters");
 			return FAILURE;
 		}
 	}
