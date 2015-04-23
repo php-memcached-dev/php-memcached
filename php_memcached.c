@@ -407,8 +407,7 @@ static PHP_METHOD(Memcached, __construct)
 	zend_fcall_info fci = {0};
 	zend_fcall_info_cache fci_cache;
 
-	if (zend_parse_parameters(ZEND_NUM_ARGS(), "|S!f!S", &persistent_id, &fci, &fci_cache, &conn_str) == FAILURE) {
-		ZEND_CTOR_MAKE_NULL();
+	if (zend_parse_parameters_throw(ZEND_NUM_ARGS(), "|S!f!S", &persistent_id, &fci, &fci_cache, &conn_str) == FAILURE) {
 		return;
 	}
 
