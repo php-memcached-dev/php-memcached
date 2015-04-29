@@ -72,7 +72,7 @@ static int php_memc_sess_lock(memcached_st *memc, const char *key TSRMLS_DC)
 				write_retry_attempts--;
 				continue;
 			}
-			php_error_docref(NULL TSRMLS_CC, E_WARNING, "Write of lock failed");
+			php_error_docref(NULL TSRMLS_CC, E_WARNING, "Memcached: Write of lock failed, last error was: %s", memcached_strerror(memc, status));
 			break;
 		}
 
@@ -322,6 +322,7 @@ PS_READ_FUNC(memcached)
 		free(payload);
 		return SUCCESS;
 	} else {
+		php_error_docref(NULL TSRMLS_CC, E_WARNING, "Memcached: Failed to read session data, last error was: %s", memcached_strerror(memc_sess->memc_sess, status));
 		return FAILURE;
 	}
 }
@@ -360,6 +361,7 @@ PS_WRITE_FUNC(memcached)
 		}
 	} while (write_try_attempts > 0);
 
+	php_error_docref(NULL TSRMLS_CC, E_WARNING, "Memcached: Failed to write session data, last error was: %s", memcached_strerror(memc_sess->memc_sess, status));
 	return FAILURE;
 }
 
