@@ -3119,7 +3119,7 @@ zend_bool s_serialize_value (enum memcached_serializer serializer, zval *value, 
 #ifdef HAVE_MEMCACHED_MSGPACK
 		case SERIALIZER_MSGPACK:
 			php_msgpack_serialize(buf, value);
-			if (!buf->c) {
+			if (!buf->s) {
 				php_error_docref(NULL, E_WARNING, "could not serialize value with msgpack");
 				return 0;
 			}
