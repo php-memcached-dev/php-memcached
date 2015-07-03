@@ -58,6 +58,8 @@ http://pear.php.net/dtd/package-2.0.xsd">
    <file role='src' name='g_fmt.h'/>
    <file role='src' name='fastlz/fastlz.c'/>
    <file role='src' name='fastlz/fastlz.h'/>
+   <file role='src' name='php_zlib/zlib.c'/>
+   <file role='src' name='php_zlib/zlib.h'/>
    <dir name="tests">
     <file role='test' name='001.phpt'/>
     <file role='test' name='version.phpt'/>

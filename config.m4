@@ -339,7 +339,7 @@ if test "$PHP_MEMCACHED" != "no"; then
       AC_MSG_RESULT([no])
     fi
 
-    PHP_MEMCACHED_FILES="php_memcached.c php_libmemcached_compat.c  g_fmt.c"
+    PHP_MEMCACHED_FILES="php_memcached.c php_libmemcached_compat.c  g_fmt.c php_zlib/zlib.c"
 
     if test "$PHP_SYSTEM_FASTLZ" != "no"; then
       AC_CHECK_HEADERS([fastlz.h], [ac_cv_have_fastlz="yes"], [ac_cv_have_fastlz="no"])
@@ -403,6 +403,7 @@ if test "$PHP_MEMCACHED" != "no"; then
     PHP_SUBST(MEMCACHED_SHARED_LIBADD)
 
     PHP_NEW_EXTENSION(memcached, $PHP_MEMCACHED_FILES, $ext_shared,,$SESSION_INCLUDES $IGBINARY_INCLUDES $LIBEVENT_INCLUDES $MSGPACK_INCLUDES)
+    PHP_ADD_BUILD_DIR($ext_builddir/php_zlib, 1)
     if test "ac_cv_have_fastlz" != "yes"; then
       PHP_ADD_BUILD_DIR($ext_builddir/fastlz, 1)
     fi

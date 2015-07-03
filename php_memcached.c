@@ -35,7 +35,7 @@
 #else
 #include "fastlz/fastlz.h"
 #endif
-#include <zlib.h>
+#include "php_zlib/zlib.h"
 
 #ifdef HAVE_JSON_API
 # include "ext/json/php_json.h"
@@ -3105,7 +3105,7 @@ char *s_compress_value (enum memcached_compression_type compression_type, const 
 			/* ZLIB returns the compressed size in this buffer */
 			compressed_size = buffer_size;
 
-			compress_status = (compress((Bytef *)buffer, &compressed_size, (Bytef *)payload, *payload_len) == Z_OK);
+			compress_status = (zlib_compress(buffer, &compressed_size, payload, *payload_len) == Z_OK);
 			MEMC_VAL_SET_FLAG(*flags, MEMC_VAL_COMPRESSION_ZLIB);
 			break;
 
@@ -3307,7 +3307,7 @@ char *s_decompress_value (const char *payload, size_t *payload_len, uint32_t fla
 		if (MEMC_VAL_HAS_FLAG(flags, MEMC_VAL_COMPRESSION_FASTLZ)) {
 			decompress_status = ((length = fastlz_decompress(payload, *payload_len, buffer, len)) > 0);
 		} else if (MEMC_VAL_HAS_FLAG(flags, MEMC_VAL_COMPRESSION_ZLIB)) {
-			decompress_status = (uncompress((Bytef *)buffer, &length, (Bytef *)payload, *payload_len) == Z_OK);
+			decompress_status = (zlib_uncompress(buffer, &length, payload, *payload_len) == Z_OK);
 		}
 	}
 
