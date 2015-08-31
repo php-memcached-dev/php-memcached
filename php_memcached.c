@@ -3582,6 +3582,7 @@ static memcached_return php_memc_do_cache_callback(zval *zmemc_obj, zend_fcall_i
 	zval_ptr_dtor(&z_key);
 	zval_ptr_dtor(&z_val);
 	zval_ptr_dtor(&z_expiration);
+	zval_ptr_dtor(zmemc_obj);
 
 	return status;
 }
@@ -3603,9 +3604,7 @@ static int php_memc_do_result_callback(zval *zmemc_obj, zend_fcall_info *fci,
 	int rc = 0;
 	php_memc_t *i_obj = NULL;
 
-	ZVAL_COPY(&params[0], zmemc_obj);
 	fci->retval = &retval;
-	fci->params = params;
 	fci->param_count = 2;
 
 	payload     = memcached_result_value(result);
@@ -3624,7 +3623,6 @@ static int php_memc_do_result_callback(zval *zmemc_obj, zend_fcall_info *fci,
 	}
 
 	array_init(&z_result);
-	ZVAL_COPY(&params[1], &z_result);
 	add_assoc_stringl_ex(&z_result, ZEND_STRL("key"), (char *)res_key, res_key_len);
 	add_assoc_zval_ex(&z_result, ZEND_STRL("value"), &value);
 	if (cas != 0) {
@@ -3634,16 +3632,19 @@ static int php_memc_do_result_callback(zval *zmemc_obj, zend_fcall_info *fci,
 		add_assoc_long_ex(&z_result, ZEND_STRL("flags"), MEMC_VAL_GET_USER_FLAGS(flags));
 	}
 
+	ZVAL_UNDEF(&retval);
+	zend_fcall_info_argn(fci, 2, zmemc_obj, &z_result);
+
 	if (zend_call_function(fci, fcc) == FAILURE) {
 		php_error_docref(NULL, E_WARNING, "could not invoke result callback");
 		rc = -1;
 	}
 
-	if (&retval) {
+	if (Z_TYPE(retval) != IS_UNDEF) {
 		zval_ptr_dtor(&retval);
 	}
-	zval_ptr_dtor(&params[0]);
-	zval_ptr_dtor(&params[1]);
+
+	zend_fcall_info_args_clear(fci, 1);
 	zval_ptr_dtor(&z_result);
 
 	return rc;
