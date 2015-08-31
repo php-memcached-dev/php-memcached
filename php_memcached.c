@@ -170,7 +170,7 @@ typedef struct {
 } php_memc_t;
 
 static inline php_memc_t *php_memc_fetch_object(zend_object *obj) {
-	return (php_memc_t *)((char *)(obj) - XtOffsetOf(php_memc_t, zo));
+	return (php_memc_t *)((char *)obj - XtOffsetOf(php_memc_t, zo));
 }
 #define Z_MEMC_OBJ_P(zv) php_memc_fetch_object(Z_OBJ_P(zv));
 
@@ -356,20 +356,17 @@ char *php_memc_printable_func (zend_fcall_info *fci, zend_fcall_info_cache *fci_
 static zend_bool php_memcached_on_new_callback(zval *object, zend_fcall_info *fci, zend_fcall_info_cache *fci_cache, zend_string *persistent_id)
 {
 	zend_bool ret = 1;
-	zval retval;
-	zval params[2];
+	zval retval, id;
 
 	if (persistent_id) {
-		ZVAL_STR(&params[1], persistent_id);
+		ZVAL_STR(&id, persistent_id);
 	} else {
-		ZVAL_NULL(&params[1]);
+		ZVAL_NULL(&id);
 	}
 
-	/* Call the cb */
-	ZVAL_COPY(&params[0], object);
+	ZVAL_UNDEF(&retval);
 
-	fci->params         = params;
-	fci->param_count    = 2;
+	zend_fcall_info_argn(fci, 2, object, &id);
 	fci->retval         = &retval;
 	fci->no_separation  = 1;
 
@@ -379,10 +376,12 @@ static zend_bool php_memcached_on_new_callback(zval *object, zend_fcall_info *fc
 		efree (buf);
 		ret = 0;
 	}
+	
+	if (Z_TYPE(retval) != IS_UNDEF)
+		zval_ptr_dtor(&retval);
 
-	zval_ptr_dtor(&params[0]);
-	zval_ptr_dtor(&params[1]);
-	zval_ptr_dtor(&retval);
+	zend_fcall_info_args_clear(fci, 1);
+
 	return ret;
 }
 
@@ -408,7 +407,6 @@ static PHP_METHOD(Memcached, __construct)
 	zend_fcall_info_cache fci_cache;
 
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "|S!f!S", &persistent_id, &fci, &fci_cache, &conn_str) == FAILURE) {
-		ZEND_CTOR_MAKE_NULL();
 		return;
 	}
 
@@ -3304,6 +3302,7 @@ zend_bool s_unserialize_value (enum memcached_serializer serializer, int val_typ
 
 			PHP_VAR_UNSERIALIZE_INIT(var_hash);
 			if (!php_var_unserialize(value, (const unsigned char **)&payload_tmp, (const unsigned char *)payload_tmp + payload_len, &var_hash)) {
+				zval_ptr_dtor(value);
 				ZVAL_FALSE(value);
 				PHP_VAR_UNSERIALIZE_DESTROY(var_hash);
 				php_error_docref(NULL, E_WARNING, "could not unserialize value");
@@ -3538,6 +3537,7 @@ static memcached_return php_memc_do_cache_callback(zval *zmemc_obj, zend_fcall_i
 	fci->param_count = 4;
 
 	result = zend_call_function(fci, fcc);
+	
 	ZVAL_DUP(value, Z_REFVAL(z_val));
 	expiration = Z_REFVAL(z_expiration);
 	if (result == SUCCESS && Z_TYPE(retval) != IS_UNDEF) {
