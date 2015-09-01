@@ -4,7 +4,7 @@ Memcached construct with bad arguments
 <?php if (!extension_loaded("memcached")) print "skip"; ?>
 --FILE--
 <?php 
-error_reporting(0);
+
 $m = new Memcached((object)array());
 echo $php_errormsg, "\n";
 var_dump($m);
@@ -21,9 +21,12 @@ var_dump ($extended->setOption (Memcached::OPT_BINARY_PROTOCOL, true));
 echo "OK" . PHP_EOL;
 
 --EXPECTF--
-Memcached::__construct() expects parameter %s
-NULL
+Warning: Memcached::__construct() expects parameter 1 to be string, object given in %s on line 3
+Memcached::__construct() expects parameter 1 to be string, object given
+object(Memcached)#1 (0) {
+}
 
-Warning: Memcached::setOption(): Memcached constructor was not called in %s on line %d
+Warning: Memcached::setOption(): Memcached constructor was not called in %s on line 14
 NULL
 OK
+
