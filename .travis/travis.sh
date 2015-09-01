@@ -128,8 +128,9 @@ function build_php_memcached() {
             sasl_flag="--enable-memcached-sasl"
         fi
 
-        ./configure --with-libmemcached-dir="$LIBMEMCACHED_PREFIX" $protocol_flag $sasl_flag --enable-memcached-json --enable-memcached-igbinary --enable-memcached-msgpack
-        make
+        # ./configure --with-libmemcached-dir="$LIBMEMCACHED_PREFIX" $protocol_flag $sasl_flag --enable-memcached-json --enable-memcached-igbinary --enable-memcached-msgpack
+		./configure --with-libmemcached-dir="$LIBMEMCACHED_PREFIX" $protocol_flag $sasl_flag 
+		make
         make install
     popd
 }
@@ -220,7 +221,7 @@ case $ACTION in
         
         # install SASL
         if test "x$ENABLE_SASL" = "xyes"; then
-            # install_sasl
+        	install_sasl
         fi
     ;;
 
