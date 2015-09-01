@@ -1,7 +1,12 @@
 --TEST--
 Test for bug 155
 --SKIPIF--
-<?php if (!extension_loaded("memcached")) print "skip"; ?>
+<?php 
+if (!extension_loaded("memcached")) 
+	print "skip";
+if (MEMCACHED::LIBMEMCACHED_VERSION_HEX < 0x01000016)
+	printf "skip";
+?>
 --FILE--
 <?php
 include dirname (__FILE__) . '/config.inc';
