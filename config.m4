@@ -145,6 +145,7 @@ if test "$PHP_MEMCACHED" != "no"; then
         AC_MSG_ERROR([Cannot find php_json.h])
       else
         AC_DEFINE(HAVE_JSON_API,1,[Whether JSON API is available])
+        AC_MSG_RESULT([$json_inc_path])
       fi
     else
       AC_MSG_RESULT([this version of memcached is only suitable for PHP7+])

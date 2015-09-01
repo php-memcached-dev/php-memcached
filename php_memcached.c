@@ -3309,7 +3309,7 @@ zend_bool s_unserialize_value (enum memcached_serializer serializer, int val_typ
 
 		case MEMC_VAL_IS_JSON:
 #ifdef HAVE_JSON_API
-			php_json_decode(value, payload, payload_len, ,(serializer == SERIALIZER_JSON_ARRAY), JSON_PARSER_DEFAULT_DEPTH);
+			php_json_decode(value, (char*) payload, payload_len, (serializer == SERIALIZER_JSON_ARRAY), PHP_JSON_PARSER_DEFAULT_DEPTH);
 #else
 			ZVAL_FALSE(value);
 			php_error_docref(NULL, E_WARNING, "could not unserialize value, no json support");
