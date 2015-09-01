@@ -59,7 +59,7 @@ string(4) "asdf"
 float(%d)
 SUCCESS
 bool(false)
-NULL
+float(0)
 NOT FOUND
 bool(false)
 NULL
