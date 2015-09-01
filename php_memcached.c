@@ -407,8 +407,7 @@ static PHP_METHOD(Memcached, __construct)
 	zend_fcall_info fci = {0};
 	zend_fcall_info_cache fci_cache;
 
-	if (zend_parse_parameters(ZEND_NUM_ARGS(), "|S!f!S", &persistent_id, &fci, &fci_cache, &conn_str) == FAILURE) {
-		ZEND_CTOR_MAKE_NULL();
+	if (zend_parse_parameters_throw(ZEND_NUM_ARGS(), "|S!f!S", &persistent_id, &fci, &fci_cache, &conn_str) == FAILURE) {
 		return;
 	}
 
@@ -1299,14 +1298,8 @@ static void php_memc_setMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 retry:
 		if (!by_key) {
 			status = memcached_set(m_obj->memc, str_key->val, str_key->len, payload, payload_len, expiration, flags);
-			if (!skey) {
-				zend_string_release(str_key);
-			}
 		} else {
 			status = memcached_set_by_key(m_obj->memc, server_key->val, server_key->len, str_key->val, str_key->len, payload, payload_len, expiration, flags);
-			if (!skey) {
-				zend_string_release(str_key);
-			}
 		}
 
 		if (php_memc_handle_error(i_obj, status) < 0) {
@@ -2760,11 +2753,9 @@ static PHP_METHOD(Memcached, getResultMessage)
 		case MEMCACHED_CONNECTION_SOCKET_CREATE_FAILURE:
 		case MEMCACHED_UNKNOWN_READ_FAILURE:
 			if (i_obj->memc_errno) {
-				char *str;
-				int str_len;
-				str_len = spprintf(&str, 0, "%s: %s", memcached_strerror(m_obj->memc, (memcached_return)i_obj->rescode),
-					strerror(i_obj->memc_errno));
-				RETURN_STRINGL(str, str_len);
+				zend_string *str = strpprintf(0, "%s: %s",
+						memcached_strerror(m_obj->memc, (memcached_return)i_obj->rescode), strerror(i_obj->memc_errno));
+				RETURN_STR(str);
 			}
 			/* Fall through */
 		default:
@@ -3128,7 +3119,7 @@ zend_bool s_serialize_value (enum memcached_serializer serializer, zval *value, 
 #ifdef HAVE_MEMCACHED_MSGPACK
 		case SERIALIZER_MSGPACK:
 			php_msgpack_serialize(buf, value);
-			if (!buf->c) {
+			if (!buf->s) {
 				php_error_docref(NULL, E_WARNING, "could not serialize value with msgpack");
 				return 0;
 			}
