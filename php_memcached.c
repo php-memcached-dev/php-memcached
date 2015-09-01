@@ -37,7 +37,7 @@
 #endif
 #include <zlib.h>
 
-#ifdef HAVE_JSON
+#ifdef HAVE_JSON_API
 # include "ext/json/php_json.h"
 #endif
 
