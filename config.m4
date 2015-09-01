@@ -127,7 +127,7 @@ if test "$PHP_MEMCACHED" != "no"; then
 
     PHP_MEMCACHED_VERSION_MASK=`echo ${PHP_MEMCACHED_VERSION_ORIG} | awk 'BEGIN { FS = "."; } { printf "%d", ($1 * 1000 + $2) * 1000 + $3;}'`
     
-    if test $PHP_MEMCACHED_VERSION_MASK -ge 5003000; then
+    if test $PHP_MEMCACHED_VERSION_MASK -ge 7000000; then
       if test -f "$abs_srcdir/include/php/ext/json/php_json.h"; then
         json_inc_path="$abs_srcdir/include/php"
       elif test -f "$abs_srcdir/ext/json/php_json.h"; then
@@ -145,33 +145,9 @@ if test "$PHP_MEMCACHED" != "no"; then
         AC_MSG_ERROR([Cannot find php_json.h])
       else
         AC_DEFINE(HAVE_JSON_API,1,[Whether JSON API is available])
-        AC_DEFINE(HAVE_JSON_API_5_3,1,[Whether JSON API for PHP 5.3 is available])
-        AC_MSG_RESULT([$json_inc_path])
       fi
-    elif test $PHP_MEMCACHED_VERSION_MASK -ge 5002009; then
-      dnl Check JSON for PHP 5.2.9+
-      if test -f "$abs_srcdir/include/php/ext/json/php_json.h"; then
-        json_inc_path="$abs_srcdir/include/php"
-      elif test -f "$abs_srcdir/ext/json/php_json.h"; then
-        json_inc_path="$abs_srcdir"
-      elif test -f "$phpincludedir/ext/json/php_json.h"; then
-        json_inc_path="$phpincludedir"
-      else
-        for i in php php4 php5 php6; do
-          if test -f "$prefix/include/$i/ext/json/php_json.h"; then
-            json_inc_path="$prefix/include/$i"
-          fi
-        done
-      fi
-      if test "$json_inc_path" = ""; then
-        AC_MSG_ERROR([Cannot find php_json.h])
-      else
-        AC_DEFINE(HAVE_JSON_API,1,[Whether JSON API is available])
-        AC_DEFINE(HAVE_JSON_API_5_2,1,[Whether JSON API for PHP 5.2 is available])
-        AC_MSG_RESULT([$json_inc_path])
-      fi
-    else 
-      AC_MSG_RESULT([the PHP version does not support JSON serialization API])
+    else
+      AC_MSG_RESULT([this version of memcached is only suitable for PHP7+])
     fi
   fi
 

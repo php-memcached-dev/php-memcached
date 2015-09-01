@@ -37,7 +37,7 @@
 #endif
 #include <zlib.h>
 
-#ifdef HAVE_JSON_API
+#ifdef HAVE_JSON
 # include "ext/json/php_json.h"
 #endif
 
@@ -49,13 +49,6 @@
 # include "ext/msgpack/php_msgpack.h"
 #endif
 
-/*
- * This is needed because PHP 5.3.[01] does not install JSON_parser.h by default. This
- * constant will move into php_json.h in the future anyway.
- */
-#ifndef JSON_PARSER_DEFAULT_DEPTH
-#define JSON_PARSER_DEFAULT_DEPTH 512
-#endif
 
 /****************************************
   Custom options
@@ -3102,11 +3095,7 @@ zend_bool s_serialize_value (enum memcached_serializer serializer, zval *value, 
 		case SERIALIZER_JSON:
 		case SERIALIZER_JSON_ARRAY:
 		{
-#if HAVE_JSON_API_5_2
-			php_json_encode(buf, value);
-#elif HAVE_JSON_API_5_3
-			php_json_encode(buf, value, 0); /* options */
-#endif
+			php_json_encode(buf, value, 0);
 			MEMC_VAL_SET_TYPE(*flags, MEMC_VAL_IS_JSON);
 		}
 			break;
@@ -3320,11 +3309,7 @@ zend_bool s_unserialize_value (enum memcached_serializer serializer, int val_typ
 
 		case MEMC_VAL_IS_JSON:
 #ifdef HAVE_JSON_API
-# if HAVE_JSON_API_5_2
-			php_json_decode(value, payload, payload_len, (serializer == SERIALIZER_JSON_ARRAY));
-# elif HAVE_JSON_API_5_3
-			php_json_decode(value, payload, payload_len, (serializer == SERIALIZER_JSON_ARRAY), JSON_PARSER_DEFAULT_DEPTH);
-# endif
+			php_json_decode(value, payload, payload_len, ,(serializer == SERIALIZER_JSON_ARRAY), JSON_PARSER_DEFAULT_DEPTH);
 #else
 			ZVAL_FALSE(value);
 			php_error_docref(NULL, E_WARNING, "could not unserialize value, no json support");

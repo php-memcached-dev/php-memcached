@@ -73,6 +73,7 @@ function install_igbinary() {
 function install_msgpack() {
     git clone https://github.com/msgpack/msgpack-php.git
     pushd msgpack-php
+		git checkout php7
         phpize
         ./configure
         make
@@ -128,8 +129,8 @@ function build_php_memcached() {
             sasl_flag="--enable-memcached-sasl"
         fi
 
-        # ./configure --with-libmemcached-dir="$LIBMEMCACHED_PREFIX" $protocol_flag $sasl_flag --enable-memcached-json --enable-memcached-igbinary --enable-memcached-msgpack
-		./configure --with-libmemcached-dir="$LIBMEMCACHED_PREFIX" $protocol_flag $sasl_flag 
+        # ./configure --with-libmemcached-dir="$LIBMEMCACHED_PREFIX" $protocol_flag $sasl_flag  --enable-memcached-igbinary --enable-memcached-msgpack
+		./configure --with-libmemcached-dir="$LIBMEMCACHED_PREFIX" $protocol_flag $sasl_flag --enable-memcached-json
 		make
         make install
     popd
