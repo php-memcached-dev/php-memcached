@@ -2,10 +2,9 @@
 Test for bug 155
 --SKIPIF--
 <?php 
-if (!extension_loaded("memcached")) 
+if (!extension_loaded("memcached"))
 	print "skip";
-if (MEMCACHED::LIBMEMCACHED_VERSION_HEX < 0x01000016)
-	printf "skip";
+if (Memcached::LIBMEMCACHED_VERSION_HEX < 0x01000016) die ('skip too old libmemcached');
 ?>
 --FILE--
 <?php
