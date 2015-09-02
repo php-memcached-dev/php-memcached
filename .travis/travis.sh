@@ -129,8 +129,8 @@ function build_php_memcached() {
             sasl_flag="--enable-memcached-sasl"
         fi
 
-        # ./configure --with-libmemcached-dir="$LIBMEMCACHED_PREFIX" $protocol_flag $sasl_flag  --enable-memcached-igbinary --enable-memcached-msgpack
-		./configure --with-libmemcached-dir="$LIBMEMCACHED_PREFIX" $protocol_flag $sasl_flag --enable-memcached-json
+        # ./configure --with-libmemcached-dir="$LIBMEMCACHED_PREFIX" $protocol_flag $sasl_flag --enable-memcached-json --enable-memcached-msgpack --enable-memcached-igbinary
+		./configure --with-libmemcached-dir="$LIBMEMCACHED_PREFIX" $protocol_flag $sasl_flag
 		make
         make install
     popd

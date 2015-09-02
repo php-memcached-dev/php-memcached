@@ -106,49 +106,29 @@ if test "$PHP_MEMCACHED" != "no"; then
       AC_MSG_RESULT([$session_inc_path])
     fi
   fi
-  
+
   if test "$PHP_MEMCACHED_JSON" != "no"; then
     AC_MSG_CHECKING([for json includes])
     json_inc_path=""
-    
-    tmp_version=$PHP_VERSION
-    if test -z "$tmp_version"; then
-      if test -z "$PHP_CONFIG"; then
-        AC_MSG_ERROR([php-config not found])
-      fi
-      PHP_MEMCACHED_VERSION_ORIG=`$PHP_CONFIG --version`;
-    else
-      PHP_MEMCACHED_VERSION_ORIG=$tmp_version
-    fi
 
-    if test -z $PHP_MEMCACHED_VERSION_ORIG; then
-      AC_MSG_ERROR([failed to detect PHP version, please report])
-    fi
-
-    PHP_MEMCACHED_VERSION_MASK=`echo ${PHP_MEMCACHED_VERSION_ORIG} | awk 'BEGIN { FS = "."; } { printf "%d", ($1 * 1000 + $2) * 1000 + $3;}'`
-    
-    if test $PHP_MEMCACHED_VERSION_MASK -ge 7000000; then
-      if test -f "$abs_srcdir/include/php/ext/json/php_json.h"; then
-        json_inc_path="$abs_srcdir/include/php"
-      elif test -f "$abs_srcdir/ext/json/php_json.h"; then
-        json_inc_path="$abs_srcdir"
-      elif test -f "$phpincludedir/ext/json/php_json.h"; then
-        json_inc_path="$phpincludedir"
-      else
-        for i in php php4 php5 php6; do
-          if test -f "$prefix/include/$i/ext/json/php_json.h"; then
-            json_inc_path="$prefix/include/$i"
-          fi
-        done
-      fi
-      if test "$json_inc_path" = ""; then
-        AC_MSG_ERROR([Cannot find php_json.h])
-      else
-        AC_DEFINE(HAVE_JSON_API,1,[Whether JSON API is available])
-        AC_MSG_RESULT([$json_inc_path])
-      fi
+    if test -f "$abs_srcdir/include/php/ext/json/php_json.h"; then
+      json_inc_path="$abs_srcdir/include/php"
+    elif test -f "$abs_srcdir/ext/json/php_json.h"; then
+      json_inc_path="$abs_srcdir"
+    elif test -f "$phpincludedir/ext/json/php_json.h"; then
+      json_inc_path="$phpincludedir"
     else
-      AC_MSG_RESULT([this version of memcached is only suitable for PHP7+])
+      for i in php php4 php5 php6; do
+        if test -f "$prefix/include/$i/ext/json/php_json.h"; then
+          json_inc_path="$prefix/include/$i"
+        fi
+      done
+    fi
+    if test "$json_inc_path" = ""; then
+      AC_MSG_ERROR([Cannot find php_json.h])
+    else
+      AC_DEFINE(HAVE_JSON_API,1,[Whether JSON API is available])
+      AC_MSG_RESULT([$json_inc_path])
     fi
   fi
 
