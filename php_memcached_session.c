@@ -277,6 +277,11 @@ success:
 PS_CLOSE_FUNC(memcached)
 {
 	memcached_sess *memc_sess = PS_GET_MOD_DATA();
+	
+	if (!memc_sess) {
+		php_error_docref(NULL TSRMLS_CC, E_WARNING, "Session is not allocated, check session.save_path value");
+		return FAILURE;
+	}
 
 	if (MEMC_G(sess_locking_enabled)) {
 		php_memc_sess_unlock(memc_sess->memc_sess);
@@ -306,6 +311,11 @@ PS_READ_FUNC(memcached)
 	memcached_return status;
 	memcached_sess *memc_sess = PS_GET_MOD_DATA();
 	size_t key_length;
+
+	if (!memc_sess) {
+		php_error_docref(NULL TSRMLS_CC, E_WARNING, "Session is not allocated, check session.save_path value");
+		return FAILURE;
+	}
 
 	key_length = strlen(MEMC_G(sess_prefix)) + key_len + 5; // prefix + "lock."
 	if (!key_length || key_length >= MEMCACHED_MAX_KEY) {
@@ -339,6 +349,11 @@ PS_WRITE_FUNC(memcached)
 	memcached_return status;
 	memcached_sess *memc_sess = PS_GET_MOD_DATA();
 	size_t key_length;
+	
+	if (!memc_sess) {
+		php_error_docref(NULL TSRMLS_CC, E_WARNING, "Session is not allocated, check session.save_path value");
+		return FAILURE;
+	}
 
 	key_length = strlen(MEMC_G(sess_prefix)) + key_len + 5; // prefix + "lock."
 	if (!key_length || key_length >= MEMCACHED_MAX_KEY) {
@@ -370,6 +385,11 @@ PS_WRITE_FUNC(memcached)
 PS_DESTROY_FUNC(memcached)
 {
 	memcached_sess *memc_sess = PS_GET_MOD_DATA();
+
+	if (!memc_sess) {
+		php_error_docref(NULL TSRMLS_CC, E_WARNING, "Session is not allocated, check session.save_path value");
+		return FAILURE;
+	}
 
 	memcached_delete(memc_sess->memc_sess, key->val, key->len, 0);
 	if (MEMC_G(sess_locking_enabled)) {
