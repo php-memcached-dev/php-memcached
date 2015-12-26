@@ -24,7 +24,7 @@ PHP_ARG_ENABLE(memcached-sasl, whether to enable memcached sasl support,
 [  --disable-memcached-sasl          Disable memcached sasl support], yes, no)
 
 PHP_ARG_ENABLE(memcached-protocol, whether to enable memcached protocol support,
-[  --enable-memcached-protocol          Enable memcached protocoll support], no, no)
+[  --enable-memcached-protocol          Enable memcached protocol support], no, no)
 
 PHP_ARG_WITH(system-fastlz, whether to use system FastLZ bibrary,
 [  --with-system-fastlz                 Use system FastLZ bibrary], no, no)
