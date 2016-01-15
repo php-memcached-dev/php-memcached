@@ -326,6 +326,8 @@ PS_READ_FUNC(memcached)
 		*val = zend_string_init(payload, payload_len, 1);
 		free(payload);
 		return SUCCESS;
+	} else if (status = MEMCACHED_NOTFOUND) {
+		*val = ZSTR_EMPTY_ALLOC();
 	} else {
 		return FAILURE;
 	}
