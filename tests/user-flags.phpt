@@ -22,46 +22,78 @@ define ('FLAG_4', 4);
 define ('FLAG_32', 32);
 define ('FLAG_64', 64);
 define ('FLAG_TOO_LARGE', pow(2, 16));
-$x = 0;
 
 include dirname (__FILE__) . '/config.inc';
 $m = memc_get_instance (array (Memcached::OPT_BINARY_PROTOCOL => true));
 
 $key = uniqid ('udf_test_');
 
-echo "stored with flags" . PHP_EOL;
+// Set with flags off
+$m->set ($key, '1', 10);
+$m->get($key);
+var_dump($m->getLastUserFlags());
 
-$m->set ($key, '1', 10, FLAG_1 | FLAG_4 | FLAG_64);
-$udf_flags = 0;
-$value = $m->get ($key, null, $x, $udf_flags);
+// Set flags on
+$m->setOption(Memcached::OPT_USER_FLAGS, FLAG_1);
+$m->set ($key, '1', 10);
+$m->get($key);
+check_flags($m->getLastUserFlags()[$key], array(FLAG_1));
 
-check_flags ($udf_flags, array (FLAG_1, FLAG_4, FLAG_64));
+// Multiple flags
+$m->setOption(Memcached::OPT_USER_FLAGS, FLAG_1 | FLAG_2 | FLAG_4);
+$m->set ($key, '1', 10);
+$m->get($key);
+check_flags($m->getLastUserFlags()[$key], array(FLAG_1, FLAG_2, FLAG_4));
 
-echo "stored without flags" . PHP_EOL;
-$m->set ($key, '1');
-$value = $m->get ($key, null, $x, $udf_flags);
+// Even more flags
+$m->setOption(Memcached::OPT_USER_FLAGS, FLAG_1 | FLAG_2 | FLAG_4 | FLAG_32 | FLAG_64);
+$m->set ($key, '1', 10);
+$m->get($key);
+check_flags($m->getLastUserFlags()[$key], array(FLAG_1, FLAG_2, FLAG_4, FLAG_32, FLAG_64));
 
-var_dump ($udf_flags == 0);
-$m->set ($key, '1', 10, FLAG_TOO_LARGE);
+// User flags with get multi
+$values = array(
+	uniqid ('udf_test_multi_') => "first",
+	uniqid ('udf_test_multi_') => "second",
+	uniqid ('udf_test_multi_') => "third",
+);
 
+$m->setOption(Memcached::OPT_USER_FLAGS, FLAG_2 | FLAG_4);
+$m->setMulti($values);
+$m->getMulti(array_keys($values));
+$flags = $m->getLastUserFlags();
+
+foreach (array_keys($values) as $key) {
+	check_flags($flags[$key], array(FLAG_2, FLAG_4));
+}
+
+// User flags with compression on
+$m->setOption(Memcached::OPT_USER_FLAGS, FLAG_1 | FLAG_2 | FLAG_4);
 $m->setOption(Memcached::OPT_COMPRESSION, true);
 $m->setOption(Memcached::OPT_COMPRESSION_TYPE, Memcached::COMPRESSION_FASTLZ);
 
-$m->set ($key, str_repeat ("abcdef1234567890", 200), 10, FLAG_1 | FLAG_4 | FLAG_64);
+$m->set ($key, '1', 10);
+$m->get($key);
+check_flags($m->getLastUserFlags()[$key], array(FLAG_1, FLAG_2, FLAG_4));
 
-$udf_flags = 0;
-$value_back = $m->get($key, null, null, $udf_flags);
 
-check_flags ($udf_flags, array (FLAG_1, FLAG_4, FLAG_64));
+// Too large flags
+$m->setOption(Memcached::OPT_USER_FLAGS, FLAG_TOO_LARGE);
 
 echo "DONE TEST\n";
 ?>
 --EXPECTF--
-stored with flags
+array(1) {
+  ["udf_test_%s"]=>
+  int(0)
+}
 Flags OK
-stored without flags
-bool(true)
+Flags OK
+Flags OK
+Flags OK
+Flags OK
+Flags OK
+Flags OK
 
-Warning: Memcached::set(): udf_flags will be limited to 65535 in %s on line %d
-Flags OK
+Warning: Memcached::setOption(): MEMC_OPT_USER_FLAGS must be < 65535 in %s on line %d
 DONE TEST
