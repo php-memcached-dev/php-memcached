@@ -106,7 +106,6 @@ function install_sasl() {
         make install
     popd
 
-    sudo apt-get install sasl2-bin
     export SASL_CONF_PATH="${HOME}/cache/sasl2"
 
     # Create config path
