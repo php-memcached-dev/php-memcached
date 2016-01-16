@@ -3085,7 +3085,7 @@ zend_bool s_serialize_value (enum memcached_serializer serializer, zval *value, 
 		*/
 #ifdef HAVE_MEMCACHED_IGBINARY
 		case SERIALIZER_IGBINARY:
-			if (igbinary_serialize((uint8_t **) &buf->c, &buf->len, value) != 0) {
+			if (igbinary_serialize((uint8_t **) &(buf->s), &buf->s->len, value) != 0) {
 				php_error_docref(NULL, E_WARNING, "could not serialize value with igbinary");
 				return 0;
 			}
@@ -3580,7 +3580,6 @@ static int php_memc_do_result_callback(zval *zmemc_obj, zend_fcall_info *fci,
 	zval value;
 	zval retval;
 	uint64_t cas = 0;
-	zval params[2];
 	zval z_result;
 	uint32_t flags = 0;
 	int rc = 0;
@@ -4317,7 +4316,6 @@ static void php_memc_register_constants(INIT_FUNC_ARGS)
 	REGISTER_MEMC_CLASS_CONST_LONG(RES_MEMORY_ALLOCATION_FAILURE, MEMCACHED_MEMORY_ALLOCATION_FAILURE);
 	REGISTER_MEMC_CLASS_CONST_LONG(RES_CONNECTION_SOCKET_CREATE_FAILURE, MEMCACHED_CONNECTION_SOCKET_CREATE_FAILURE);
 
-	REGISTER_MEMC_CLASS_CONST_LONG(RES_BAD_KEY_PROVIDED,                 MEMCACHED_BAD_KEY_PROVIDED);
 	REGISTER_MEMC_CLASS_CONST_LONG(RES_E2BIG,                            MEMCACHED_E2BIG);
 	REGISTER_MEMC_CLASS_CONST_LONG(RES_KEY_TOO_BIG,                      MEMCACHED_KEY_TOO_BIG);
 	REGISTER_MEMC_CLASS_CONST_LONG(RES_SERVER_TEMPORARILY_DISABLED,      MEMCACHED_SERVER_TEMPORARILY_DISABLED);
