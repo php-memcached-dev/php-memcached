@@ -1,5 +1,7 @@
 #!/bin/bash
 
+MEMCACHED_VERSION="1.4.25"
+
 function version_compare() {
     DPKG=`which dpkg`
 
@@ -87,26 +89,34 @@ function install_msgpack() {
     popd
 }
 
-function install_sasl() {
-
+function install_memcached() {
     local prefix="${HOME}/cache/memcached"
 
-    if test -f "${prefix}/bin/memcached"
+    if test -d "$prefix"
     then
-        echo "Using cached memcached-sasl: ${prefix}/bin/memcached"
+        echo "Using cached memcached: ${prefix}"
         return
     fi
 
-    wget http://www.memcached.org/files/memcached-1.4.25.tar.gz -O memcached-1.4.25.tar.gz
-    tar xfz memcached-1.4.25.tar.gz
+    wget http://www.memcached.org/files/memcached-${MEMCACHED_VERSION}.tar.gz -O memcached-${MEMCACHED_VERSION}.tar.gz
+    tar xfz memcached-${MEMCACHED_VERSION}.tar.gz
 
-    pushd memcached-1.4.25
+    pushd memcached-${MEMCACHED_VERSION}
         ./configure --enable-sasl --prefix="${prefix}"
         make
         make install
     popd
+}
+
+function install_sasl_config() {
 
     export SASL_CONF_PATH="${HOME}/cache/sasl2"
+
+    if test -f "${SASL_CONF_PATH}/memcached.conf"
+    then
+        echo "Using cached SASL configuration: ${SASL_CONF_PATH}/memcached.conf"
+        return
+    fi
 
     # Create config path
     mkdir "${SASL_CONF_PATH}"
@@ -120,6 +130,13 @@ EOF
 
     # Create password
     echo "test" | /usr/sbin/saslpasswd2 -c memcached -a memcached -f "${SASL_CONF_PATH}/sasldb2"
+}
+
+function run_memcached() {
+    local prefix="${HOME}/cache/memcached"
+
+    # Run normal memcached
+    "${prefix}/bin/memcached" -d -p 11211
 
     # Run memcached on port 11212 with SASL support
     "${prefix}/bin/memcached" -S -d -p 11212
@@ -232,11 +249,10 @@ case $ACTION in
 
         # install msgpack
         # install_msgpack
-        
-        # install SASL
-        if test "x$ENABLE_SASL" = "xyes"; then
-        	install_sasl
-        fi
+
+        install_memcached
+        install_sasl_config
+        run_memcached
     ;;
 
     script)
