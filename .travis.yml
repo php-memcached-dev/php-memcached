@@ -24,3 +24,7 @@ before_script:
 
 script:
     - ./.travis/travis.sh script $LIBMEMCACHED_VERSION
+
+cache:
+    directories: 
+    - $HOME/cache

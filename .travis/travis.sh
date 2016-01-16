@@ -44,6 +44,12 @@ function validate_package_xml() {
 
 function install_libmemcached() {
 
+    if test -d "${LIBMEMCACHED_PREFIX}"
+    then
+        echo "Using cached libmemcached: ${LIBMEMCACHED_PREFIX}"
+        return
+    fi
+
     wget "https://launchpad.net/libmemcached/1.0/${LIBMEMCACHED_VERSION}/+download/libmemcached-${LIBMEMCACHED_VERSION}.tar.gz" -O libmemcached-${LIBMEMCACHED_VERSION}.tar.gz
 
     tar xvfz libmemcached-${LIBMEMCACHED_VERSION}.tar.gz
@@ -83,17 +89,25 @@ function install_msgpack() {
 
 function install_sasl() {
 
-    wget http://memcached.googlecode.com/files/memcached-1.4.15.tar.gz -O memcached-1.4.15.tar.gz
-    tar xfz memcached-1.4.15.tar.gz
+    local prefix="${HOME}/cache/memcached"
 
-    pushd memcached-1.4.15
-        ./configure --enable-sasl --prefix="${HOME}/memcached"
+    if test -f "${prefix}/bin/memcached"
+    then
+        echo "Using cached memcached-sasl: ${prefix}/bin/memcached"
+        return
+    fi
+
+    wget http://www.memcached.org/files/memcached-1.4.25.tar.gz -O memcached-1.4.25.tar.gz
+    tar xfz memcached-1.4.25.tar.gz
+
+    pushd memcached-1.4.25
+        ./configure --enable-sasl --prefix="${prefix}"
         make
         make install
     popd
 
     sudo apt-get install sasl2-bin
-    export SASL_CONF_PATH="${HOME}/sasl2"
+    export SASL_CONF_PATH="${HOME}/cache/sasl2"
 
     # Create config path
     mkdir "${SASL_CONF_PATH}"
@@ -109,7 +123,7 @@ EOF
     echo "test" | /usr/sbin/saslpasswd2 -c memcached -a memcached -f "${SASL_CONF_PATH}/sasldb2"
 
     # Run memcached on port 11212 with SASL support
-    "${HOME}/memcached/bin/memcached" -S -d -p 11212
+    "${prefix}/bin/memcached" -S -d -p 11212
 }
 
 function build_php_memcached() {
@@ -192,7 +206,7 @@ fi
 PHP_MEMCACHED_VERSION=$(php -r '$sxe = simplexml_load_file ("package.xml"); echo (string) $sxe->version->release;')
 
 # Libmemcached install dir
-LIBMEMCACHED_PREFIX="${HOME}/libmemcached-${LIBMEMCACHED_VERSION}"
+LIBMEMCACHED_PREFIX="${HOME}/cache/libmemcached-${LIBMEMCACHED_VERSION}"
 
 # Where to do the build
 PHP_MEMCACHED_BUILD_DIR="/tmp/php-memcached-build"
