@@ -1,7 +1,5 @@
 #!/bin/bash
 
-MEMCACHED_VERSION="1.4.25"
-
 function version_compare() {
     DPKG=`which dpkg`
 
@@ -90,7 +88,7 @@ function install_msgpack() {
 }
 
 function install_memcached() {
-    local prefix="${HOME}/cache/memcached"
+    local prefix="${HOME}/cache/memcached-${MEMCACHED_VERSION}"
 
     if test -d "$prefix"
     then
@@ -133,7 +131,7 @@ EOF
 }
 
 function run_memcached() {
-    local prefix="${HOME}/cache/memcached"
+    local prefix="${HOME}/cache/memcached-${MEMCACHED_VERSION}"
 
     # Run normal memcached
     "${prefix}/bin/memcached" -d -p 11211
@@ -207,6 +205,7 @@ function run_memcached_tests() {
 # Command line arguments
 ACTION=$1
 LIBMEMCACHED_VERSION=$2
+MEMCACHED_VERSION="1.4.25"
 
 if test "x$ACTION" = "x"; then
     echo "Usage: $0 <action> <libmemcached version>"
@@ -216,6 +215,10 @@ fi
 if test "x$LIBMEMCACHED_VERSION" = "x"; then
     echo "Usage: $0 <action> <libmemcached version>"
     exit 1
+fi
+
+if test "x$3" != "x"; then
+    MEMCACHED_VERSION=$3
 fi
 
 # the extension version
