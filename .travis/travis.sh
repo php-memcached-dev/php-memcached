@@ -106,41 +106,32 @@ function install_memcached() {
     popd
 }
 
-function install_sasl_config() {
+function run_memcached() {
+    local prefix="${HOME}/cache/memcached-sasl-${MEMCACHED_VERSION}"
 
-    export SASL_CONF_PATH="${HOME}/cache/sasl2"
+    export SASL_CONF_PATH="/tmp/sasl2"
 
-    if test -f "${SASL_CONF_PATH}/memcached.conf"
+    if test -d "${SASL_CONF_PATH}"
     then
-        echo "Using cached SASL configuration: ${SASL_CONF_PATH}/memcached.conf"
-        return
+        rm -rf "${SASL_CONF_PATH}"
     fi
 
-    # Create config path
     mkdir "${SASL_CONF_PATH}"
+    export MEMCACHED_SASL_PWDB="${SASL_CONF_PATH}/sasldb2"
 
     # Create configuration
     cat<<EOF > "${SASL_CONF_PATH}/memcached.conf"
 mech_list: PLAIN
 plainlog_level: 5
-sasldb_path: ${SASL_CONF_PATH}/sasldb2
+sasldb_path: ${MEMCACHED_SASL_PWDB}
 EOF
 
-    # Create password
-    echo "test" | /usr/sbin/saslpasswd2 -c memcached -a memcached -f "${SASL_CONF_PATH}/sasldb2"
-}
-
-function run_memcached() {
-    local prefix="${HOME}/cache/memcached-sasl-${MEMCACHED_VERSION}"
+    echo "test" | /usr/sbin/saslpasswd2 -c memcached -a memcached -f "${MEMCACHED_SASL_PWDB}"
 
     # Run normal memcached
     "${prefix}/bin/memcached" -d -p 11211
 
     # Run memcached on port 11212 with SASL support
-    echo "SASL users:"
-    sasldblistusers2 -f "${SASL_CONF_PATH}/sasldb2"
-
-    export MEMCACHED_SASL_PWDB="${SASL_CONF_PATH}/sasldb2"
     "${prefix}/bin/memcached" -S -d -v -p 11212 > /tmp/memcached-sasl.log 2>&1
 }
 
@@ -253,7 +244,6 @@ case $ACTION in
         # install_msgpack
 
         install_memcached
-        install_sasl_config
         run_memcached
     ;;
 
