@@ -137,7 +137,7 @@ function run_memcached() {
     "${prefix}/bin/memcached" -d -p 11211
 
     # Run memcached on port 11212 with SASL support
-    "${prefix}/bin/memcached" -S -d -p 11212
+    MEMCACHED_SASL_PWDB="${SASL_CONF_PATH}/sasldb2" "${prefix}/bin/memcached" -S -d -p 11212
 }
 
 function build_php_memcached() {
