@@ -181,7 +181,7 @@ EOF
 function run_memcached_tests() {
     export NO_INTERACTION=1
     export REPORT_EXIT_STATUS=1
-    export TEST_PHP_EXECUTABLE=`which php`
+    export TEST_PHP_EXECUTABLE=$(which php)
 
     pushd "${PHP_MEMCACHED_BUILD_DIR}/memcached-${PHP_MEMCACHED_VERSION}"
         # We have one xfail test, we run it separately
@@ -189,14 +189,8 @@ function run_memcached_tests() {
         rm ./tests/expire.phpt
 
         # Run normal tests
-        php run-tests.php -d extension=memcached.so -n ./tests/*.phpt
+        php run-tests.php --show-diff -d extension=memcached.so -n ./tests/*.phpt
         retval=$?
-        for i in `ls tests/*.out 2>/dev/null`; do
-            echo "-- START ${i}";
-            cat $i;
-            echo "";
-            echo "-- END";
-        done
     popd
 
     return $retval;
