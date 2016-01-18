@@ -132,7 +132,7 @@ EOF
     "${prefix}/bin/memcached" -d -p 11211
 
     # Run memcached on port 11212 with SASL support
-    "${prefix}/bin/memcached" -S -d -v -p 11212 > /tmp/memcached-sasl.log 2>&1
+    "${prefix}/bin/memcached" -S -d -v -p 11212
 }
 
 function build_php_memcached() {
@@ -187,8 +187,6 @@ function run_memcached_tests() {
         php run-tests.php --show-diff -d extension=memcached.so -n ./tests/*.phpt
         retval=$?
     popd
-
-    cat /tmp/memcached-sasl.log
     return $retval;
 }
 
