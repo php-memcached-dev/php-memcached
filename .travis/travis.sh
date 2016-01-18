@@ -88,7 +88,7 @@ function install_msgpack() {
 }
 
 function install_memcached() {
-    local prefix="${HOME}/cache/memcached-${MEMCACHED_VERSION}"
+    local prefix="${HOME}/cache/memcached-sasl-${MEMCACHED_VERSION}"
 
     if test -d "$prefix"
     then
@@ -100,7 +100,7 @@ function install_memcached() {
     tar xfz memcached-${MEMCACHED_VERSION}.tar.gz
 
     pushd memcached-${MEMCACHED_VERSION}
-        ./configure --enable-sasl --prefix="${prefix}"
+        ./configure --enable-sasl --enable-sasl-pwdb --prefix="${prefix}"
         make
         make install
     popd
@@ -137,7 +137,8 @@ function run_memcached() {
     "${prefix}/bin/memcached" -d -p 11211
 
     # Run memcached on port 11212 with SASL support
-    MEMCACHED_SASL_PWDB="${SASL_CONF_PATH}/sasldb2" "${prefix}/bin/memcached" -S -d -p 11212
+    export MEMCACHED_SASL_PWDB="${SASL_CONF_PATH}/sasldb2"
+    "${prefix}/bin/memcached" -S -d -p 11212
 }
 
 function build_php_memcached() {
