@@ -131,7 +131,7 @@ EOF
 }
 
 function run_memcached() {
-    local prefix="${HOME}/cache/memcached-${MEMCACHED_VERSION}"
+    local prefix="${HOME}/cache/memcached-sasl-${MEMCACHED_VERSION}"
 
     # Run normal memcached
     "${prefix}/bin/memcached" -d -p 11211
