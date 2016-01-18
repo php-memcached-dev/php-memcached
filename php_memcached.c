@@ -424,6 +424,7 @@ static PHP_METHOD(Memcached, __construct)
 	}
 
 	i_obj->is_persistent = is_persistent;
+	array_init(&i_obj->last_udf_flags);
 
 	if (!m_obj) {
 		m_obj = pecalloc(1, sizeof(*m_obj), is_persistent);
@@ -470,7 +471,6 @@ static PHP_METHOD(Memcached, __construct)
 		m_obj->store_retry_count = MEMC_G(store_retry_count);
 
 		m_obj->set_udf_flags = -1;
-		array_init(&i_obj->last_udf_flags);
 
 		i_obj->obj = m_obj;
 		i_obj->is_pristine = 1;
@@ -580,7 +580,7 @@ static void php_memc_get_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 
 	zend_hash_clean(Z_ARRVAL(i_obj->last_udf_flags));
 
-	if (key->len == 0) {
+	if (key->len == 0 || (!memcached_behavior_get(m_obj->memc, MEMCACHED_BEHAVIOR_BINARY_PROTOCOL) && strchr(key->val, ' '))) {
 		i_obj->rescode = MEMCACHED_BAD_KEY_PROVIDED;
 		RETURN_FROM_GET;
 	}
@@ -1423,7 +1423,7 @@ static void php_memc_store_impl(INTERNAL_FUNCTION_PARAMETERS, int op, zend_bool 
 	MEMC_METHOD_FETCH_OBJECT;
 	i_obj->rescode = MEMCACHED_SUCCESS;
 
-	if (key->len == 0) {
+	if (key->len == 0 || (!memcached_behavior_get(m_obj->memc, MEMCACHED_BEHAVIOR_BINARY_PROTOCOL) && strchr(key->val, ' '))) {
 		i_obj->rescode = MEMCACHED_BAD_KEY_PROVIDED;
 		RETURN_FALSE;
 	}
@@ -1568,7 +1568,7 @@ static void php_memc_cas_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 	MEMC_METHOD_FETCH_OBJECT;
 	i_obj->rescode = MEMCACHED_SUCCESS;
 
-	if (key->len == 0) {
+	if (key->len == 0 || (!memcached_behavior_get(m_obj->memc, MEMCACHED_BEHAVIOR_BINARY_PROTOCOL) && strchr(key->val, ' '))) {
 		i_obj->rescode = MEMCACHED_BAD_KEY_PROVIDED;
 		RETURN_FALSE;
 	}
@@ -1677,7 +1677,7 @@ static void php_memc_delete_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 	MEMC_METHOD_FETCH_OBJECT;
 	i_obj->rescode = MEMCACHED_SUCCESS;
 
-	if (key->len == 0 || strchr(key->val, ' ')) {
+	if (key->len == 0 || (!memcached_behavior_get(m_obj->memc, MEMCACHED_BEHAVIOR_BINARY_PROTOCOL) && strchr(key->val, ' '))) {
 		i_obj->rescode = MEMCACHED_BAD_KEY_PROVIDED;
 		RETURN_FALSE;
 	}
@@ -1775,7 +1775,7 @@ static void php_memc_incdec_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key,
 	MEMC_METHOD_FETCH_OBJECT;
 	i_obj->rescode = MEMCACHED_SUCCESS;
 
-	if (key->len == 0 || strchr(key->val, ' ')) {
+	if (key->len == 0 || (!memcached_behavior_get(m_obj->memc, MEMCACHED_BEHAVIOR_BINARY_PROTOCOL) && strchr(key->val, ' '))) {
 		i_obj->rescode = MEMCACHED_BAD_KEY_PROVIDED;
 		RETURN_FALSE;
 	}
@@ -2020,7 +2020,7 @@ PHP_METHOD(Memcached, getServerByKey)
 	MEMC_METHOD_FETCH_OBJECT;
 	i_obj->rescode = MEMCACHED_SUCCESS;
 
-	if (server_key->len == 0 || strchr(server_key->val, ' ')) {
+	if (server_key->len == 0 || (!memcached_behavior_get(m_obj->memc, MEMCACHED_BEHAVIOR_BINARY_PROTOCOL) && strchr(server_key->val, ' '))) {
 		i_obj->rescode = MEMCACHED_BAD_KEY_PROVIDED;
 		RETURN_FALSE;
 	}
