@@ -24,7 +24,7 @@
 extern ps_module ps_mod_memcached;
 #define ps_memcached_ptr &ps_mod_memcached
 
-PS_FUNCS(memcached);
+PS_FUNCS_UPDATE_TIMESTAMP(memcached);
 
 PS_OPEN_FUNC(memcached);
 PS_CLOSE_FUNC(memcached);
@@ -32,5 +32,8 @@ PS_READ_FUNC(memcached);
 PS_WRITE_FUNC(memcached);
 PS_DESTROY_FUNC(memcached);
 PS_GC_FUNC(memcached);
+PS_CREATE_SID_FUNC(memcached);
+PS_VALIDATE_SID_FUNC(memcached);
+PS_UPDATE_TIMESTAMP_FUNC(memcached);
 
 #endif /* PHP_MEMCACHED_SESSION_H */
