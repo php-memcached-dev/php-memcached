@@ -58,6 +58,7 @@
 #define MEMC_OPT_SERIALIZER         -1003
 #define MEMC_OPT_COMPRESSION_TYPE   -1004
 #define MEMC_OPT_STORE_RETRY_COUNT  -1005
+#define MEMC_OPT_USER_FLAGS         -1006
 
 /****************************************
   Custom result codes
@@ -153,8 +154,10 @@ typedef struct {
 		zend_bool has_sasl_data;
 #endif
 		long store_retry_count;
+		zend_long set_udf_flags;
 	} *obj;
 
+	zval last_udf_flags;
 	zend_bool is_persistent;
 	zend_bool is_pristine;
 	int rescode;
@@ -421,6 +424,7 @@ static PHP_METHOD(Memcached, __construct)
 	}
 
 	i_obj->is_persistent = is_persistent;
+	array_init(&i_obj->last_udf_flags);
 
 	if (!m_obj) {
 		m_obj = pecalloc(1, sizeof(*m_obj), is_persistent);
@@ -466,6 +470,8 @@ static PHP_METHOD(Memcached, __construct)
 		m_obj->compression = 1;
 		m_obj->store_retry_count = MEMC_G(store_retry_count);
 
+		m_obj->set_udf_flags = -1;
+
 		i_obj->obj = m_obj;
 		i_obj->is_pristine = 1;
 
@@ -508,7 +514,23 @@ static PHP_METHOD(Memcached, __construct)
 }
 /* }}} */
 
-/* {{{ Memcached::get(string key [, mixed callback [, double &cas_token [, int &udf_flags ] ] ])
+/* {{{ Memcached::getLastUserFlags()
+   Returns the user flags from last fetch operation */
+PHP_METHOD(Memcached, getLastUserFlags)
+{
+	MEMC_METHOD_INIT_VARS;
+
+	if (zend_parse_parameters_none() == FAILURE) {
+		return;
+	}
+
+	MEMC_METHOD_FETCH_OBJECT;
+	RETVAL_ZVAL(&i_obj->last_udf_flags, 1, 0);
+}
+/* }}} */
+
+
+/* {{{ Memcached::get(string key [, mixed callback [, double &cas_token ] ])
    Returns a value for the given key or false */
 PHP_METHOD(Memcached, get)
 {
@@ -516,7 +538,7 @@ PHP_METHOD(Memcached, get)
 }
 /* }}} */
 
-/* {{{ Memcached::getByKey(string server_key, string key [, mixed callback [, double &cas_token [, int &udf_flags ] ] ])
+/* {{{ Memcached::getByKey(string server_key, string key [, mixed callback [, double &cas_token ] ])
    Returns a value for key from the server identified by the server key or false */
 PHP_METHOD(Memcached, getByKey)
 {
@@ -536,7 +558,6 @@ static void php_memc_get_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 	const char* keys[1] = { NULL };
 	size_t key_lens[1] = { 0 };
 	zval *cas_token = NULL;
-	zval *udf_flags = NULL;
 	uint64_t orig_cas_flag;
 	zend_fcall_info fci = empty_fcall_info;
 	zend_fcall_info_cache fcc = empty_fcall_info_cache;
@@ -545,13 +566,11 @@ static void php_memc_get_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 	MEMC_METHOD_INIT_VARS;
 
 	if (by_key) {
-		if (zend_parse_parameters(ZEND_NUM_ARGS(), "SS|f!zz", &server_key, &key,
-								  &fci, &fcc, &cas_token, &udf_flags) == FAILURE) {
+		if (zend_parse_parameters(ZEND_NUM_ARGS(), "SS|f!z", &server_key, &key, &fci, &fcc, &cas_token) == FAILURE) {
 			return;
 		}
 	} else {
-		if (zend_parse_parameters(ZEND_NUM_ARGS(), "S|f!zz", &key,
-								  &fci, &fcc, &cas_token, &udf_flags) == FAILURE) {
+		if (zend_parse_parameters(ZEND_NUM_ARGS(), "S|f!z", &key, &fci, &fcc, &cas_token) == FAILURE) {
 			return;
 		}
 	}
@@ -559,7 +578,9 @@ static void php_memc_get_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 	MEMC_METHOD_FETCH_OBJECT;
 	i_obj->rescode = MEMCACHED_SUCCESS;
 
-	if (key->len == 0 || strchr(key->val, ' ')) {
+	zend_hash_clean(Z_ARRVAL(i_obj->last_udf_flags));
+
+	if (key->len == 0 || (!memcached_behavior_get(m_obj->memc, MEMCACHED_BEHAVIOR_BINARY_PROTOCOL) && strchr(key->val, ' '))) {
 		i_obj->rescode = MEMCACHED_BAD_KEY_PROVIDED;
 		RETURN_FROM_GET;
 	}
@@ -650,18 +671,13 @@ static void php_memc_get_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 		ZVAL_DOUBLE(cas_token, (double)cas);
 	}
 
-	if (udf_flags) {
-		ZVAL_DEREF(udf_flags);
-		SEPARATE_ZVAL(udf_flags);
-		zval_dtor(udf_flags);
-		ZVAL_LONG(udf_flags, MEMC_VAL_GET_USER_FLAGS(flags));
-	}
-
+	/* Parse user flags */
+	add_assoc_long_ex(&i_obj->last_udf_flags, key->val, key->len, MEMC_VAL_GET_USER_FLAGS(flags));
 	memcached_result_free(&result);
 }
 /* }}} */
 
-/* {{{ Memcached::getMulti(array keys [, array &cas_tokens [, array &udf_flags ] ])
+/* {{{ Memcached::getMulti(array keys [, array &cas_tokens ])
    Returns values for the given keys or false */
 PHP_METHOD(Memcached, getMulti)
 {
@@ -669,7 +685,7 @@ PHP_METHOD(Memcached, getMulti)
 }
 /* }}} */
 
-/* {{{ Memcached::getMultiByKey(string server_key, array keys [, array &cas_tokens [, array &udf_flags ] ])
+/* {{{ Memcached::getMultiByKey(string server_key, array keys [, array &cas_tokens ])
    Returns values for the given keys from the server identified by the server key or false */
 PHP_METHOD(Memcached, getMultiByKey)
 {
@@ -693,7 +709,6 @@ static void php_memc_getMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 	uint32_t flags;
 	uint64_t cas = 0;
 	zval *cas_tokens = NULL;
-	zval *udf_flags = NULL;
 	uint64_t orig_cas_flag = 0;
 	zval value;
 	long get_flags = 0;
@@ -704,18 +719,21 @@ static void php_memc_getMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 	MEMC_METHOD_INIT_VARS;
 
 	if (by_key) {
-		if (zend_parse_parameters(ZEND_NUM_ARGS(), "Sa/|zlz", &server_key,
-								  &keys, &cas_tokens, &get_flags, &udf_flags) == FAILURE) {
+		if (zend_parse_parameters(ZEND_NUM_ARGS(), "Sa/|zl", &server_key,
+								  &keys, &cas_tokens, &get_flags) == FAILURE) {
 			return;
 		}
 	} else {
-		if (zend_parse_parameters(ZEND_NUM_ARGS(), "a/|zlz", &keys, &cas_tokens, &get_flags, &udf_flags) == FAILURE) {
+		if (zend_parse_parameters(ZEND_NUM_ARGS(), "a/|zl", &keys, &cas_tokens, &get_flags) == FAILURE) {
 			return;
 		}
 	}
 
 	MEMC_METHOD_FETCH_OBJECT;
 	i_obj->rescode = MEMCACHED_SUCCESS;
+
+	/* clean flags */
+	zend_hash_clean(Z_ARRVAL(i_obj->last_udf_flags));
 
 	preserve_order = (get_flags & MEMC_GET_PRESERVE_ORDER);
 	num_keys  = zend_hash_num_elements(Z_ARRVAL_P(keys));
@@ -801,12 +819,6 @@ static void php_memc_getMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 	 * Iterate through the result set and create the result array. The flags are
 	 * returned as longs.
 	 */
-	if (udf_flags) {
-		ZVAL_DEREF(udf_flags);
-		SEPARATE_ZVAL(udf_flags);
-		zval_dtor(udf_flags);
-		array_init(udf_flags);
-	}
 
 	memcached_result_create(m_obj->memc, &result);
 	while ((memcached_fetch_result(m_obj->memc, &result, &status)) != NULL) {
@@ -851,9 +863,7 @@ static void php_memc_getMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 			cas = memcached_result_cas(&result);
 			add_assoc_double_ex(cas_tokens, res_key, res_key_len, (double)cas);
 		}
-		if (udf_flags) {
-			add_assoc_long_ex(udf_flags, res_key, res_key_len, MEMC_VAL_GET_USER_FLAGS(flags));
-		}
+		add_assoc_long_ex(&i_obj->last_udf_flags, res_key, res_key_len, MEMC_VAL_GET_USER_FLAGS(flags));
 	}
 
 	memcached_result_free(&result);
@@ -866,12 +876,7 @@ static void php_memc_getMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 			zval_dtor(cas_tokens);
 			ZVAL_NULL(cas_tokens);
 		}
-		if (udf_flags) {
-			ZVAL_DEREF(udf_flags);
-			SEPARATE_ZVAL(udf_flags);
-			zval_dtor(udf_flags);
-			ZVAL_NULL(udf_flags);
-		}
+		zend_hash_clean(Z_ARRVAL(i_obj->last_udf_flags));
 		zval_dtor(return_value);
 		RETURN_FALSE;
 	}
@@ -1136,7 +1141,7 @@ PHP_METHOD(Memcached, fetchAll)
 }
 /* }}} */
 
-/* {{{ Memcached::set(string key, mixed value [, int expiration [, int udf_flags ] ])
+/* {{{ Memcached::set(string key, mixed value [, int expiration ])
    Sets the value for the given key */
 PHP_METHOD(Memcached, set)
 {
@@ -1144,7 +1149,7 @@ PHP_METHOD(Memcached, set)
 }
 /* }}} */
 
-/* {{{ Memcached::setByKey(string server_key, string key, mixed value [, int expiration [, int udf_flags ] ])
+/* {{{ Memcached::setByKey(string server_key, string key, mixed value [, int expiration ])
    Sets the value for the given key on the server identified by the server key */
 PHP_METHOD(Memcached, setByKey)
 {
@@ -1171,7 +1176,7 @@ PHP_METHOD(Memcached, touchByKey)
 #endif
 
 
-/* {{{ Memcached::setMulti(array items [, int expiration [, int udf_flags ] ])
+/* {{{ Memcached::setMulti(array items [, int expiration  ])
    Sets the keys/values specified in the items array */
 PHP_METHOD(Memcached, setMulti)
 {
@@ -1179,7 +1184,7 @@ PHP_METHOD(Memcached, setMulti)
 }
 /* }}} */
 
-/* {{{ Memcached::setMultiByKey(string server_key, array items [, int expiration [, int udf_flags ] ])
+/* {{{ Memcached::setMultiByKey(string server_key, array items [, int expiration ])
    Sets the keys/values specified in the items array on the server identified by the given server key */
 PHP_METHOD(Memcached, setMultiByKey)
 {
@@ -1218,7 +1223,6 @@ static void php_memc_setMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 	zval *entries;
 	zend_string *server_key = NULL;
 	time_t expiration = 0;
-	long udf_flags = 0;
 	zval *entry;
 	zend_string *skey, *str_key = NULL;
 	ulong num_key;
@@ -1233,27 +1237,17 @@ static void php_memc_setMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 
 	if (by_key) {
 		if (zend_parse_parameters(ZEND_NUM_ARGS(), "Sa|ll", &server_key,
-								  &entries, &expiration, &udf_flags) == FAILURE) {
+								  &entries, &expiration) == FAILURE) {
 			return;
 		}
 	} else {
-		if (zend_parse_parameters(ZEND_NUM_ARGS(), "a|ll", &entries, &expiration, &udf_flags) == FAILURE) {
+		if (zend_parse_parameters(ZEND_NUM_ARGS(), "a|ll", &entries, &expiration) == FAILURE) {
 			return;
 		}
 	}
 
 	MEMC_METHOD_FETCH_OBJECT;
 	i_obj->rescode = MEMCACHED_SUCCESS;
-
-	/*
-	 * php_memcached uses 16 bits internally to store type, compression and serialization info.
-	 * We use 16 upper bits to store user defined flags.
-	 */
-	if (udf_flags > 0) {
-		if ((uint32_t) udf_flags > MEMC_VAL_USER_FLAGS_MAX) {
-			php_error_docref(NULL, E_WARNING, "udf_flags will be limited to %u", MEMC_VAL_USER_FLAGS_MAX);
-		}
-	}
 
 	ZEND_HASH_FOREACH_KEY_VAL (Z_ARRVAL_P(entries), num_key, skey, entry) {
 		if (skey) {
@@ -1274,8 +1268,8 @@ static void php_memc_setMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 			MEMC_VAL_SET_FLAG(flags, MEMC_VAL_COMPRESSED);
 		}
 
-		if (udf_flags > 0) {
-			MEMC_VAL_SET_USER_FLAGS(flags, ((uint32_t) udf_flags));
+		if (m_obj->set_udf_flags >= 0) {
+			MEMC_VAL_SET_USER_FLAGS(flags, ((uint32_t) m_obj->set_udf_flags));
 		}
 
 		payload = php_memc_zval_to_payload(entry, &payload_len, &flags, m_obj->serializer, m_obj->compression_type);
@@ -1312,7 +1306,7 @@ retry:
 }
 /* }}} */
 
-/* {{{ Memcached::add(string key, mixed value [, int expiration [, int udf_flags ] ])
+/* {{{ Memcached::add(string key, mixed value [, int expiration ])
    Sets the value for the given key, failing if the key already exists */
 PHP_METHOD(Memcached, add)
 {
@@ -1320,7 +1314,7 @@ PHP_METHOD(Memcached, add)
 }
 /* }}} */
 
-/* {{{ Memcached::addByKey(string server_key, string key, mixed value [, int expiration [, int udf_flags ] ])
+/* {{{ Memcached::addByKey(string server_key, string key, mixed value [, int expiration ])
    Sets the value for the given key on the server identified by the sever key, failing if the key already exists */
 PHP_METHOD(Memcached, addByKey)
 {
@@ -1360,7 +1354,7 @@ PHP_METHOD(Memcached, prependByKey)
 }
 /* }}} */
 
-/* {{{ Memcached::replace(string key, mixed value [, int expiration [, int udf_flags ] ])
+/* {{{ Memcached::replace(string key, mixed value [, int expiration ])
    Replaces the value for the given key, failing if the key doesn't exist */
 PHP_METHOD(Memcached, replace)
 {
@@ -1368,7 +1362,7 @@ PHP_METHOD(Memcached, replace)
 }
 /* }}} */
 
-/* {{{ Memcached::replaceByKey(string server_key, string key, mixed value [, int expiration [, int udf_flags ] ])
+/* {{{ Memcached::replaceByKey(string server_key, string key, mixed value [, int expiration ])
    Replaces the value for the given key on the server identified by the server key, failing if the key doesn't exist */
 PHP_METHOD(Memcached, replaceByKey)
 {
@@ -1385,7 +1379,6 @@ static void php_memc_store_impl(INTERNAL_FUNCTION_PARAMETERS, int op, zend_bool 
 	zval  s_zvalue;
 	zval *value;
 	long expiration = 0;
-	long udf_flags = 0;
 	char  *payload = NULL;
 	size_t payload_len;
 	uint32_t flags = 0;
@@ -1405,7 +1398,7 @@ static void php_memc_store_impl(INTERNAL_FUNCTION_PARAMETERS, int op, zend_bool 
 				return;
 			}
 		} else {
-			if (zend_parse_parameters(ZEND_NUM_ARGS(), "SSz|ll", &server_key, &key, &value, &expiration, &udf_flags) == FAILURE) {
+			if (zend_parse_parameters(ZEND_NUM_ARGS(), "SSz|l", &server_key, &key, &value, &expiration) == FAILURE) {
 				return;
 			}
 		}
@@ -1421,7 +1414,7 @@ static void php_memc_store_impl(INTERNAL_FUNCTION_PARAMETERS, int op, zend_bool 
 				return;
 			}
 		} else {
-			if (zend_parse_parameters(ZEND_NUM_ARGS(), "Sz|ll", &key, &value, &expiration, &udf_flags) == FAILURE) {
+			if (zend_parse_parameters(ZEND_NUM_ARGS(), "Sz|l", &key, &value, &expiration) == FAILURE) {
 				return;
 			}
 		}
@@ -1430,7 +1423,7 @@ static void php_memc_store_impl(INTERNAL_FUNCTION_PARAMETERS, int op, zend_bool 
 	MEMC_METHOD_FETCH_OBJECT;
 	i_obj->rescode = MEMCACHED_SUCCESS;
 
-	if (key->len == 0 || strchr(key->val, ' ')) {
+	if (key->len == 0 || (!memcached_behavior_get(m_obj->memc, MEMCACHED_BEHAVIOR_BINARY_PROTOCOL) && strchr(key->val, ' '))) {
 		i_obj->rescode = MEMCACHED_BAD_KEY_PROVIDED;
 		RETURN_FALSE;
 	}
@@ -1452,11 +1445,8 @@ static void php_memc_store_impl(INTERNAL_FUNCTION_PARAMETERS, int op, zend_bool 
 	 * php_memcached uses 16 bits internally to store type, compression and serialization info.
 	 * We use 16 upper bits to store user defined flags.
 	 */
-	if (udf_flags > 0) {
-		if ((uint32_t) udf_flags > MEMC_VAL_USER_FLAGS_MAX) {
-			php_error_docref(NULL, E_WARNING, "udf_flags will be limited to %u", MEMC_VAL_USER_FLAGS_MAX);
-		}
-		MEMC_VAL_SET_USER_FLAGS(flags, ((uint32_t) udf_flags));
+	if (m_obj->set_udf_flags >= 0) {
+		MEMC_VAL_SET_USER_FLAGS(flags, ((uint32_t) m_obj->set_udf_flags));
 	}
 
 	if (op == MEMC_OP_TOUCH) {
@@ -1557,7 +1547,6 @@ static void php_memc_cas_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 	zend_string *server_key = NULL;
 	zval *value;
 	time_t expiration = 0;
-	long udf_flags = 0;
 	char  *payload;
 	size_t payload_len;
 	uint32_t flags = 0;
@@ -1566,12 +1555,12 @@ static void php_memc_cas_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 
 	if (by_key) {
 		if (zend_parse_parameters(ZEND_NUM_ARGS(), "dSSz|ll", &cas_d, &server_key, &key,
-								  &value, &expiration, &udf_flags) == FAILURE) {
+								  &value, &expiration) == FAILURE) {
 			return;
 		}
 	} else {
 		if (zend_parse_parameters(ZEND_NUM_ARGS(), "dSz|ll", &cas_d, &key, &value,
-								  &expiration, &udf_flags) == FAILURE) {
+								  &expiration) == FAILURE) {
 			return;
 		}
 	}
@@ -1579,7 +1568,7 @@ static void php_memc_cas_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 	MEMC_METHOD_FETCH_OBJECT;
 	i_obj->rescode = MEMCACHED_SUCCESS;
 
-	if (key->len == 0 || strchr(key->val, ' ')) {
+	if (key->len == 0 || (!memcached_behavior_get(m_obj->memc, MEMCACHED_BEHAVIOR_BINARY_PROTOCOL) && strchr(key->val, ' '))) {
 		i_obj->rescode = MEMCACHED_BAD_KEY_PROVIDED;
 		RETURN_FALSE;
 	}
@@ -1594,11 +1583,8 @@ static void php_memc_cas_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 	 * php_memcached uses 16 bits internally to store type, compression and serialization info.
 	 * We use 16 upper bits to store user defined flags.
 	 */
-	if (udf_flags > 0) {
-		if ((uint32_t) udf_flags > MEMC_VAL_USER_FLAGS_MAX) {
-			php_error_docref(NULL, E_WARNING, "udf_flags will be limited to %u", MEMC_VAL_USER_FLAGS_MAX);
-		}
-		MEMC_VAL_SET_USER_FLAGS(flags, ((uint32_t) udf_flags));
+	if (m_obj->set_udf_flags > 0) {
+		MEMC_VAL_SET_USER_FLAGS(flags, ((uint32_t) m_obj->set_udf_flags));
 	}
 
 	payload = php_memc_zval_to_payload(value, &payload_len, &flags, m_obj->serializer, m_obj->compression_type);
@@ -1621,7 +1607,7 @@ static void php_memc_cas_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 }
 /* }}} */
 
-/* {{{ Memcached::cas(double cas_token, string key, mixed value [, int expiration [, int udf_flags ] ])
+/* {{{ Memcached::cas(double cas_token, string key, mixed value [, int expiration ])
    Sets the value for the given key, failing if the cas_token doesn't match the one in memcache */
 PHP_METHOD(Memcached, cas)
 {
@@ -1629,7 +1615,7 @@ PHP_METHOD(Memcached, cas)
 }
 /* }}} */
 
-/* {{{ Memcached::casByKey(double cas_token, string server_key, string key, mixed value [, int expiration [, int udf_flags ] ])
+/* {{{ Memcached::casByKey(double cas_token, string server_key, string key, mixed value [, int expiration ])
    Sets the value for the given key on the server identified by the server_key, failing if the cas_token doesn't match the one in memcache */
 PHP_METHOD(Memcached, casByKey)
 {
@@ -1691,7 +1677,7 @@ static void php_memc_delete_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 	MEMC_METHOD_FETCH_OBJECT;
 	i_obj->rescode = MEMCACHED_SUCCESS;
 
-	if (key->len == 0 || strchr(key->val, ' ')) {
+	if (key->len == 0 || (!memcached_behavior_get(m_obj->memc, MEMCACHED_BEHAVIOR_BINARY_PROTOCOL) && strchr(key->val, ' '))) {
 		i_obj->rescode = MEMCACHED_BAD_KEY_PROVIDED;
 		RETURN_FALSE;
 	}
@@ -1789,7 +1775,7 @@ static void php_memc_incdec_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key,
 	MEMC_METHOD_FETCH_OBJECT;
 	i_obj->rescode = MEMCACHED_SUCCESS;
 
-	if (key->len == 0 || strchr(key->val, ' ')) {
+	if (key->len == 0 || (!memcached_behavior_get(m_obj->memc, MEMCACHED_BEHAVIOR_BINARY_PROTOCOL) && strchr(key->val, ' '))) {
 		i_obj->rescode = MEMCACHED_BAD_KEY_PROVIDED;
 		RETURN_FALSE;
 	}
@@ -2034,7 +2020,7 @@ PHP_METHOD(Memcached, getServerByKey)
 	MEMC_METHOD_FETCH_OBJECT;
 	i_obj->rescode = MEMCACHED_SUCCESS;
 
-	if (server_key->len == 0 || strchr(server_key->val, ' ')) {
+	if (server_key->len == 0 || (!memcached_behavior_get(m_obj->memc, MEMCACHED_BEHAVIOR_BINARY_PROTOCOL) && strchr(server_key->val, ' '))) {
 		i_obj->rescode = MEMCACHED_BAD_KEY_PROVIDED;
 		RETURN_FALSE;
 	}
@@ -2344,6 +2330,10 @@ static PHP_METHOD(Memcached, getOption)
 			RETURN_LONG((long)m_obj->serializer);
 			break;
 
+		case MEMC_OPT_USER_FLAGS:
+			RETURN_LONG(m_obj->set_udf_flags);
+			break;
+
 		case MEMC_OPT_STORE_RETRY_COUNT:
 			RETURN_LONG((long)m_obj->store_retry_count);
 			break;
@@ -2480,6 +2470,21 @@ static int php_memc_set_option(php_memc_t *i_obj, long option, zval *value)
 			}
 			break;
 		}
+
+		case MEMC_OPT_USER_FLAGS:
+			convert_to_long(value);
+
+			if (Z_LVAL_P(value) < 0) {
+				m_obj->set_udf_flags = -1;
+				return 1;
+			}
+
+			if (Z_LVAL_P(value) > MEMC_VAL_USER_FLAGS_MAX) {
+				php_error_docref(NULL, E_WARNING, "MEMC_OPT_USER_FLAGS must be < %u", MEMC_VAL_USER_FLAGS_MAX);
+				return 0;
+			}
+			m_obj->set_udf_flags = Z_LVAL_P(value);
+			break;
 
 		case MEMC_OPT_STORE_RETRY_COUNT:
 			convert_to_long(value);
@@ -2805,23 +2810,23 @@ static void php_memc_destroy(struct memc_obj *m_obj, zend_bool persistent)
 	if (m_obj->memc) {
 		memcached_free(m_obj->memc);
 	}
-
 	pefree(m_obj, persistent);
 }
 
 static void php_memc_free_storage(zend_object *obj)
 {
 	php_memc_t *i_obj = php_memc_fetch_object(obj);
-	
+
 	if (i_obj->obj && !i_obj->is_persistent) {
 		php_memc_destroy(i_obj->obj, 0);
 	}
 
+	zval_ptr_dtor(&i_obj->last_udf_flags);
 	zend_object_std_dtor(&i_obj->zo);
 	i_obj->obj = NULL;
 }
 
-zend_object *php_memc_new(zend_class_entry *ce)
+static zend_object *php_memc_new(zend_class_entry *ce)
 {
 	php_memc_t *i_obj = ecalloc(1, sizeof(php_memc_t) + zend_object_properties_size(ce));
     
@@ -3514,7 +3519,7 @@ static memcached_return php_memc_do_cache_callback(zval *zmemc_obj, zend_fcall_i
 	fci->param_count = 4;
 
 	result = zend_call_function(fci, fcc);
-	
+
 	ZVAL_DUP(value, Z_REFVAL(z_val));
 	expiration = Z_REFVAL(z_expiration);
 	if (result == SUCCESS && Z_TYPE(retval) != IS_UNDEF) {
@@ -3552,7 +3557,7 @@ static memcached_return php_memc_do_cache_callback(zval *zmemc_obj, zend_fcall_i
 		ZVAL_NULL(value);
 	}
 
-	if (&retval) {
+	if (!Z_ISUNDEF(retval)) {
 		zval_ptr_dtor(&retval);
 	}
 
@@ -3711,7 +3716,6 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_get, 0, 0, 1)
 	ZEND_ARG_INFO(0, key)
 	ZEND_ARG_INFO(0, cache_cb)
 	ZEND_ARG_INFO(2, cas_token)
-	ZEND_ARG_INFO(1, udf_flags)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_getByKey, 0, 0, 2)
@@ -3719,14 +3723,12 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_getByKey, 0, 0, 2)
 	ZEND_ARG_INFO(0, key)
 	ZEND_ARG_INFO(0, cache_cb)
 	ZEND_ARG_INFO(2, cas_token)
-	ZEND_ARG_INFO(1, udf_flags)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_getMulti, 0, 0, 1)
 	ZEND_ARG_ARRAY_INFO(0, keys, 0)
 	ZEND_ARG_INFO(2, cas_tokens)
 	ZEND_ARG_INFO(0, flags)
-	ZEND_ARG_INFO(1, udf_flags)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_getMultiByKey, 0, 0, 2)
@@ -3734,7 +3736,6 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_getMultiByKey, 0, 0, 2)
 	ZEND_ARG_ARRAY_INFO(0, keys, 0)
 	ZEND_ARG_INFO(2, cas_tokens)
 	ZEND_ARG_INFO(0, flags)
-	ZEND_ARG_INFO(1, udf_flags)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_getDelayed, 0, 0, 1)
@@ -3760,7 +3761,6 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_set, 0, 0, 2)
 	ZEND_ARG_INFO(0, key)
 	ZEND_ARG_INFO(0, value)
 	ZEND_ARG_INFO(0, expiration)
-	ZEND_ARG_INFO(0, udf_flags)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_setByKey, 0, 0, 3)
@@ -3768,7 +3768,6 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_setByKey, 0, 0, 3)
 	ZEND_ARG_INFO(0, key)
 	ZEND_ARG_INFO(0, value)
 	ZEND_ARG_INFO(0, expiration)
-	ZEND_ARG_INFO(0, udf_flags)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_touch, 0, 0, 2)
@@ -3785,21 +3784,21 @@ ZEND_END_ARG_INFO()
 ZEND_BEGIN_ARG_INFO_EX(arginfo_setMulti, 0, 0, 1)
 	ZEND_ARG_ARRAY_INFO(0, items, 0)
 	ZEND_ARG_INFO(0, expiration)
-	ZEND_ARG_INFO(0, udf_flags)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_setMultiByKey, 0, 0, 2)
 	ZEND_ARG_INFO(0, server_key)
 	ZEND_ARG_ARRAY_INFO(0, items, 0)
 	ZEND_ARG_INFO(0, expiration)
-	ZEND_ARG_INFO(0, udf_flags)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_getLastUserFlags, 0, 0, 0)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_add, 0, 0, 2)
 	ZEND_ARG_INFO(0, key)
 	ZEND_ARG_INFO(0, value)
 	ZEND_ARG_INFO(0, expiration)
-	ZEND_ARG_INFO(0, udf_flags)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_addByKey, 0, 0, 3)
@@ -3807,14 +3806,12 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_addByKey, 0, 0, 3)
 	ZEND_ARG_INFO(0, key)
 	ZEND_ARG_INFO(0, value)
 	ZEND_ARG_INFO(0, expiration)
-	ZEND_ARG_INFO(0, udf_flags)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_replace, 0, 0, 2)
 	ZEND_ARG_INFO(0, key)
 	ZEND_ARG_INFO(0, value)
 	ZEND_ARG_INFO(0, expiration)
-	ZEND_ARG_INFO(0, udf_flags)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_replaceByKey, 0, 0, 3)
@@ -3822,7 +3819,6 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_replaceByKey, 0, 0, 3)
 	ZEND_ARG_INFO(0, key)
 	ZEND_ARG_INFO(0, value)
 	ZEND_ARG_INFO(0, expiration)
-	ZEND_ARG_INFO(0, udf_flags)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_append, 0, 0, 2)
@@ -3856,7 +3852,6 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_cas, 0, 0, 3)
 	ZEND_ARG_INFO(0, key)
 	ZEND_ARG_INFO(0, value)
 	ZEND_ARG_INFO(0, expiration)
-	ZEND_ARG_INFO(0, udf_flags)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_casByKey, 0, 0, 4)
@@ -3865,7 +3860,6 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_casByKey, 0, 0, 4)
 	ZEND_ARG_INFO(0, key)
 	ZEND_ARG_INFO(0, value)
 	ZEND_ARG_INFO(0, expiration)
-	ZEND_ARG_INFO(0, udf_flags)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_delete, 0, 0, 1)
@@ -4028,6 +4022,8 @@ static zend_function_entry memcached_class_methods[] = {
 	MEMC_ME(setMulti,           arginfo_setMulti)
 	MEMC_ME(setMultiByKey,      arginfo_setMultiByKey)
 
+	MEMC_ME(getLastUserFlags,   arginfo_getLastUserFlags)
+
 	MEMC_ME(cas,                arginfo_cas)
 	MEMC_ME(casByKey,           arginfo_casByKey)
 	MEMC_ME(add,                arginfo_add)
@@ -4186,6 +4182,8 @@ static void php_memc_register_constants(INIT_FUNC_ARGS)
 	REGISTER_MEMC_CLASS_CONST_LONG(OPT_COMPRESSION_TYPE, MEMC_OPT_COMPRESSION_TYPE);
 	REGISTER_MEMC_CLASS_CONST_LONG(OPT_PREFIX_KEY,  MEMC_OPT_PREFIX_KEY);
 	REGISTER_MEMC_CLASS_CONST_LONG(OPT_SERIALIZER,  MEMC_OPT_SERIALIZER);
+
+	REGISTER_MEMC_CLASS_CONST_LONG(OPT_USER_FLAGS,  MEMC_OPT_USER_FLAGS);
 	REGISTER_MEMC_CLASS_CONST_LONG(OPT_STORE_RETRY_COUNT,  MEMC_OPT_STORE_RETRY_COUNT);
 
 	/*
