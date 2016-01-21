@@ -277,7 +277,7 @@ success:
 PS_CLOSE_FUNC(memcached)
 {
 	memcached_sess *memc_sess = PS_GET_MOD_DATA();
-	
+
 	if (!memc_sess) {
 		php_error_docref(NULL TSRMLS_CC, E_WARNING, "Session is not allocated, check session.save_path value");
 		return FAILURE;
@@ -336,8 +336,9 @@ PS_READ_FUNC(memcached)
 		*val = zend_string_init(payload, payload_len, 1);
 		free(payload);
 		return SUCCESS;
-	} else if (status = MEMCACHED_NOTFOUND) {
+	} else if (status == MEMCACHED_NOTFOUND) {
 		*val = ZSTR_EMPTY_ALLOC();
+		return SUCCESS;
 	} else {
 		return FAILURE;
 	}
@@ -351,7 +352,7 @@ PS_WRITE_FUNC(memcached)
 	memcached_return status;
 	memcached_sess *memc_sess = PS_GET_MOD_DATA();
 	size_t key_length;
-	
+
 	if (!memc_sess) {
 		php_error_docref(NULL TSRMLS_CC, E_WARNING, "Session is not allocated, check session.save_path value");
 		return FAILURE;
@@ -409,39 +410,34 @@ PS_GC_FUNC(memcached)
 PS_CREATE_SID_FUNC(memcached)
 {
 	zend_string *sid;
-	int maxfail = 3;
+	int retries = 3;
 	memcached_sess *memc_sess = PS_GET_MOD_DATA();
+	time_t expiration = PS(gc_maxlifetime);
 
-	do {
+	if (!memc_sess) {
+		return NULL;
+	}
+
+	while (retries-- > 0) {
 		sid = php_session_create_id((void**)&memc_sess);
-		if (!sid) {
-			if (--maxfail < 0) {
-				return NULL;
-			} else {
-				continue;
-			}
-		}
-		/* Check collision */
-		/* FIXME: mod_data(memc_sess) should not be NULL (User handler could be NULL) */
-		if (memc_sess && memcached_exist(memc_sess->memc_sess, sid->val, sid->len) == MEMCACHED_SUCCESS) {
-			if (sid) {
-				zend_string_release(sid);
-				sid = NULL;
-			}
-			if (--maxfail < 0) {
-				return NULL;
-			}
-		}
-	} while(!sid);
 
-	return sid;
+		if (sid) {
+			if (memcached_add(memc_sess->memc_sess, sid->val, sid->len, "0", 0, expiration, 0) == MEMCACHED_SUCCESS) {
+				return sid;
+			}
+			else {
+				zend_string_release(sid);
+			}
+		}
+	}
+	return NULL;
 }
 
 PS_VALIDATE_SID_FUNC(memcached)
 {
 	memcached_sess *memc_sess = PS_GET_MOD_DATA();
 
-	if (memcached_exist(memc_sess->memc_sess, key->val, key->len) == MEMCACHED_SUCCESS) {
+	if (php_memcached_exist(memc_sess->memc_sess, key) == MEMCACHED_SUCCESS) {
 		return SUCCESS;
 	} else {
 		return FAILURE;

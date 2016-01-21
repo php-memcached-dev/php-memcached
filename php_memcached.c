@@ -332,6 +332,25 @@ static void php_memc_destroy(struct memc_obj *m_obj, zend_bool persistent);
 ****************************************/
 
 
+memcached_return php_memcached_exist (memcached_st *memc, zend_string *key)
+{
+#ifdef HAVE_MEMCACHED_EXIST
+	return memcached_exist (memc, key->val, key->len);
+#else
+	memcached_return rc = MEMCACHED_SUCCESS;
+	uint32_t flags = 0;
+	size_t value_length = 0;
+	char *value = NULL;
+
+	value = memcached_get (memc, key->val, key->len, &value_length, &flags, &rc);
+	if (value) {
+		free (value);
+	}
+	return rc;
+#endif
+}
+
+
 char *php_memc_printable_func (zend_fcall_info *fci, zend_fcall_info_cache *fci_cache)
 {
 	char *buffer = NULL;

@@ -296,6 +296,28 @@ if test "$PHP_MEMCACHED" != "no"; then
       AC_MSG_RESULT([no])
     fi
 
+    ORIG_CFLAGS="$CFLAGS"
+    ORIG_LIBS="$LIBS"
+  
+    CFLAGS="$CFLAGS $PHP_LIBMEMCACHED_INCLUDES"
+    LIBS="$LIBS $PHP_LIBMEMCACHED_LIBS"
+
+    AC_CACHE_CHECK([whether memcached_exist is defined], ac_cv_have_memcached_exist, [
+      AC_TRY_LINK(
+        [ #include <libmemcached/memcached.h> ],
+        [ memcached_exist (NULL, NULL, 0); ],
+        [ ac_cv_have_memcached_exist="yes" ],
+        [ ac_cv_have_memcached_exist="no" ]
+      )
+    ])
+
+    CFLAGS="$ORIG_CFLAGS"
+    LIBS="$ORIG_LIBS"
+
+    if test "$ac_cv_have_memcached_exist" = "yes"; then
+      AC_DEFINE(HAVE_MEMCACHED_EXIST, [1], [Whether memcached_exist is defined])
+    fi
+
     PHP_MEMCACHED_FILES="php_memcached.c php_libmemcached_compat.c  g_fmt.c"
 
     if test "$PHP_SYSTEM_FASTLZ" != "no"; then
