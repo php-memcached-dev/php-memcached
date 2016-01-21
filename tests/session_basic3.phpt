@@ -18,7 +18,7 @@ ini_set ('session.save_path', MEMC_SERVER_HOST . ':' . MEMC_SERVER_PORT);
 
 error_reporting(0);
 
-session_start(['read_only'=>TRUE);
+session_start(['read_only'=>TRUE]);
 $_SESSION['foo'] = 1;
 session_write_close();
 
