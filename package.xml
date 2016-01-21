@@ -100,6 +100,8 @@ http://pear.php.net/dtd/package-2.0.xsd">
     <file role='test' name='session_badconf_prefix.phpt'/>
     <file role='test' name='session_badconf_servers.phpt'/>
     <file role='test' name='session_basic.phpt'/>
+    <file role='test' name='session_basic2.phpt'/>
+    <file role='test' name='session_basic3.phpt'/>
     <file role='test' name='set_large.phpt'/>
     <file role='test' name='setoptions.phpt'/>
     <file role='test' name='touch_binary.phpt'/>
