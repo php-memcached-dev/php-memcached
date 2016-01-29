@@ -129,46 +129,60 @@ typedef struct {
 #endif
 
 ZEND_BEGIN_MODULE_GLOBALS(php_memcached)
+
 #ifdef HAVE_MEMCACHED_SESSION
-	zend_bool sess_locking_enabled;
-	long  sess_lock_wait;
-	long  sess_lock_max_wait;
-	long  sess_lock_expire;
-	char* sess_prefix;
-	zend_bool sess_locked;
-	char* sess_lock_key;
-	int   sess_lock_key_len;
+	/* Session related variables */
+	struct {
+		zend_bool lock_enabled;
+		zend_long lock_wait_max;
+		zend_long lock_wait_min;
+		zend_long lock_retries;
+		zend_long lock_expiration;
 
-	int   sess_number_of_replicas;
-	zend_bool sess_randomize_replica_read;
-	zend_bool sess_remove_failed_enabled;
-	long  sess_connect_timeout;
-	zend_bool sess_consistent_hash_enabled;
-	zend_bool sess_binary_enabled;
+		zend_bool compression_enabled;
+		zend_bool binary_protocol_enabled;
+		zend_bool consistent_hash_enabled;
+
+		zend_long server_failure_limit;
+		zend_long number_of_replicas;
+		zend_bool randomize_replica_read_enabled;
+		zend_bool remove_failed_servers_enabled;
+
+		zend_long connect_timeout;
+
+		char *prefix;
+		zend_bool persistent_enabled;
+
+		char *sasl_username;
+		char *sasl_password;
+	} session_ini;
+
+#endif
+
+	struct {
+		char     *serializer_name;
+		char     *compression_type;
+		zend_long compression_threshold;
+		double    compression_factor;
+		zend_long store_retry_count;
 
 #if HAVE_MEMCACHED_SASL
-	char *sess_sasl_username;
-	char *sess_sasl_password;
-	zend_bool sess_sasl_data;
+		zend_bool sasl_enabled;
 #endif
-#endif
-	char *serializer_name;
-	enum memcached_serializer serializer;
 
-	char *compression_type;
-	int   compression_type_real;
-	int   compression_threshold;
+		/* Converted values*/
+		enum memcached_serializer serializer;
+		zend_long compression_type_real;
+	} memc_ini;
 
-	double compression_factor;
-#if HAVE_MEMCACHED_SASL
-	zend_bool use_sasl;
-#endif
+
+
 #ifdef HAVE_MEMCACHED_PROTOCOL
 	struct {
 		php_memc_server_cb_t callbacks [MEMC_SERVER_ON_MAX];
 	} server;
 #endif
-	long store_retry_count;
+
 ZEND_END_MODULE_GLOBALS(php_memcached)
 
 PHP_RINIT_FUNCTION(memcached);
@@ -176,19 +190,6 @@ PHP_RSHUTDOWN_FUNCTION(memcached);
 PHP_MINIT_FUNCTION(memcached);
 PHP_MSHUTDOWN_FUNCTION(memcached);
 PHP_MINFO_FUNCTION(memcached);
-
-#ifdef ZTS
-#define MEMC_G(v) TSRMG(php_memcached_globals_id, zend_php_memcached_globals *, v)
-#else
-#define MEMC_G(v) (php_memcached_globals.v)
-#endif
-
-typedef struct {
-	memcached_st *memc_sess;
-	zend_bool is_persistent;
-} memcached_sess;
-
-int php_memc_sess_list_entry(void);
 
 char *php_memc_printable_func (zend_fcall_info *fci, zend_fcall_info_cache *fci_cache TSRMLS_DC);
 

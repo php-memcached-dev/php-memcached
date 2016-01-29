@@ -11,8 +11,7 @@ $memcached->addServer('localhost', 5555); // Server should not exist
 $result = $memcached->get('foo_not_exists');
 var_dump ($result === Memcached::GET_ERROR_RETURN_VALUE);
 
-$cas = 7;
-$result = $memcached->get('foo_not_exists', null, $cas);
+$result = $memcached->get('foo_not_exists');
 var_dump ($result === Memcached::GET_ERROR_RETURN_VALUE);
 
 echo "OK\n";

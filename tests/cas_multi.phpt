@@ -16,25 +16,22 @@ foreach ($data as $key => $v) {
 	$m->delete($key);
 }
 
-$cas_tokens = array();
 $m->setMulti($data, 10);
-$actual = $m->getMulti(array_keys($data), $cas_tokens);
+$actual = $m->getMulti(array_keys($data), Memcached::GET_EXTENDED);
 
-foreach ($data as $key => $v) {
-	if (is_null($cas_tokens[$key])) {
+foreach ($actual as $key => $v) {
+	if (is_null($v['cas'])) {
 		echo "missing cas token(s)\n";
 		echo "data: ";
 		var_dump($data);
 		echo "actual data: ";
 		var_dump($actual);
-		echo "cas tokens: ";
-		var_dump($cas_tokens);
 		return;
 	}
 
-	$v = $m->cas($cas_tokens[$key], $key, 11);
+	$v = $m->cas($v['cas'], $key, 11);
 	if (!$v) {
-		echo "Error setting key: $key value: 11 with CAS: ", $cas_tokens[$key], "\n";
+		echo "Error setting key: $key value: 11 with CAS: ", $v['cas'], "\n";
 		return;
 	}
 	$v = $m->get($key);
@@ -51,24 +48,6 @@ if (array_keys($actual) !== array_keys($data)) {
 	var_dump($data);
 	echo "actual data: ";
 	var_dump($actual);
-	return;
-}
-
-$actual = $m->getMulti(array_keys($data), 2);
-if (array_keys($actual) !== array_keys($data)) {
-	echo "Failed to getMulti \$cas_token passed by value (2)\n";
-	return;
-}
-
-$actual = $m->getMulti(array_keys($data), null);
-if (array_keys($actual) !== array_keys($data)) {
-	echo "Failed to getMulti \$cas_token passed by value (null)\n";
-	return;
-}
-
-$actual = $m->getMulti(array_keys($data), $cas_tokens = array(2, 4));
-if (array_keys($actual) !== array_keys($data) || $cas_tokens !== array(2, 4)) {
-	echo "Failed to getMulti \$cas_token passed by value (\$cas_tokens = array(2, 4))\n";
 	return;
 }
 

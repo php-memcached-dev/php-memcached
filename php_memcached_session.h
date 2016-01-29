@@ -36,4 +36,7 @@ PS_CREATE_SID_FUNC(memcached);
 PS_VALIDATE_SID_FUNC(memcached);
 PS_UPDATE_TIMESTAMP_FUNC(memcached);
 
+/* Called from php_memcached.c */
+int php_memc_session_minit(int module_number);
+
 #endif /* PHP_MEMCACHED_SESSION_H */
