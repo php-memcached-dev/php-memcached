@@ -37,7 +37,8 @@ try {
 }
 
 try {
-    
+    $m = new Memcached(null, 'throw_something');
+    echo "fail\n";
 } catch (Exception $e) {
     echo "fail\n";
 }
