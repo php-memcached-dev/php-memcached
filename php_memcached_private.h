@@ -155,8 +155,7 @@ ZEND_BEGIN_MODULE_GLOBALS(php_memcached)
 
 		char *sasl_username;
 		char *sasl_password;
-	} session_ini;
-
+	} session;
 #endif
 
 	struct {
@@ -166,15 +165,14 @@ ZEND_BEGIN_MODULE_GLOBALS(php_memcached)
 		double    compression_factor;
 		zend_long store_retry_count;
 
-#if HAVE_MEMCACHED_SASL
-		zend_bool sasl_enabled;
-#endif
-
 		/* Converted values*/
 		enum memcached_serializer serializer;
 		zend_long compression_type_real;
-	} memc_ini;
 
+		/* Whether we have initialised sasl for this process */
+		zend_bool sasl_initialised;
+
+	} memc;
 
 	/* For deprecated values */
 	zend_long no_effect;
@@ -194,9 +192,11 @@ PHP_MINIT_FUNCTION(memcached);
 PHP_MSHUTDOWN_FUNCTION(memcached);
 PHP_MINFO_FUNCTION(memcached);
 
-char *php_memc_printable_func (zend_fcall_info *fci, zend_fcall_info_cache *fci_cache TSRMLS_DC);
+char *php_memc_printable_func (zend_fcall_info *fci, zend_fcall_info_cache *fci_cache);
 
 memcached_return php_memcached_exist (memcached_st *memc, zend_string *key);
+
+zend_bool php_memc_init_sasl_if_needed();
 
 #endif /* PHP_MEMCACHED_PRIVATE_H */
 

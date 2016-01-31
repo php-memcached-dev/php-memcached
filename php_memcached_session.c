@@ -45,9 +45,9 @@ typedef struct  {
 #endif
 
 #ifdef ZTS
-#define MEMC_SESS_INI(v) TSRMG(php_memcached_globals_id, zend_php_memcached_globals *, session_ini.v)
+#define MEMC_SESS_INI(v) TSRMG(php_memcached_globals_id, zend_php_memcached_globals *, session.v)
 #else
-#define MEMC_SESS_INI(v) (php_memcached_globals.session_ini.v)
+#define MEMC_SESS_INI(v) (php_memcached_globals.session.v)
 #endif
 
 #define MEMC_SESS_STR_INI(vv) ((MEMC_SESS_INI(vv) && *MEMC_SESS_INI(vv)) ? MEMC_SESS_INI(vv) : NULL)
@@ -138,7 +138,7 @@ zend_bool s_lock_session(memcached_st *memc, zend_string *sid)
 		switch (rc) {
 
 			case MEMCACHED_SUCCESS:
-				user_data->lock_key = zend_string_init(lock_key, lock_key_len, user_data->is_persistent);
+				user_data->lock_key  = zend_string_init(lock_key, lock_key_len, user_data->is_persistent);
 				user_data->is_locked = 1;
 			break;
 
@@ -215,9 +215,12 @@ zend_bool s_configure_from_ini_values(memcached_st *memc, zend_bool silent)
 		memcached_callback_set(memc, MEMCACHED_CALLBACK_NAMESPACE, MEMC_SESS_STR_INI(prefix));
 	}
 
-#ifdef HAVE_MEMCACHED_SASL
 	if (MEMC_SESS_STR_INI(sasl_username) && MEMC_SESS_STR_INI(sasl_password)) {
 		php_memcached_user_data *user_data;
+
+		if (!php_memc_init_sasl_if_needed()) {
+			return 0;
+		}
 
 		check_set_behavior(MEMCACHED_BEHAVIOR_BINARY_PROTOCOL, 1);
 
@@ -228,7 +231,6 @@ zend_bool s_configure_from_ini_values(memcached_st *memc, zend_bool silent)
 		user_data = memcached_get_user_data(memc);
 		user_data->has_sasl_data = 1;
 	}
-#endif
 
 #undef safe_set_behavior
 
@@ -297,7 +299,6 @@ memcached_st *s_init_mod_data (const memcached_server_list_st servers, zend_bool
 
 	memcached_set_user_data(memc, user_data);
 	memcached_server_push (memc, servers);
-
 	memcached_behavior_set(memc, MEMCACHED_BEHAVIOR_VERIFY_KEY, 1);
 	return memc;
 }
@@ -307,6 +308,7 @@ PS_OPEN_FUNC(memcached)
 	memcached_st *memc   = NULL;
 	char *plist_key      = NULL;
 	size_t plist_key_len = 0;
+
 	memcached_server_list_st servers;
 
 	// First parse servers
@@ -348,6 +350,7 @@ PS_OPEN_FUNC(memcached)
 		if (plist_key) {
 			efree(plist_key);
 		}
+		s_destroy_mod_data(memc);
 		PS_SET_MOD_DATA(NULL);
 		return FAILURE;
 	}
@@ -501,21 +504,6 @@ PS_CREATE_SID_FUNC(memcached)
 			}
 			zend_string_release(sid);
 			sid = NULL;
-		}
-	}
-
-	if (sid) {
-		if (sid->len + (sizeof ("lock.") - 1) > (MEMCACHED_MAX_KEY - 1)) {
-			php_error_docref(NULL TSRMLS_CC, E_WARNING, "Session id is too long to be stored in memcached");
-			zend_string_release (sid);
-			return NULL;
-		}
-		if (MEMC_SESS_STR_INI(prefix)) {
-			if (strlen (MEMC_SESS_STR_INI(prefix)) + sid->len + (sizeof ("lock.") - 1) > (MEMCACHED_MAX_KEY - 1)) {
-				php_error_docref(NULL TSRMLS_CC, E_WARNING, "Session id with prefix is too long to be stored in memcached");
-				zend_string_release (sid);
-				return NULL;
-			}
 		}
 	}
 	return sid;
