@@ -323,7 +323,9 @@ PHP_INI_BEGIN()
 	MEMC_INI_ENTRY("compression_factor",    "1.3",                   OnUpdateReal,            compression_factor)
 	MEMC_INI_ENTRY("compression_threshold", "2000",                  OnUpdateLong,            compression_threshold)
 	MEMC_INI_ENTRY("serializer",            SERIALIZER_DEFAULT_NAME, OnUpdateSerializer,      serializer_name)
+#if HAVE_MEMCACHED_SASL
 	MEMC_INI_ENTRY("use_sasl",              "0",                     OnUpdateBool,            sasl_enabled)
+#endif
 	MEMC_INI_ENTRY("store_retry_count",     "2",                     OnUpdateLong,            store_retry_count)
 PHP_INI_END()
 /* }}} */

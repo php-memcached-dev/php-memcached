@@ -1,0 +1,23 @@
+--TEST--
+Check stats
+--SKIPIF--
+<?php if (!extension_loaded("memcached")) print "skip"; ?>
+--FILE--
+<?php 
+include dirname (__FILE__) . '/config.inc';
+$m = memc_get_instance ();
+
+$stats = $m->getStats();
+$key = MEMC_SERVER_HOST . ':' . MEMC_SERVER_PORT;
+
+var_dump (count ($stats) === 1);
+var_dump (isset ($stats[$key]));
+var_dump (count ($stats[$key]) > 0);
+
+echo "OK";
+?>
+--EXPECT--
+bool(true)
+bool(true)
+bool(true)
+OK
