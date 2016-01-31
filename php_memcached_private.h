@@ -176,6 +176,9 @@ ZEND_BEGIN_MODULE_GLOBALS(php_memcached)
 	} memc_ini;
 
 
+	/* For deprecated values */
+	zend_long no_effect;
+
 
 #ifdef HAVE_MEMCACHED_PROTOCOL
 	struct {

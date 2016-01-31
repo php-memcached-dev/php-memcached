@@ -13,6 +13,7 @@ function my_func(Memcached $obj, $persistent_id = null)
 }
 
 $m = new Memcached('hi', 'my_func');
+$m = new Memcached('hi', 'my_func');
 
 var_dump($m->getServerList());
 
@@ -21,11 +22,13 @@ echo "OK\n";
 --EXPECTF--
 array(1) {
   [0]=>
-  array(2) {
+  array(3) {
     ["host"]=>
     string(9) "127.0.0.1"
     ["port"]=>
     int(11211)
+    ["type"]=>
+    string(3) "TCP"
   }
 }
 OK

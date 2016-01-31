@@ -6,11 +6,7 @@ if (!extension_loaded("memcached")) print "skip";
 if (!Memcached::HAVE_SESSION) print "skip";
 ?>
 --INI--
-memcached.sess_locking = on
-memcached.sess_lock_wait = 150000
-memcached.sess_prefix = "memc.sess.key."
 session.save_handler = memcached
-
 --FILE--
 <?php
 include dirname (__FILE__) . '/config.inc';

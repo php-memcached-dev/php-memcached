@@ -6,26 +6,19 @@ Session bad configurations, prefix
     if (!Memcached::HAVE_SESSION) print "skip";
 ?>
 --INI--
-memcached.sess_locking = on
-memcached.sess_lock_wait = 150000
-memcached.sess_prefix = "memc.sess.key."
 session.save_handler = memcached
-
 --FILE--
 <?php
 include dirname (__FILE__) . '/config.inc';
 ini_set ('session.save_path', MEMC_SERVER_HOST . ':' . MEMC_SERVER_PORT);
 
-error_reporting(0);
-function handler($errno, $errstr) {
-	echo "$errstr\n";
-}
-
-set_error_handler('handler', E_ALL);
-
 ini_set('memcached.sess_prefix', ' sdj jkhasd ');
-session_start();
-session_write_close();
+ini_set('memcached.sess_prefix', str_repeat('a', 512));
+
+echo "OK";
 
 --EXPECTF--
-session_start(): bad memcached key prefix in memcached.sess_prefix
+Warning: ini_set(): memcached.sess_prefix cannot contain whitespace characters in %s on line %d
+
+Warning: ini_set(): memcached.sess_prefix too long (max: %d) in %s on line %d
+OK

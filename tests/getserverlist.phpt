@@ -14,41 +14,52 @@ var_dump($m->getServerList());
 $m = new memcached();
 $m->addServer('127.0.0.1', 11211);
 var_dump($m->getServerList());
+
+echo "OK";
 ?>
---EXPECTF--
+--EXPECT--
 array(0) {
 }
 array(1) {
   [0]=>
-  array(2) {
+  array(3) {
     ["host"]=>
     string(9) "localhost"
     ["port"]=>
     int(11211)
+    ["type"]=>
+    string(3) "TCP"
   }
 }
 array(2) {
   [0]=>
-  array(2) {
+  array(3) {
     ["host"]=>
     string(9) "localhost"
     ["port"]=>
     int(11211)
+    ["type"]=>
+    string(3) "TCP"
   }
   [1]=>
-  array(2) {
+  array(3) {
     ["host"]=>
     string(9) "localhost"
     ["port"]=>
     int(11211)
+    ["type"]=>
+    string(3) "TCP"
   }
 }
 array(1) {
   [0]=>
-  array(2) {
+  array(3) {
     ["host"]=>
     string(9) "127.0.0.1"
     ["port"]=>
     int(11211)
+    ["type"]=>
+    string(3) "TCP"
   }
 }
+OK

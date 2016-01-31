@@ -297,6 +297,8 @@ memcached_st *s_init_mod_data (const memcached_server_list_st servers, zend_bool
 
 	memcached_set_user_data(memc, user_data);
 	memcached_server_push (memc, servers);
+
+	memcached_behavior_set(memc, MEMCACHED_BEHAVIOR_VERIFY_KEY, 1);
 	return memc;
 }
 
@@ -499,6 +501,21 @@ PS_CREATE_SID_FUNC(memcached)
 			}
 			zend_string_release(sid);
 			sid = NULL;
+		}
+	}
+
+	if (sid) {
+		if (sid->len + (sizeof ("lock.") - 1) > (MEMCACHED_MAX_KEY - 1)) {
+			php_error_docref(NULL TSRMLS_CC, E_WARNING, "Session id is too long to be stored in memcached");
+			zend_string_release (sid);
+			return NULL;
+		}
+		if (MEMC_SESS_STR_INI(prefix)) {
+			if (strlen (MEMC_SESS_STR_INI(prefix)) + sid->len + (sizeof ("lock.") - 1) > (MEMCACHED_MAX_KEY - 1)) {
+				php_error_docref(NULL TSRMLS_CC, E_WARNING, "Session id with prefix is too long to be stored in memcached");
+				zend_string_release (sid);
+				return NULL;
+			}
 		}
 	}
 	return sid;
