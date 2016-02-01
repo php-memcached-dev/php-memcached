@@ -137,15 +137,17 @@ http://pear.php.net/dtd/package-2.0.xsd">
     <file role='test' name='sasl_basic.phpt'/>
     <file role='test' name='getserverbykey.phpt'/>
     <file role='test' name='gh_155.phpt'/>
+    <file role='test' name='get_flags.phpt'/>
+    <file role='test' name='session_lock.phpt'/>
+    <file role='test' name='session_regenerate.phpt'/>
+    <file role='test' name='stats.phpt'/>
   </dir>
  </dir>
  </contents>
  <dependencies>
   <required>
    <php>
-    <min>5.2.0</min>
-    <max>6.0.0</max>
-    <exclude>6.0.0</exclude>
+    <min>7.0.0</min>
    </php>
    <pearinstaller>
     <min>1.4.0b1</min>

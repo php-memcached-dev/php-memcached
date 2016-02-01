@@ -13,6 +13,10 @@ $first_key  = uniqid ('cache_test_');
 $second_key = uniqid ('cache_test_');
 $third_key  = uniqid ('cache_test_');
 
+$m->delete($first_key);
+$m->delete($second_key);
+$m->delete($third_key);
+
 var_dump (
 $m->get ($first_key, function (Memcached $memc, $key, &$value, &$expiration) {
 					$value = "hello";

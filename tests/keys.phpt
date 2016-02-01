@@ -11,6 +11,7 @@ $binary = memc_get_instance (array (
 							));
 
 $ascii = memc_get_instance ();
+$ascii->setOption(Memcached::OPT_VERIFY_KEY, 1);
 
 var_dump ($binary->set ('binary key with spaces', 'this is a test'));
 var_dump ($binary->getResultCode () == Memcached::RES_SUCCESS);

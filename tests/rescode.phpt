@@ -23,6 +23,7 @@ $m->delete('bar_foo');
 echo $m->getResultCode(), "\n";
 echo $m->getResultMessage(), "\n";
 
+$m->set ('asdf_a', 'aa');
 $m->getMulti(array('asdf_a', 'jkhjkhjkb', 'nbahsdgc'));
 echo $m->getResultMessage(), "\n";
 $code = $m->getResultCode();

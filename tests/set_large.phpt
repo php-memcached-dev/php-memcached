@@ -9,8 +9,9 @@ $m = memc_get_instance ();
 
 $key = 'foobarbazDEADC0DE';
 $value = str_repeat("foo bar", 1024 * 1024);
-$m->set($key, $value, 360);
+var_dump($m->set($key, $value, 360));
 var_dump($m->get($key) === $value);
 ?>
 --EXPECT--
+bool(true)
 bool(true)

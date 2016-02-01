@@ -16,6 +16,10 @@ function check_flags ($flags, $expected_flags)
     echo "Flags OK" . PHP_EOL;
 }
 
+function get_flags($m, $key) {
+	return $m->get($key, null, Memcached::GET_EXTENDED)['flags'];
+}
+
 define ('FLAG_1', 1);
 define ('FLAG_2', 2);
 define ('FLAG_4', 4);
@@ -30,26 +34,26 @@ $key = uniqid ('udf_test_');
 
 // Set with flags off
 $m->set ($key, '1', 10);
-$m->get($key);
-var_dump($m->getLastUserFlags());
+$v = $m->get($key, null, Memcached::GET_EXTENDED);
+var_dump($v);
 
 // Set flags on
 $m->setOption(Memcached::OPT_USER_FLAGS, FLAG_1);
 $m->set ($key, '1', 10);
 $m->get($key);
-check_flags($m->getLastUserFlags()[$key], array(FLAG_1));
+check_flags(get_flags($m, $key), array(FLAG_1));
 
 // Multiple flags
 $m->setOption(Memcached::OPT_USER_FLAGS, FLAG_1 | FLAG_2 | FLAG_4);
 $m->set ($key, '1', 10);
 $m->get($key);
-check_flags($m->getLastUserFlags()[$key], array(FLAG_1, FLAG_2, FLAG_4));
+check_flags(get_flags($m, $key), array(FLAG_1, FLAG_2, FLAG_4));
 
 // Even more flags
 $m->setOption(Memcached::OPT_USER_FLAGS, FLAG_1 | FLAG_2 | FLAG_4 | FLAG_32 | FLAG_64);
 $m->set ($key, '1', 10);
 $m->get($key);
-check_flags($m->getLastUserFlags()[$key], array(FLAG_1, FLAG_2, FLAG_4, FLAG_32, FLAG_64));
+check_flags(get_flags($m, $key), array(FLAG_1, FLAG_2, FLAG_4, FLAG_32, FLAG_64));
 
 // User flags with get multi
 $values = array(
@@ -61,10 +65,10 @@ $values = array(
 $m->setOption(Memcached::OPT_USER_FLAGS, FLAG_2 | FLAG_4);
 $m->setMulti($values);
 $m->getMulti(array_keys($values));
-$flags = $m->getLastUserFlags();
+$flags = $m->getMulti(array_keys($values), Memcached::GET_EXTENDED);
 
 foreach (array_keys($values) as $key) {
-	check_flags($flags[$key], array(FLAG_2, FLAG_4));
+	check_flags($flags[$key]['flags'], array(FLAG_2, FLAG_4));
 }
 
 // User flags with compression on
@@ -74,7 +78,7 @@ $m->setOption(Memcached::OPT_COMPRESSION_TYPE, Memcached::COMPRESSION_FASTLZ);
 
 $m->set ($key, '1', 10);
 $m->get($key);
-check_flags($m->getLastUserFlags()[$key], array(FLAG_1, FLAG_2, FLAG_4));
+check_flags(get_flags($m, $key), array(FLAG_1, FLAG_2, FLAG_4));
 
 
 // Too large flags
@@ -83,8 +87,12 @@ $m->setOption(Memcached::OPT_USER_FLAGS, FLAG_TOO_LARGE);
 echo "DONE TEST\n";
 ?>
 --EXPECTF--
-array(1) {
-  ["udf_test_%s"]=>
+array(3) {
+  ["value"]=>
+  string(1) "1"
+  ["cas"]=>
+  int(%d)
+  ["flags"]=>
   int(0)
 }
 Flags OK

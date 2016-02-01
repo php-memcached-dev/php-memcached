@@ -67,8 +67,8 @@ function install_libmemcached() {
 }
 
 function install_igbinary() {
-    git clone https://github.com/igbinary/igbinary.git
-    pushd igbinary
+    git clone https://github.com/igbinary/igbinary7.git
+    pushd igbinary7
         phpize
         ./configure
         make
@@ -79,7 +79,7 @@ function install_igbinary() {
 function install_msgpack() {
     git clone https://github.com/msgpack/msgpack-php.git
     pushd msgpack-php
-		git checkout php7
+        git checkout php7
         phpize
         ./configure
         make
@@ -152,9 +152,9 @@ function build_php_memcached() {
             sasl_flag="--enable-memcached-sasl"
         fi
 
-        # ./configure --with-libmemcached-dir="$LIBMEMCACHED_PREFIX" $protocol_flag $sasl_flag --enable-memcached-json --enable-memcached-msgpack --enable-memcached-igbinary
-		./configure --with-libmemcached-dir="$LIBMEMCACHED_PREFIX" $protocol_flag $sasl_flag
-		make
+        # ./configure --with-libmemcached-dir="$LIBMEMCACHED_PREFIX" $protocol_flag $sasl_flag 
+        ./configure --with-libmemcached-dir="$LIBMEMCACHED_PREFIX" $protocol_flag $sasl_flag --enable-memcached-json --enable-memcached-msgpack --enable-memcached-igbinary
+        make
         make install
     popd
 }
@@ -184,7 +184,7 @@ function run_memcached_tests() {
         rm ./tests/expire.phpt
 
         # Run normal tests
-        php run-tests.php --show-diff -d extension=memcached.so -n ./tests/*.phpt
+        php run-tests.php --show-diff -d extension=modules/memcached.so -d extension=msgpack.so -d extension=igbinary.so -n ./tests/*.phpt
         retval=$?
     popd
     return $retval;
@@ -236,10 +236,10 @@ case $ACTION in
         install_libmemcached
 
         # Install igbinary extension
-        # install_igbinary
+        install_igbinary
 
         # install msgpack
-        # install_msgpack
+        install_msgpack
 
         install_memcached
         run_memcached
