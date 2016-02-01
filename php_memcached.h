@@ -27,7 +27,7 @@
 # include "config.h"
 #endif
 
-#define PHP_MEMCACHED_VERSION "2.2.0"
+#define PHP_MEMCACHED_VERSION "3.0.0b1"
 
 #if defined(PHP_WIN32) && defined(MEMCACHED_EXPORTS)
 #define PHP_MEMCACHED_API __declspec(dllexport)
