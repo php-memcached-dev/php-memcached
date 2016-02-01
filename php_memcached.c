@@ -3187,11 +3187,18 @@ zend_bool s_serialize_value (enum memcached_serializer serializer, zval *value, 
 		*/
 #ifdef HAVE_MEMCACHED_IGBINARY
 		case SERIALIZER_IGBINARY:
-			if (igbinary_serialize((uint8_t **) &(buf->s), &buf->s->len, value) != 0) {
+		{
+			uint8_t *buffer;
+			size_t buffer_len;
+
+			if (igbinary_serialize(&buffer, &buffer_len, value) != 0) {
 				php_error_docref(NULL, E_WARNING, "could not serialize value with igbinary");
 				return 0;
 			}
+			smart_str_appendl (buf, buffer, buffer_len);
+			efree(buffer);
 			MEMC_VAL_SET_TYPE(*flags, MEMC_VAL_IS_IGBINARY);
+		}
 			break;
 #endif
 
@@ -3395,7 +3402,7 @@ zend_bool s_unserialize_value (memcached_st *memc, int val_type, zend_string *pa
 
 		case MEMC_VAL_IS_IGBINARY:
 #ifdef HAVE_MEMCACHED_IGBINARY
-			if (igbinary_unserialize((uint8_t *) payload->val, payload->len, &value)) {
+			if (igbinary_unserialize((uint8_t *) payload->val, payload->len, return_value)) {
 				ZVAL_FALSE(return_value);
 				php_error_docref(NULL, E_WARNING, "could not unserialize value with igbinary");
 				return 0;
