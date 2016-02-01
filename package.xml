@@ -160,6 +160,42 @@ http://pear.php.net/dtd/package-2.0.xsd">
  </extsrcrelease>
  <changelog>
    <release>
+      <stability>
+        <release>beta</release>
+        <api>beta</api>
+      </stability>
+      <version>
+        <release>3.0.0</release>
+        <api>3.0.0</api>
+      </version>
+      <date>2016-02-01</date>
+      <notes>
+PHP7 release of memcached extension. Note that support for libmemcached 0.x series has been discontinued
+and the earliest actively tested version is 1.0.2. It is highly recommended to use version 1.0.18 of
+libmemcached.
+
+API
+ * set/get commands do not take cas or user flags parameters
+ * get and getMulti commands take Memcached::GET_EXTENDED flag to retrieve user flags and cas tokens
+ * Fixes getStats command to return all stats from all servers
+ * Fixes allKeys command behaviour
+ * Fixes error where cache callback for get command was not setting expiration time properly
+ * Added server type to server list
+ * Remove use_sasl ini-variable and initialise sasl as needed
+
+Session handler
+ * Session lock algorithm updated (new ini-values memcached.sess_lock_wait_min, memcached.sess_lock_wait_max and memcached.sess_lock_retries)
+ * Session extension uses PHP allocators (still some work to do on the rest of the extension)
+ * Ini-values take effect during session_start or session_regenerate_id
+ * Fixes crash with session_regenerate_id (work-around for PHP bug)
+
+Tests
+ * Fix several broken tests
+
+      </notes>
+   </release>
+
+   <release>
    <stability><release>stable</release><api>stable</api></stability>
    <version><release>2.2.0</release><api>2.2.0</api></version>
    <date>2014-04-01</date>
