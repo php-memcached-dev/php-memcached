@@ -25,6 +25,8 @@ extern ZEND_DECLARE_MODULE_GLOBALS(php_memcached)
 #define MEMC_SESS_DEFAULT_LOCK_WAIT 150000
 #define MEMC_SESS_LOCK_EXPIRATION 30
 
+#define REALTIME_MAXDELTA 60*60*24*30
+
 ps_module ps_mod_memcached = {
 	PS_MOD_UPDATE_TIMESTAMP(memcached)
 };
@@ -93,15 +95,25 @@ int php_memc_session_minit(int module_number)
 }
 
 static
+time_t s_adjust_expiration(zend_long expiration)
+{
+    if (expiration <= REALTIME_MAXDELTA) {
+        return expiration;
+    } else {
+        return time(NULL) + expiration;
+    }
+}
+
+static
 time_t s_lock_expiration()
 {
 	if (MEMC_SESS_INI(lock_expiration) > 0) {
-		return time(NULL) + MEMC_SESS_INI(lock_expiration);
+		return s_adjust_expiration(MEMC_SESS_INI(lock_expiration));
 	}
 	else {
 		zend_long max_execution_time = zend_ini_long(ZEND_STRS("max_execution_time"), 0);
 		if (max_execution_time > 0) {
-			return time(NULL) + max_execution_time;
+			return s_adjust_expiration(max_execution_time);
 		}
 	}
 	return 0;
@@ -111,7 +123,7 @@ static
 time_t s_session_expiration(zend_long maxlifetime)
 {
 	if (maxlifetime > 0) {
-		return time(NULL) + maxlifetime;
+		return s_adjust_expiration(maxlifetime);
 	}
 	return 0;
 }
