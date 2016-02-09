@@ -75,13 +75,24 @@ typedef unsigned long int uint32_t;
 /****************************************
   Structures and definitions
 ****************************************/
-enum memcached_serializer {
-	SERIALIZER_PHP = 1,
-	SERIALIZER_IGBINARY = 2,
-	SERIALIZER_JSON = 3,
+typedef enum {
+	SERIALIZER_PHP        = 1,
+	SERIALIZER_IGBINARY   = 2,
+	SERIALIZER_JSON       = 3,
 	SERIALIZER_JSON_ARRAY = 4,
-	SERIALIZER_MSGPACK = 5,
-};
+	SERIALIZER_MSGPACK    = 5
+} php_memc_serializer_type;
+
+typedef enum {
+	COMPRESSION_TYPE_ZLIB   = 1,
+	COMPRESSION_TYPE_FASTLZ = 2
+} php_memc_compression_type;
+
+typedef struct {
+	const char *name;
+	php_memc_serializer_type type;
+} php_memc_serializer;
+
 #ifdef HAVE_MEMCACHED_IGBINARY
 #define SERIALIZER_DEFAULT SERIALIZER_IGBINARY
 #define SERIALIZER_DEFAULT_NAME "igbinary"
@@ -160,14 +171,14 @@ ZEND_BEGIN_MODULE_GLOBALS(php_memcached)
 
 	struct {
 		char     *serializer_name;
-		char     *compression_type;
+		char     *compression_name;
 		zend_long compression_threshold;
 		double    compression_factor;
 		zend_long store_retry_count;
 
 		/* Converted values*/
-		enum memcached_serializer serializer;
-		zend_long compression_type_real;
+		php_memc_serializer_type  serializer_type;
+		php_memc_compression_type compression_type;
 
 		/* Whether we have initialised sasl for this process */
 		zend_bool sasl_initialised;

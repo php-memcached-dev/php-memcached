@@ -202,6 +202,7 @@ API
  * Fixes error where cache callback for get command was not setting expiration time properly
  * Added server type to server list
  * Remove use_sasl ini-variable and initialise sasl as needed
+ * CAS tokens are returned as integers and in case of too large values they overflow to strings
 
 Session handler
  * Session lock algorithm updated (new ini-values memcached.sess_lock_wait_min, memcached.sess_lock_wait_max and memcached.sess_lock_retries)
