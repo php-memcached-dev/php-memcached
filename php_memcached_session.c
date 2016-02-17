@@ -68,9 +68,11 @@ void s_destroy_mod_data(memcached_st *memc)
 {
 	php_memcached_user_data *user_data = memcached_get_user_data(memc);
 
+#if HAVE_MEMCACHED_SASL
 	if (user_data->has_sasl_data) {
 		memcached_destroy_sasl_auth_data(memc);
 	}
+#endif
 
 	memcached_free(memc);
 	pefree(memc, user_data->is_persistent);
