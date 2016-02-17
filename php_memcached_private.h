@@ -150,7 +150,6 @@ ZEND_BEGIN_MODULE_GLOBALS(php_memcached)
 		zend_long lock_retries;
 		zend_long lock_expiration;
 
-		zend_bool compression_enabled;
 		zend_bool binary_protocol_enabled;
 		zend_bool consistent_hash_enabled;
 
@@ -182,6 +181,14 @@ ZEND_BEGIN_MODULE_GLOBALS(php_memcached)
 
 		/* Whether we have initialised sasl for this process */
 		zend_bool sasl_initialised;
+
+		struct {
+
+			zend_bool consistent_hash_enabled;
+			zend_bool binary_protocol_enabled;
+			zend_long connect_timeout;
+
+		} default_behavior;
 
 	} memc;
 

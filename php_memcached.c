@@ -341,6 +341,11 @@ PHP_INI_BEGIN()
 	MEMC_INI_ENTRY("compression_threshold", "2000",                  OnUpdateLong,            compression_threshold)
 	MEMC_INI_ENTRY("serializer",            SERIALIZER_DEFAULT_NAME, OnUpdateSerializer,      serializer_name)
 	MEMC_INI_ENTRY("store_retry_count",     "2",                     OnUpdateLong,            store_retry_count)
+
+	MEMC_INI_ENTRY("default_consistent_hash",       "0", OnUpdateBool,       default_behavior.consistent_hash_enabled)
+	MEMC_INI_ENTRY("default_binary_protocol",       "0", OnUpdateBool,       default_behavior.binary_protocol_enabled)
+	MEMC_INI_ENTRY("default_connect_timeout",       "0", OnUpdateLongGEZero, default_behavior.connect_timeout)
+
 PHP_INI_END()
 /* }}} */
 
@@ -1190,7 +1195,8 @@ static PHP_METHOD(Memcached, __construct)
 	}
 
 	if (!intern->memc) {
-		// TODO: handle allocation fail
+		php_error_docref(NULL, E_ERROR, "Failed to allocate memory for memcached structure");
+		/* never reached */
 	}
 
 	memc_user_data                    = pecalloc (1, sizeof(*memc_user_data), is_persistent);
@@ -1202,6 +1208,38 @@ static PHP_METHOD(Memcached, __construct)
 	memc_user_data->is_persistent     = is_persistent;
 
 	memcached_set_user_data(intern->memc, memc_user_data);
+
+	/* Set default behaviors */
+	{
+#ifdef mikko_0
+		fprintf (stderr, "consistent_hash_enabled=%d binary_protocol_enabled=%d connect_timeout=%ld\n",
+			MEMC_G(default_behavior.consistent_hash_enabled), MEMC_G(default_behavior.binary_protocol_enabled), MEMC_G(default_behavior.connect_timeout));
+#endif
+
+		memcached_return rc;
+
+		if (MEMC_G(default_behavior.consistent_hash_enabled)) {
+
+			rc = memcached_behavior_set(intern->memc, MEMCACHED_BEHAVIOR_DISTRIBUTION, MEMCACHED_DISTRIBUTION_CONSISTENT);
+			if (rc != MEMCACHED_SUCCESS) {
+				php_error_docref(NULL, E_WARNING, "Failed to turn on consistent hash: %s", memcached_strerror(intern->memc, rc));
+			}
+		}
+
+		if (MEMC_G(default_behavior.binary_protocol_enabled)) {
+			rc = memcached_behavior_set(intern->memc, MEMCACHED_BEHAVIOR_BINARY_PROTOCOL, 1);
+			if (rc != MEMCACHED_SUCCESS) {
+				php_error_docref(NULL, E_WARNING, "Failed to turn on binary protocol: %s", memcached_strerror(intern->memc, rc));
+			}
+		}
+
+		if (MEMC_G(default_behavior.connect_timeout)) {
+			rc = memcached_behavior_set(intern->memc, MEMCACHED_BEHAVIOR_CONNECT_TIMEOUT, MEMC_G(default_behavior.connect_timeout));
+			if (rc != MEMCACHED_SUCCESS) {
+				php_error_docref(NULL, E_WARNING, "Failed to set connect timeout: %s", memcached_strerror(intern->memc, rc));
+			}
+		}
+	}
 
 	if (fci.size) {
 		if (!s_invoke_new_instance_cb(getThis(), &fci, &fci_cache, persistent_id) || EG(exception)) {
@@ -2263,7 +2301,7 @@ PHP_METHOD(Memcached, addServer)
 	}
 
 	MEMC_METHOD_FETCH_OBJECT;
-	intern->rescode = MEMCACHED_SUCCESS;
+	s_memc_set_status(intern, MEMCACHED_SUCCESS, 0);
 
 #if defined(LIBMEMCACHED_VERSION_HEX) && LIBMEMCACHED_VERSION_HEX < 0x01000002
 	if (host->val[0] == '/') { /* unix domain socket */
@@ -2712,7 +2750,7 @@ static PHP_METHOD(Memcached, flush)
 	}
 
 	MEMC_METHOD_FETCH_OBJECT;
-	intern->rescode = MEMCACHED_SUCCESS;
+	s_memc_set_status(intern, MEMCACHED_SUCCESS, 0);
 
 	status = memcached_flush(intern->memc, delay);
 	if (s_memc_status_handle_result_code(intern, status) == FAILURE) {
@@ -4100,6 +4138,11 @@ PHP_GINIT_FUNCTION(php_memcached)
 
 	php_memcached_globals->memc.sasl_initialised = 0;
 	php_memcached_globals->no_effect = 0;
+
+	/* Defaults for certain options */
+	php_memcached_globals->memc.default_behavior.consistent_hash_enabled = 0;
+	php_memcached_globals->memc.default_behavior.binary_protocol_enabled = 0;
+	php_memcached_globals->memc.default_behavior.connect_timeout         = 0;
 }
 
 zend_module_entry memcached_module_entry = {
