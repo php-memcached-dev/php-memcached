@@ -21,14 +21,14 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <email>mkoppanen@php.net</email>
   <active>yes</active>
  </lead>
- <date>2016-02-17</date>
+ <date>2016-02-22</date>
  <version>
-  <release>3.0.0b1</release>
+  <release>3.0.0a1</release>
   <api>3.0.0</api>
  </version>
  <stability>
-  <release>beta</release>
-  <api>beta</api>
+  <release>alpha</release>
+  <api>alpha</api>
  </stability>
  <license uri="http://www.php.net/license">PHP</license>
  <notes>
@@ -38,7 +38,7 @@ libmemcached. Please note that this is a beta release and reporting any issues w
 before we move closer to releasing stable version.
 
 API
- * set/get commands do not take cas or user flags parameters.
+ * get commands do not take cas or user flags parameters.
  * get and getMulti commands take Memcached::GET_EXTENDED flag to retrieve user flags and cas tokens
  * Fixes getStats command to return all stats from all servers
  * Fixes allKeys command behaviour
@@ -184,14 +184,14 @@ Tests
  <changelog>
    <release>
       <stability>
-        <release>beta</release>
-        <api>beta</api>
+        <release>alpha</release>
+        <api>alpha</api>
       </stability>
       <version>
-        <release>3.0.0b1</release>
+        <release>3.0.0a1</release>
         <api>3.0.0</api>
       </version>
-      <date>2016-02-17</date>
+      <date>2016-02-22</date>
       <notes>
 PHP7 release of memcached extension. Note that support for libmemcached 0.x series has been discontinued
 and the oldest actively tested version is 1.0.2. It is highly recommended to use version 1.0.18 of
@@ -199,7 +199,7 @@ libmemcached. Please note that this is a beta release and reporting any issues w
 before we move closer to releasing stable version.
 
 API
- * set/get commands do not take cas or user flags parameters.
+ * get commands do not take cas or user flags parameters.
  * get and getMulti commands take Memcached::GET_EXTENDED flag to retrieve user flags and cas tokens
  * Fixes getStats command to return all stats from all servers
  * Fixes allKeys command behaviour

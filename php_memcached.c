@@ -1339,6 +1339,11 @@ static
 void s_clear_keys(php_memc_keys_t *keys)
 {
 	size_t i;
+
+	if (!keys->num_valid_keys) {
+		return;
+	}
+
 	for (i = 0; i < keys->num_valid_keys; i++) {
 		zend_string_release (keys->strings[i]);
 	}
