@@ -228,20 +228,6 @@ Tests
   </release>
    <release>
    <stability><release>beta</release><api>stable</api></stability>
-   <version><release>2.2.0b1</release><api>2.2.0</api></version>
-   <date>2013-10-28</date>
-   <notes>
-- Reinstate support for libememcached 0.x series
-- Added SASL support to session handler
-- Added Memcached::flushBuffers as per GH #78
-- Fixes GH #54: Fixed UDP server adding with newer libmemcached
-- Fixed PHP bug #65334: (Segfault if uncompress value failed)
-- Fixes GH #14: get with cas token fails to fetch all results
-- Fixes GH #69: compiling on CentOS 6.4 with libmemcached 1.0.17
-   </notes>
-  </release>
-   <release>
-   <stability><release>beta</release><api>stable</api></stability>
    <version><release>2.2.0RC1</release><api>2.2.0</api></version>
    <date>2014-03-12</date>
    <notes>
