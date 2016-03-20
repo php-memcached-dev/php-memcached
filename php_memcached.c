@@ -19,7 +19,6 @@
 /* TODO
  * - set LIBKETAMA_COMPATIBLE as the default?
  * - fix unserialize(serialize($memc))
- * - ability to set binary protocol for sessions
  */
 
 #include "php_memcached.h"
