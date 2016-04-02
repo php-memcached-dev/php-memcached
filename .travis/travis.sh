@@ -73,6 +73,7 @@ function install_igbinary() {
 function install_msgpack() {
     git clone https://github.com/msgpack/msgpack-php.git
     pushd msgpack-php
+        git checkout php5
         phpize
         ./configure
         make
