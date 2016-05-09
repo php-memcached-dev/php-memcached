@@ -23,4 +23,4 @@ Resources
 ---------
  * [libmemcached](http://libmemcached.org/libMemcached.html)
  * [memcached](http://memcached.org/)
- * [igbinary](https://github.com/phadej/igbinary/)
+ * [igbinary](https://github.com/igbinary/igbinary7)
