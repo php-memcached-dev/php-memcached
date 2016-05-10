@@ -2248,11 +2248,11 @@ retry_inc_dec:
 		}
 	}
 
-	if (value == UINT64_MAX) {
+	if (s_memc_status_handle_result_code(intern, status) == FAILURE) {
 		RETURN_FALSE;
 	}
 
-	if (s_memc_status_handle_result_code(intern, status) == FAILURE) {
+	if (value == UINT64_MAX) {
 		RETURN_FALSE;
 	}
 
