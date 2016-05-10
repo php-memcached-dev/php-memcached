@@ -209,7 +209,7 @@ class Memcached {
 
 	public function touch( $key, $expiration = 0 ) {}
 
-	public function touchbyKey( $key, $expiration = 0 ) {}
+	public function touchByKey( $server_key, $key, $expiration = 0 ) {}
 
 	public function setByKey( $server_key, $key, $value, $expiration = 0, $udf_flags = 0 ) {}
 
