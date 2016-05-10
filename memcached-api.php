@@ -295,9 +295,9 @@ class Memcached {
 
 	public function resetServerList( ) {}
 
-	public function incrementByKey($server_key, $key, $offset = 1 , $initial_value = 0 , $expiry = 0) {}
+	public function incrementByKey( $server_key, $key, $offset = 1, $initial_value = 0, $expiry = 0) {}
 
-	public function decrementByKey($server_key, $key, $offset = 1, $initial_value = 0 , $expiry = 0 ) {}
+	public function decrementByKey( $server_key, $key, $offset = 1, $initial_value = 0, $expiry = 0 ) {}
 }
 
 class MemcachedException extends Exception {
