@@ -3443,6 +3443,8 @@ zend_string *s_decompress_value (const char *payload, size_t payload_len, uint32
 		decompress_status = (uncompress((Bytef *) buffer->val, &buffer->len, (Bytef *)payload, payload_len) == Z_OK);
 	}
 
+	ZSTR_VAL(buffer)[stored_length] = '\0';
+
 	if (!decompress_status) {
 		php_error_docref(NULL, E_WARNING, "could not decompress value");
 		zend_string_release (buffer);
