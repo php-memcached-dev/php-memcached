@@ -94,6 +94,7 @@ Tests
     <file role='test' name='check_if_persistent.phpt'/>
     <file role='test' name='check_if_pristine.phpt'/>
     <file role='test' name='clone.phpt'/>
+    <file role='test' name='compression_conditions.phpt'/>
     <file role='test' name='compression_types.phpt'/>
     <file role='test' name='conf_persist.phpt'/>
     <file role='test' name='construct.phpt'/>
