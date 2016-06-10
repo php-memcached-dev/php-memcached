@@ -108,10 +108,10 @@ static int php_memc_list_entry(void) {
 #define MEMC_VAL_COMPRESSION_ZLIB    (1<<1)
 #define MEMC_VAL_COMPRESSION_FASTLZ  (1<<2)
 
-#define MEMC_VAL_GET_FLAGS(internal_flags)               ((internal_flags & MEMC_MASK_INTERNAL) >> 4)
-#define MEMC_VAL_SET_FLAG(internal_flags, internal_flag) ((internal_flags) |= ((internal_flag << 4) & MEMC_MASK_INTERNAL))
-#define MEMC_VAL_HAS_FLAG(internal_flags, internal_flag) ((MEMC_VAL_GET_FLAGS(internal_flags) & internal_flag) == internal_flag)
-#define MEMC_VAL_DEL_FLAG(internal_flags, internal_flag) internal_flags &= ~((internal_flag << 4) & MEMC_MASK_INTERNAL)
+#define MEMC_VAL_GET_FLAGS(internal_flags)               (((internal_flags) & MEMC_MASK_INTERNAL) >> 4)
+#define MEMC_VAL_SET_FLAG(internal_flags, internal_flag) ((internal_flags) |= (((internal_flag) << 4) & MEMC_MASK_INTERNAL))
+#define MEMC_VAL_HAS_FLAG(internal_flags, internal_flag) ((MEMC_VAL_GET_FLAGS(internal_flags) & (internal_flag)) == (internal_flag))
+#define MEMC_VAL_DEL_FLAG(internal_flags, internal_flag) (internal_flags &= (~(((internal_flag) << 4) & MEMC_MASK_INTERNAL)))
 
 /****************************************
   User-defined flags
@@ -867,7 +867,7 @@ zend_bool s_compress_value (php_memc_compression_type compression_type, zend_str
 	}
 
 	/* This means the value was too small to be compressed, still a success */
-	if (compressed_size > (ZSTR_LEN(payload) * MEMC_G(compression_factor))) {
+	if (ZSTR_LEN(payload) < (compressed_size * MEMC_G(compression_factor))) {
 		efree (buffer);
 		return 1;
 	}
