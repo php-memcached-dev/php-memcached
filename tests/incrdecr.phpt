@@ -10,8 +10,11 @@ $m = memc_get_instance ();
 echo "Not there\n";
 $m->delete('foo');
 var_dump($m->increment('foo', 1));
+var_dump($m->getResultCode());
 var_dump($m->decrement('foo', 1));
+var_dump($m->getResultCode());
 var_dump($m->get('foo'));
+var_dump($m->getResultCode());
 
 echo "Normal\n";
 $m->set('foo', 1);
@@ -37,8 +40,11 @@ var_dump($m->get('foo'));
 --EXPECT--
 Not there
 bool(false)
+int(16)
 bool(false)
+int(16)
 bool(false)
+int(16)
 Normal
 int(1)
 int(2)
