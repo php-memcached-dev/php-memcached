@@ -529,7 +529,59 @@ static PHP_METHOD(Memcached, __construct)
 }
 /* }}} */
 
-/* {{{ Memcached::get(string key [, mixed callback [, double &cas_token [, int &udf_flags ] ] ])
+static
+uint64_t s_zval_to_uint64 (zval *cas TSRMLS_DC)
+{
+	switch (Z_TYPE_P (cas)) {
+		case IS_LONG:
+			if (Z_LVAL_P (cas) < 0)
+				return 0;
+
+			return (uint64_t) Z_LVAL_P (cas);
+		break;
+
+		case IS_DOUBLE:
+			if (Z_DVAL_P (cas) < 0.0)
+				return 0;
+
+			return (uint64_t) Z_DVAL_P (cas);
+		break;
+
+		case IS_STRING:
+		{
+			uint64_t val;
+			char *end;
+
+			errno = 0;
+			val = (uint64_t) strtoull (Z_STRVAL_P (cas), &end, 0);
+
+			if (*end || (errno == ERANGE && val == UINT64_MAX) || (errno != 0 && val == 0)) {
+				// TODO: maybe warning here
+				return 0;
+			}
+			return val;
+		}
+		break;
+	}
+	return 0;
+}
+
+static
+void s_uint64_to_zval (zval *target, uint64_t value TSRMLS_DC)
+{
+	uint64_t lmax = (uint64_t) LONG_MAX;
+
+	if (value >= lmax) {
+		char *buffer;
+		spprintf (&buffer, 0, "%" PRIu64, value);
+		ZVAL_STRING (target, buffer, 0);
+	}
+	else {
+		ZVAL_LONG (target, (long) value);
+	}
+}
+
+/* {{{ Memcached::get(string key [, mixed callback [, mixed &cas_token [, int &udf_flags ] ] ])
    Returns a value for the given key or false */
 PHP_METHOD(Memcached, get)
 {
@@ -537,7 +589,7 @@ PHP_METHOD(Memcached, get)
 }
 /* }}} */
 
-/* {{{ Memcached::getByKey(string server_key, string key [, mixed callback [, double &cas_token [, int &udf_flags ] ] ])
+/* {{{ Memcached::getByKey(string server_key, string key [, mixed callback [, mixed &cas_token [, int &udf_flags ] ] ])
    Returns a value for key from the server identified by the server key or false */
 PHP_METHOD(Memcached, getByKey)
 {
@@ -623,7 +675,7 @@ static void php_memc_get_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 			* ourselves.
 			*/
 		if (cas_token) {
-			ZVAL_DOUBLE(cas_token, 0.0);
+			s_uint64_to_zval(cas_token, 0 TSRMLS_CC);
 		}
 
 		if (status == MEMCACHED_NOTFOUND && fci.size != 0) {
@@ -664,7 +716,7 @@ static void php_memc_get_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 
 	if (cas_token) {
 		zval_dtor(cas_token);
-		ZVAL_DOUBLE(cas_token, (double)cas);
+		s_uint64_to_zval(cas_token, cas TSRMLS_CC);
 	}
 
 	if (udf_flags) {
@@ -795,7 +847,7 @@ static void php_memc_getMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 
 	/*
 	 * Iterate through the result set and create the result array. The CAS tokens are
-	 * returned as doubles, because we cannot store potential 64-bit values in longs.
+	 * returned as Long / String, because we cannot store potential 64-bit values in longs.
 	 */
 	if (cas_tokens) {
 		if (PZVAL_IS_REF(cas_tokens)) {
@@ -862,8 +914,12 @@ static void php_memc_getMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 
 		add_assoc_zval_ex(return_value, res_key, res_key_len+1, value);
 		if (cas_tokens) {
+			zval *zcas;
 			cas = memcached_result_cas(&result);
-			add_assoc_double_ex(cas_tokens, res_key, res_key_len+1, (double)cas);
+
+			MAKE_STD_ZVAL(zcas);
+			s_uint64_to_zval(zcas, cas TSRMLS_CC);
+			add_assoc_zval_ex(cas_tokens, res_key, res_key_len+1, zcas);
 		}
 		if (udf_flags) {
 			add_assoc_long_ex(udf_flags, res_key, res_key_len+1, MEMC_VAL_GET_USER_FLAGS(flags));
@@ -1075,8 +1131,12 @@ PHP_METHOD(Memcached, fetch)
 	add_assoc_stringl_ex(return_value, ZEND_STRS("key"), res_key, res_key_len, 1);
 	add_assoc_zval_ex(return_value, ZEND_STRS("value"), value);
 	if (cas != 0) {
-		/* XXX: also check against ULLONG_MAX or memc_behavior */
-		add_assoc_double_ex(return_value, ZEND_STRS("cas"), (double)cas);
+		zval *zcas;
+
+		MAKE_STD_ZVAL(zcas)
+		s_uint64_to_zval(zcas, cas TSRMLS_CC);
+
+		add_assoc_zval_ex(return_value, ZEND_STRS("cas"), zcas);
 	}
 	if (MEMC_VAL_GET_USER_FLAGS(flags) != 0) {
 		add_assoc_long_ex(return_value, ZEND_STRS("flags"), MEMC_VAL_GET_USER_FLAGS(flags));
@@ -1134,8 +1194,12 @@ PHP_METHOD(Memcached, fetchAll)
 		add_assoc_stringl_ex(entry, ZEND_STRS("key"), res_key, res_key_len, 1);
 		add_assoc_zval_ex(entry, ZEND_STRS("value"), value);
 		if (cas != 0) {
-			/* XXX: also check against ULLONG_MAX or memc_behavior */
-			add_assoc_double_ex(entry, ZEND_STRS("cas"), (double)cas);
+			zval *zcas;
+
+			MAKE_STD_ZVAL(zcas)
+			s_uint64_to_zval(zcas, cas TSRMLS_CC);
+
+			add_assoc_zval_ex(return_value, ZEND_STRS("cas"), zcas);
 		}
 		if (MEMC_VAL_GET_USER_FLAGS(flags) != 0) {
 			add_assoc_long_ex(entry, ZEND_STRS("flags"), MEMC_VAL_GET_USER_FLAGS(flags));
@@ -1574,7 +1638,7 @@ retry:
 /* {{{ -- php_memc_cas_impl */
 static void php_memc_cas_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 {
-	double cas_d;
+	zval *cas_in;
 	uint64_t cas;
 	char *key = NULL;
 	int   key_len = 0;
@@ -1590,12 +1654,12 @@ static void php_memc_cas_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 	MEMC_METHOD_INIT_VARS;
 
 	if (by_key) {
-		if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "dssz|ll", &cas_d, &server_key,
+		if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "zssz|ll", &cas_in, &server_key,
 								  &server_key_len, &key, &key_len, &value, &expiration, &udf_flags) == FAILURE) {
 			return;
 		}
 	} else {
-		if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "dsz|ll", &cas_d, &key, &key_len,
+		if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "zsz|ll", &cas_in, &key, &key_len,
 								  &value, &expiration, &udf_flags) == FAILURE) {
 			return;
 		}
@@ -1609,7 +1673,7 @@ static void php_memc_cas_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 		RETURN_FALSE;
 	}
 
-	DVAL_TO_LVAL(cas_d, cas);
+	cas = s_zval_to_uint64(cas_in TSRMLS_CC);
 
 	if (m_obj->compression) {
 		MEMC_VAL_SET_FLAG(flags, MEMC_VAL_COMPRESSED);
