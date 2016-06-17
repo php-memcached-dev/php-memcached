@@ -358,7 +358,7 @@ PS_WRITE_FUNC(memcached)
 	}
 
 	if (PS(gc_maxlifetime) > 0) {
-		expiration = PS(gc_maxlifetime);
+		expiration = time(NULL) + PS(gc_maxlifetime);
 	}
 
 	/* Set the number of write retry attempts to the number of replicas times the number of attempts to remove a server plus the initial write */
