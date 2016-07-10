@@ -14,18 +14,12 @@ function my_func(Memcached $obj, $persistent_id = null)
 
 $m = new Memcached('hi', 'my_func');
 
-var_dump($m->getServerList());
-
+$serverList = $m->getServerList();
+var_dump( $serverList[0]["host"] == MEMC_SERVER_HOST ); 
+var_dump( $serverList[0]["port"] == MEMC_SERVER_PORT ); 
 echo "OK\n";
 
 --EXPECTF--
-array(1) {
-  [0]=>
-  array(2) {
-    ["host"]=>
-    string(9) "127.0.0.1"
-    ["port"]=>
-    int(11211)
-  }
-}
+bool(true)
+bool(true)
 OK
