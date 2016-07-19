@@ -2660,16 +2660,21 @@ memcached_return s_stat_execute_cb (php_memcached_instance_st instance, const ch
 PHP_METHOD(Memcached, getStats)
 {
 	memcached_return status;
+	char *args = NULL;
+	zend_string *args_string = NULL;
 	MEMC_METHOD_INIT_VARS;
 
-	if (zend_parse_parameters_none() == FAILURE) {
+	if (zend_parse_parameters(ZEND_NUM_ARGS(), "|S!", &args_string) == FAILURE) {
 		return;
 	}
 
 	MEMC_METHOD_FETCH_OBJECT;
 
+	if (args_string)
+		args = ZSTR_VAL(args_string);
+
 	array_init(return_value);
-	status = memcached_stat_execute(intern->memc, NULL, s_stat_execute_cb, return_value);
+	status = memcached_stat_execute(intern->memc, args, s_stat_execute_cb, return_value);
 	if (s_memc_status_handle_result_code(intern, status) == FAILURE) {
 		zval_ptr_dtor(return_value);
 		RETURN_FALSE;
@@ -3983,6 +3988,7 @@ ZEND_BEGIN_ARG_INFO(arginfo_setBucket, 3)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO(arginfo_getStats, 0)
+	ZEND_ARG_INFO(0, args)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO(arginfo_getVersion, 0)
