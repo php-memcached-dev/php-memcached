@@ -2,7 +2,7 @@
 Serialize igbinary
 --SKIPIF--
 <?php
-	if (!extension_loaded("memcached")) print "skip";
+	include dirname(__FILE__) . "/skipif.inc";
 	if (!extension_loaded('igbinary')) echo "skip no igbinary loaded";
 	if (!Memcached::HAVE_IGBINARY) echo "skip igbinary support not enabled";
 

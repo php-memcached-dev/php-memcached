@@ -2,7 +2,7 @@
 Memcached::phpinfo()
 --SKIPIF--
 <?php 
-if (!extension_loaded("memcached")) print "skip"; 
+include dirname(dirname(__FILE__)) . "/skipif.inc";
 if (!Memcached::HAVE_SESSION) print "skip";
 ?>
 --FILE--

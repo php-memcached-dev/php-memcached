@@ -1,7 +1,7 @@
 --TEST--
 Check for memcached presence
 --SKIPIF--
-<?php if (!extension_loaded("memcached")) print "skip"; ?>
+<?php include "skipif.inc";?>
 --FILE--
 <?php 
 echo "memcached extension is available";

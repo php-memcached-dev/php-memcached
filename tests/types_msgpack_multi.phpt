@@ -2,7 +2,7 @@
 Memcached multi store & fetch type and value correctness using msgpack serializer
 --SKIPIF--
 <?php
-if (!extension_loaded("memcached")) print "skip";
+include dirname(__FILE__) . "/skipif.inc";
 if (!Memcached::HAVE_MSGPACK) print "skip msgpack not enabled";
 ?>
 --FILE--

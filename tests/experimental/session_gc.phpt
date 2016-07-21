@@ -2,7 +2,10 @@
 Session expiration
 --SKIPIF--
 <?php 
-if (!extension_loaded("memcached")) print "skip"; 
+include dirname(dirname(__FILE__)) . "/skipif.inc"; 
+if (MEMC_SERVER_HOST != "127.0.0.1" || MEMC_SERVER_PORT != 11211) {
+	die("skip ini require specific setting\n");
+}
 if (!Memcached::HAVE_SESSION) print "skip";
 ?>
 --INI--

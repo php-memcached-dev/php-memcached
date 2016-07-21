@@ -21,7 +21,9 @@ function memc_create_instance ($host, $port, array $opts = array (), $persistent
 		echo "Failed to set options" . PHP_EOL;
 
 	$memcached->addServer($host, $port);
-	$memcached->flush ();
+	if ($memcached->flush() === false) {
+		return NULL;
+	}
 	return $memcached;
 }
 

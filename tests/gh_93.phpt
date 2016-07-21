@@ -1,7 +1,7 @@
 --TEST--
 Test for Github issue #93 (double and long overflow)
 --SKIPIF--
-<?php if (!extension_loaded("memcached")) print "skip"; ?>
+<?php include "skipif.inc";?>
 --FILE--
 <?php
 include dirname (__FILE__) . '/config.inc';
