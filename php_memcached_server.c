@@ -29,19 +29,15 @@
 
 #define MEMC_MAKE_ZVAL_COOKIE(my_zcookie, my_ptr) \
 	do { \
-		char *cookie_buf; \
-		spprintf (&cookie_buf, 0, "%p", my_ptr); \
-		MAKE_STD_ZVAL(my_zcookie); \
-		ZVAL_STRING(my_zcookie, cookie_buf, 0); \
+		zend_string *cookie_buf; \
+		cookie_buf = zend_strpprintf(0, "%p", my_ptr); \
+		ZVAL_STR(&my_zcookie, cookie_buf); \
 	} while (0)
 
 #define MEMC_MAKE_RESULT_CAS(my_zresult_cas, my_result_cas) \
 	do { \
 		my_result_cas = 0; \
-		if (Z_TYPE_P(my_zresult_cas) != IS_NULL) { \
-			convert_to_double (my_zresult_cas); \
-			my_result_cas = (uint64_t) Z_DVAL_P(my_zresult_cas); \
-		} \
+		my_result_cas = zval_get_double(my_zresult_cas); \
 	} while (0)
 
 
@@ -78,9 +74,7 @@ long s_invoke_php_callback (php_memc_server_cb_t *cb, zval ***params, ssize_t pa
 		efree (buf);
 	}
 	if (retval_ptr) {
-		convert_to_long (retval_ptr);
-		retval = Z_LVAL_P(retval_ptr);
-		zval_ptr_dtor(&retval_ptr);
+		retval = zval_get_long(retval_ptr);
 	}
 	return retval;
 }
@@ -223,10 +217,7 @@ protocol_binary_response_status s_incr_decr_handler (php_memc_event_t event, con
 
 	retval = s_invoke_php_callback (&MEMC_GET_CB(event), params, 7);
 
-	if (Z_TYPE(zresult) != IS_LONG) {
-		convert_to_long (&zresult);
-	}
-	*result = (uint64_t) Z_LVAL(zresult);
+	*result = (uint64_t)zval_get_long(zresult);
 
 	MEMC_MAKE_RESULT_CAS(zresult_cas, *result_cas);
 
