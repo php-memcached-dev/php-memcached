@@ -1786,7 +1786,7 @@ static void php_memc_setMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 		}
 
 		if (!s_memc_write_zval (intern, MEMC_OP_SET, server_key, str_key, value, expiration)) {
-			php_error_docref(NULL, E_WARNING, "failed to set key %s", str_key->val);
+			php_error_docref(NULL, E_WARNING, "failed to set key %s", ZSTR_VAL(str_key));
 		}
 
 		if (!skey) {

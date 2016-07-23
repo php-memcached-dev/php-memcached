@@ -42,6 +42,6 @@ try {
 var_dump($m->getByKey('kef', 'foo'));
 
 --EXPECT--
-
+Memcached::setMultiByKey(): failed to set key foo
 1234
 int(10)
