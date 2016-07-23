@@ -206,6 +206,16 @@ static inline php_memc_object_t *php_memc_fetch_object(zend_object *obj) {
 	}                                                                                 \
 	memc_user_data = (php_memc_user_data_t *) memcached_get_user_data(intern->memc);
 
+#define MEMC_CHECK_KEY(intern, key)                      \
+	if (UNEXPECTED(ZSTR_LEN(key) == 0 ||                 \
+		ZSTR_LEN(key) > MEMC_OBJECT_KEY_MAX_LENGTH ||    \
+		(memcached_behavior_get(intern->memc,            \
+				MEMCACHED_BEHAVIOR_BINARY_PROTOCOL) ?    \
+		strchr(ZSTR_VAL(key), '\n') :                    \
+		strchr(ZSTR_VAL(key), ' ')))) {                  \
+		intern->rescode = MEMCACHED_BAD_KEY_PROVIDED;    \
+		RETURN_FALSE;                                    \
+	}
 
 #ifdef HAVE_MEMCACHED_PROTOCOL
 
@@ -1406,6 +1416,7 @@ void php_memc_get_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 
 	MEMC_METHOD_FETCH_OBJECT;
 	s_memc_set_status(intern, MEMCACHED_SUCCESS, 0);
+	MEMC_CHECK_KEY(intern, key);
 
 	context.extended = (get_flags & MEMC_GET_EXTENDED);
 
@@ -1960,6 +1971,7 @@ static void php_memc_store_impl(INTERNAL_FUNCTION_PARAMETERS, int op, zend_bool 
 
 	MEMC_METHOD_FETCH_OBJECT;
 	s_memc_set_status(intern, MEMCACHED_SUCCESS, 0);
+	MEMC_CHECK_KEY(intern, key);
 
 	if (memc_user_data->compression_enabled) {
 		/*
@@ -2017,6 +2029,7 @@ static void php_memc_cas_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 
 	MEMC_METHOD_FETCH_OBJECT;
 	s_memc_set_status(intern, MEMCACHED_SUCCESS, 0);
+	MEMC_CHECK_KEY(intern, key);
 
 	cas = s_zval_to_uint64(zv_cas);
 
@@ -2110,6 +2123,7 @@ static void php_memc_delete_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 
 	MEMC_METHOD_FETCH_OBJECT;
 	s_memc_set_status(intern, MEMCACHED_SUCCESS, 0);
+	MEMC_CHECK_KEY(intern, key);
 
 	if (by_key) {
 		status = memcached_delete_by_key(intern->memc, ZSTR_VAL(server_key), ZSTR_LEN(server_key), ZSTR_VAL(key),
@@ -2202,6 +2216,7 @@ static void php_memc_incdec_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key,
 
 	MEMC_METHOD_FETCH_OBJECT;
 	s_memc_set_status(intern, MEMCACHED_SUCCESS, 0);
+	MEMC_CHECK_KEY(intern, key);
 
 	if (offset < 0) {
 		php_error_docref(NULL, E_WARNING, "offset has to be > 0");
