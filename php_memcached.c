@@ -829,17 +829,17 @@ zend_bool s_compress_value (php_memc_compression_type compression_type, zend_str
 
 	if (!compress_status) {
 		php_error_docref(NULL, E_WARNING, "could not compress value");
-		MEMC_VAL_DEL_FLAG(*flags, MEMC_VAL_COMPRESSED);
 		efree (buffer);
 		return 0;
 	}
 
 	/* This means the value was too small to be compressed, still a success */
 	if (compressed_size > (ZSTR_LEN(payload) * MEMC_G(compression_factor))) {
-		MEMC_VAL_DEL_FLAG(*flags, MEMC_VAL_COMPRESSED);
 		efree (buffer);
 		return 1;
 	}
+
+	MEMC_VAL_SET_FLAG(*flags, MEMC_VAL_COMPRESSED);
 
 	payload = zend_string_realloc(payload, compressed_size + sizeof(uint32_t), 0);
 
@@ -1005,7 +1005,6 @@ zend_string *s_zval_to_payload(php_memc_object_t *intern, zval *value, uint32_t 
 			zend_string_release(payload);
 			return NULL;
 		}
-		MEMC_VAL_SET_FLAG(*flags, MEMC_VAL_COMPRESSED);
 	}
 
 	if (memc_user_data->set_udf_flags >= 0) {
