@@ -390,8 +390,8 @@ PS_OPEN_FUNC(memcached)
 
 PS_CLOSE_FUNC(memcached)
 {
-	memcached_st *memc = PS_GET_MOD_DATA();
 	php_memcached_user_data *user_data;
+	memcached_st *memc = PS_GET_MOD_DATA();
 
 	if (!memc) {
 		php_error_docref(NULL, E_WARNING, "Session is not allocated, check session.save_path value");
@@ -453,7 +453,7 @@ PS_WRITE_FUNC(memcached)
 	time_t expiration = s_session_expiration(maxlifetime);
 
 	if (!memc) {
-		php_error_docref(NULL TSRMLS_CC, E_WARNING, "Session is not allocated, check session.save_path value");
+		php_error_docref(NULL, E_WARNING, "Session is not allocated, check session.save_path value");
 		return FAILURE;
 	}
 
@@ -482,7 +482,7 @@ PS_DESTROY_FUNC(memcached)
 	memcached_st *memc = PS_GET_MOD_DATA();
 
 	if (!memc) {
-		php_error_docref(NULL TSRMLS_CC, E_WARNING, "Session is not allocated, check session.save_path value");
+		php_error_docref(NULL, E_WARNING, "Session is not allocated, check session.save_path value");
 		return FAILURE;
 	}
 

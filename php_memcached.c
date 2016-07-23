@@ -68,6 +68,11 @@ int php_memc_list_entry(void)
 }
 
 /****************************************
+  Protocol parameters
+****************************************/
+#define MEMC_OBJECT_KEY_MAX_LENGTH 250
+
+/****************************************
   Custom options
 ****************************************/
 #define MEMC_OPT_COMPRESSION        -1001
@@ -781,8 +786,6 @@ zend_bool s_invoke_cache_callback(zval *zobject, zend_fcall_info *fci, zend_fcal
 	else {
 		s_memc_set_status(intern, MEMCACHED_NOTFOUND, 0);
 	}
-
-
 
 	zval_ptr_dtor(zobject);
 	zval_ptr_dtor(&zv_key);
