@@ -1,7 +1,7 @@
 --TEST--
 Check if persistent object is new or an old persistent one
 --SKIPIF--
-<?php if (!extension_loaded("memcached")) print "skip";
+<?php include dirname(__FILE__) . "/skipif.inc";
 ?>
 --FILE--
 <?php 

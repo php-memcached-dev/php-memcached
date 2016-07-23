@@ -1,7 +1,7 @@
 --TEST--
 Memcached::getServerByKey(): Bug pecl#18639 (Segfault in getServerByKey)
 --SKIPIF--
-<?php if (!extension_loaded("memcached")) print "skip"; ?>
+<?php include "skipif.inc";?>
 --FILE--
 <?php
 include dirname (__FILE__) . '/config.inc';
@@ -14,9 +14,9 @@ var_dump($m->getServerByKey('1'));
 bool(true)
 array(3) {
   ["host"]=>
-  string(9) "127.0.0.1"
+  string(9) "%s"
   ["port"]=>
-  int(11211)
+  int(%d)
   ["weight"]=>
   int(%r[01]%r)
 }

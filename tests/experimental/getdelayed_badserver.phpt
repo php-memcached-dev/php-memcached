@@ -1,7 +1,7 @@
 --TEST--
 Memcached::getDelayedByKey() with bad server
 --SKIPIF--
-<?php if (!extension_loaded("memcached")) print "skip"; ?>
+<?php include dirname(dirname(__FILE__)) . "/skipif.inc";?>
 --FILE--
 <?php
 $m = new Memcached();

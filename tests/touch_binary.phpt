@@ -1,7 +1,7 @@
 --TEST--
 Touch in binary mode
 --SKIPIF--
-<?php if (!extension_loaded("memcached")) print "skip";
+<?php include dirname(__FILE__) . "/skipif.inc";
 	  if (Memcached::LIBMEMCACHED_VERSION_HEX < 0x01000016) die ('skip too old libmemcached');
 ?>
 --FILE--

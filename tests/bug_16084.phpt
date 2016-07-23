@@ -1,7 +1,7 @@
 --TEST--
 Memcached: Bug #16084 (Crash when addServers is called with an associative array)
 --SKIPIF--
-<?php if (!extension_loaded("memcached")) print "skip"; ?>
+<?php include "skipif.inc";?>
 --FILE--
 <?php 
 $servers = array ( 0 => array ( 'KEYHERE' => 'localhost', 11211, 3 ), );
