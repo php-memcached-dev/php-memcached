@@ -30,7 +30,7 @@
 #define MEMC_MAKE_ZVAL_COOKIE(my_zcookie, my_ptr) \
 	do { \
 		zend_string *cookie_buf; \
-		cookie_buf = zend_strpprintf(0, "%p", my_ptr); \
+		cookie_buf = strpprintf(0, "%p", my_ptr); \
 		ZVAL_STR(&my_zcookie, cookie_buf); \
 	} while (0)
 

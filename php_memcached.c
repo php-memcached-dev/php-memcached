@@ -2623,8 +2623,7 @@ zend_bool s_double_value(const char *str, double *value)
 static
 memcached_return s_stat_execute_cb (php_memcached_instance_st instance, const char *key, size_t key_length, const char *value, size_t value_length, void *context)
 {
-	char *server_key;
-	size_t server_key_len;
+	zend_string *server_key;
 	zend_long long_val;
 	double d_val;
 	char *buffer;
@@ -2632,14 +2631,14 @@ memcached_return s_stat_execute_cb (php_memcached_instance_st instance, const ch
 	zval *return_value = (zval *) context;
 	zval *server_values;
 
-	server_key_len = spprintf (&server_key, 0, "%s:%d", memcached_server_name(instance), memcached_server_port(instance));
-	server_values = zend_hash_str_find(Z_ARRVAL_P(return_value), server_key, server_key_len);
+	server_key = strpprintf(0, "%s:%d", memcached_server_name(instance), memcached_server_port(instance));
+	server_values = zend_hash_find(Z_ARRVAL_P(return_value), server_key);
 
 	if (!server_values) {
 		zval zv;
 		array_init(&zv);
 
-		server_values = zend_hash_str_add(Z_ARRVAL_P(return_value), server_key, server_key_len, &zv);
+		server_values = zend_hash_add(Z_ARRVAL_P(return_value), server_key, &zv);
 	}
 
 	spprintf (&buffer, 0, "%.*s", value_length, value);
@@ -2655,7 +2654,8 @@ memcached_return s_stat_execute_cb (php_memcached_instance_st instance, const ch
 		add_assoc_stringl_ex(server_values, key, key_length, (char*)value, value_length);
 	}
 	efree (buffer);
-	efree (server_key);
+	zend_string_release(server_key);
+
 	return MEMCACHED_SUCCESS;
 }
 
