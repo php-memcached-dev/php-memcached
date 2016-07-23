@@ -442,13 +442,13 @@ char *php_memc_printable_func (zend_fcall_info *fci, zend_fcall_info_cache *fci_
 	char *buffer = NULL;
 
 	if (fci->object) {
-		spprintf (&buffer, 0, "%s::%s", fci->object->ce->name->val, fci_cache->function_handler->common.function_name);
+		spprintf (&buffer, 0, "%s::%s", ZSTR_VAL(fci->object->ce->name), fci_cache->function_handler->common.function_name);
 	} else {
 		if (Z_TYPE (fci->function_name) == IS_OBJECT) {
-			spprintf (&buffer, 0, "%s", Z_OBJCE (fci->function_name)->name->val);
+			spprintf (&buffer, 0, "%s", ZSTR_VAL(Z_OBJCE(fci->function_name)->name));
 		}
 		else {
-			spprintf (&buffer, 0, "%s", Z_STRVAL (fci->function_name));
+			spprintf (&buffer, 0, "%s", Z_STRVAL(fci->function_name));
 		}
 	}
 	return buffer;
@@ -1156,7 +1156,7 @@ static PHP_METHOD(Memcached, __construct)
 		zend_resource *le;
 
 		plist_key = zend_string_alloc(sizeof("memcached:id=") + persistent_id->len - 1, 0);
-		snprintf(plist_key->val, plist_key->len + 1, "memcached:id=%s", persistent_id->val);
+		snprintf(ZSTR_VAL(plist_key), plist_key->len + 1, "memcached:id=%s", ZSTR_VAL(persistent_id));
 
 		if ((le = zend_hash_find_ptr(&EG(persistent_list), plist_key)) != NULL) {
 			if (le->type == php_memc_list_entry()) {
@@ -1170,7 +1170,7 @@ static PHP_METHOD(Memcached, __construct)
 	}
 
 	if (conn_str && conn_str->len > 0) {
-		intern->memc = memcached (conn_str->val, conn_str->len);
+		intern->memc = memcached (ZSTR_VAL(conn_str), ZSTR_LEN(conn_str));
 	}
 	else {
 		intern->memc = memcached (NULL, 0);
@@ -1249,7 +1249,7 @@ static PHP_METHOD(Memcached, __construct)
 		GC_REFCOUNT(&le) = 1;
 
 		/* plist_key is not a persistent allocated key, thus we use str_update here */
-		if (zend_hash_str_update_mem(&EG(persistent_list), plist_key->val, plist_key->len, &le, sizeof(le)) == NULL) {
+		if (zend_hash_str_update_mem(&EG(persistent_list), ZSTR_VAL(plist_key), ZSTR_LEN(plist_key), &le, sizeof(le)) == NULL) {
 			zend_string_release(plist_key);
 			php_error_docref(NULL, E_ERROR, "could not register persistent entry");
 			/* not reached */
@@ -3131,7 +3131,7 @@ static PHP_METHOD(Memcached, setSaslAuthData)
 		RETURN_FALSE;
 	}
 	memc_user_data->has_sasl_data = 1;
-	status = memcached_set_sasl_auth_data(intern->memc, user->val, pass->val);
+	status = memcached_set_sasl_auth_data(intern->memc, ZSTR_VAL(user), ZSTR_VAL(pass));
 
 	if (s_memc_status_handle_result_code(intern, status) == FAILURE) {
 		RETURN_FALSE;
@@ -3503,28 +3503,28 @@ zend_bool s_memcached_result_to_zval(memcached_st *memc, memcached_result_st *re
 			break;
 
 		case MEMC_VAL_IS_LONG:
-			ZVAL_LONG(return_value, strtol(data->val, NULL, 10));
+			ZVAL_LONG(return_value, strtol(ZSTR_VAL(data), NULL, 10));
 			break;
 
 		case MEMC_VAL_IS_DOUBLE:
 		{
-			if (payload_len == 8 && memcmp(data->val, "Infinity", 8) == 0) {
+			if (zend_string_equals_literal(data, "Infinity")) {
 				ZVAL_DOUBLE(return_value, php_get_inf());
 			}
-			else if (payload_len == 9 && memcmp(data->val, "-Infinity", 9) == 0) {
+			else if (zend_string_equals_literal(data, "-Infinity")) {
 				ZVAL_DOUBLE(return_value, -php_get_inf());
 			}
-			else if (payload_len == 3 && memcmp(data->val, "NaN", 3) == 0) {
+			else if (zend_string_equals_literal(data, "NaN")) {
 				ZVAL_DOUBLE(return_value, php_get_nan());
 			}
 			else {
-				ZVAL_DOUBLE(return_value, zend_strtod(data->val, NULL));
+				ZVAL_DOUBLE(return_value, zend_strtod(ZSTR_VAL(data), NULL));
 			}
 		}
 			break;
 
 		case MEMC_VAL_IS_BOOL:
-			ZVAL_BOOL(return_value, payload_len > 0 && data->val[0] == '1');
+			ZVAL_BOOL(return_value, payload_len > 0 && ZSTR_VAL(data)[0] == '1');
 			break;
 
 		case MEMC_VAL_IS_SERIALIZED:
