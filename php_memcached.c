@@ -613,13 +613,7 @@ memcached_return php_memc_result_apply(php_memc_object_t *intern, php_memc_resul
 			const char *res_key;
 			size_t res_key_len;
 			
-
-			ZVAL_UNDEF(&zv_value);
 			if (!s_memcached_result_to_zval(intern->memc, &result, &zv_value)) {
-				if (Z_TYPE(zv_value) != IS_UNDEF) {
-					zval_ptr_dtor(&zv_value);
-				}
-
 				if (EG(exception)) {
 					status = MEMC_RES_PAYLOAD_FAILURE;
 					memcached_quit(intern->memc);
@@ -729,8 +723,6 @@ zend_bool s_invoke_new_instance_cb(zval *object, zend_fcall_info *fci, zend_fcal
 		ZVAL_NULL(&id);
 	}
 
-	ZVAL_UNDEF(&retval);
-
 	zend_fcall_info_argn(fci, 2, object, &id);
 	fci->retval         = &retval;
 	fci->no_separation  = 1;
@@ -783,8 +775,6 @@ zend_bool s_invoke_cache_callback(zval *zobject, zend_fcall_info *fci, zend_fcal
 	fci->retval = &retval;
 	fci->params = params;
 	fci->param_count = 4;
-
-	ZVAL_UNDEF(&retval);
 
 	if (zend_call_function(fci, fcc) == SUCCESS) {
 		if (zend_is_true(&retval)) {
@@ -1596,7 +1586,6 @@ zend_bool s_result_callback_apply(php_memc_object_t *intern, zend_string *key, z
 	context->fci.retval = &retval;
 	context->fci.param_count = 2;
 	
-	ZVAL_UNDEF(&retval);
 	if (zend_call_function(&context->fci, &context->fcc) == FAILURE) {
 		if (Z_TYPE(retval) != IS_UNDEF) {
 			zval_ptr_dtor(&retval);
@@ -3597,14 +3586,10 @@ zend_bool s_memcached_result_to_zval(memcached_st *memc, memcached_result_st *re
 
 		default:
 			php_error_docref(NULL, E_WARNING, "unknown payload type");
-			retval = 0;
 			break;
 	}
 	zend_string_release(data);
 
-	if (!retval) {
-		zval_ptr_dtor(return_value);
-	}
 	return retval;
 }
 
