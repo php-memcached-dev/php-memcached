@@ -9,7 +9,7 @@ if (!setlocale(LC_NUMERIC, "fi_FI", 'sv_SV', 'nl_NL')) {
 --FILE--
 <?php
 
-include dirname (__FILE__) . '/config.inc';
+include dirname(dirname(__FILE__)) . '/config.inc';
 $memcache = memc_get_instance ();
 
 setlocale(LC_NUMERIC,
