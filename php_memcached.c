@@ -1819,8 +1819,7 @@ static void php_memc_setMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 	s_memc_set_status(intern, MEMCACHED_SUCCESS, 0);
 
 	ZEND_HASH_FOREACH_KEY_VAL (Z_ARRVAL_P(entries), num_key, skey, value) {
-
-		zend_string *str_key;
+		zend_string *str_key = NULL;
 
 		if (skey) {
 			str_key = skey;
@@ -2337,7 +2336,6 @@ PHP_METHOD(Memcached, addServers)
 	zval *servers;
 	zval *entry;
 	zval *z_host, *z_port, *z_weight = NULL;
-	uint32_t weight = 0;
 	HashPosition	pos;
 	int   entry_size, i = 0;
 	memcached_server_st *list = NULL;
@@ -2361,6 +2359,10 @@ PHP_METHOD(Memcached, addServers)
 		entry_size = zend_hash_num_elements(Z_ARRVAL_P(entry));
 
 		if (entry_size > 1) {
+			zend_string *host;
+			zend_long port;
+			uint32_t weight;
+
 			zend_hash_internal_pointer_reset_ex(Z_ARRVAL_P(entry), &pos);
 
 			/* Check that we have a host */
@@ -2378,8 +2380,8 @@ PHP_METHOD(Memcached, addServers)
 				continue;
 			}
 
-			convert_to_string_ex(z_host);
-			convert_to_long_ex(z_port);
+			host = zval_get_string(z_host);
+			port = zval_get_long(z_port);
 
 			weight = 0;
 			if (entry_size > 2) {
@@ -2389,12 +2391,12 @@ PHP_METHOD(Memcached, addServers)
 					php_error_docref(NULL, E_WARNING, "could not get server weight for entry #%d", i+1);
 				}
 
-				convert_to_long_ex(z_weight);
-				weight = Z_LVAL_P(z_weight);
+				weight = zval_get_long(z_weight);
 			}
 
-			list = memcached_server_list_append_with_weight(list, Z_STRVAL_P(z_host),
-				Z_LVAL_P(z_port), weight, &status);
+			list = memcached_server_list_append_with_weight(list, ZSTR_VAL(host), port, weight, &status);
+
+			zend_string_release(host);
 
 			if (s_memc_status_handle_result_code(intern, status) == SUCCESS) {
 				i++;
@@ -2839,21 +2841,21 @@ static PHP_METHOD(Memcached, getOption)
 static
 int php_memc_set_option(php_memc_object_t *intern, long option, zval *value)
 {
+	zend_long lval;
 	memcached_return rc = MEMCACHED_FAILURE;
 	memcached_behavior flag;
 	php_memc_user_data_t *memc_user_data = memcached_get_user_data(intern->memc);
 
 	switch (option) {
 		case MEMC_OPT_COMPRESSION:
-			convert_to_long(value);
-			memc_user_data->compression_enabled = Z_LVAL_P(value) ? 1 : 0;
+			memc_user_data->compression_enabled = zval_get_long(value) ? 1 : 0;
 			break;
 
 		case MEMC_OPT_COMPRESSION_TYPE:
-			convert_to_long(value);
-			if (Z_LVAL_P(value) == COMPRESSION_TYPE_FASTLZ ||
-				Z_LVAL_P(value) == COMPRESSION_TYPE_ZLIB) {
-				memc_user_data->compression_type = Z_LVAL_P(value);
+			lval = zval_get_long(value);
+			if (lval == COMPRESSION_TYPE_FASTLZ ||
+				lval == COMPRESSION_TYPE_ZLIB) {
+				memc_user_data->compression_type = lval;
 			} else {
 				/* invalid compression type */
 				intern->rescode = MEMCACHED_INVALID_ARGUMENTS;
@@ -2863,12 +2865,13 @@ int php_memc_set_option(php_memc_object_t *intern, long option, zval *value)
 
 		case MEMC_OPT_PREFIX_KEY:
 		{
+			zend_string *str;
 			char *key;
 #if defined(LIBMEMCACHED_VERSION_HEX) && LIBMEMCACHED_VERSION_HEX == 0x00049000
 			char tmp[MEMCACHED_PREFIX_KEY_MAX_SIZE - 1];
 #endif
-			convert_to_string(value);
-			if (Z_STRLEN_P(value) == 0) {
+			str = zval_get_string(value);
+			if (ZSTR_VAL(str) == 0) {
 				key = NULL;
 			} else {
 				/*
@@ -2876,25 +2879,27 @@ int php_memc_set_option(php_memc_object_t *intern, long option, zval *value)
 				   character of the key prefix, to avoid the issue we pad it with a '0'
 				*/
 #if defined(LIBMEMCACHED_VERSION_HEX) && LIBMEMCACHED_VERSION_HEX == 0x00049000
-				snprintf(tmp, sizeof(tmp), "%s0", Z_STRVAL_P(value));
+				snprintf(tmp, sizeof(tmp), "%s0", ZSTR_VAL(str));
 				key = tmp;
 #else
-				key = Z_STRVAL_P(value);
+				key = ZSTR_VAL(str);
 #endif
 			}
 			if (memcached_callback_set(intern->memc, MEMCACHED_CALLBACK_PREFIX_KEY, key) == MEMCACHED_BAD_KEY_PROVIDED) {
+				zend_string_release(str);
 				intern->rescode = MEMCACHED_INVALID_ARGUMENTS;
 				php_error_docref(NULL, E_WARNING, "bad key provided");
 				return 0;
 			}
+			zend_string_release(str);
 		}
 			break;
 
 		case MEMCACHED_BEHAVIOR_KETAMA_WEIGHTED:
 			flag = (memcached_behavior) option;
 
-			convert_to_long(value);
-			rc = memcached_behavior_set(intern->memc, flag, (uint64_t) Z_LVAL_P(value));
+			lval = zval_get_long(value);
+			rc = memcached_behavior_set(intern->memc, flag, (uint64_t)lval);
 
 			if (s_memc_status_handle_result_code(intern, rc) == FAILURE) {
 				php_error_docref(NULL, E_WARNING, "error setting memcached option: %s", memcached_strerror (intern->memc, rc));
@@ -2906,7 +2911,7 @@ int php_memc_set_option(php_memc_object_t *intern, long option, zval *value)
 			 * options on false case, like it does for MEMCACHED_BEHAVIOR_KETAMA
 			 * (non-weighted) case. We have to clean up ourselves.
 			 */
-			if (!Z_LVAL_P(value)) {
+			if (!lval) {
 #if defined(LIBMEMCACHED_VERSION_HEX) && LIBMEMCACHED_VERSION_HEX > 0x00037000
 			(void)memcached_behavior_set_key_hash(intern->memc, MEMCACHED_HASH_DEFAULT);
 			(void)memcached_behavior_set_distribution_hash(intern->memc, MEMCACHED_HASH_DEFAULT);
@@ -2920,28 +2925,28 @@ int php_memc_set_option(php_memc_object_t *intern, long option, zval *value)
 
 		case MEMC_OPT_SERIALIZER:
 		{
-			convert_to_long(value);
+			lval = zval_get_long(value);
 			/* igbinary serializer */
 #ifdef HAVE_MEMCACHED_IGBINARY
-			if (Z_LVAL_P(value) == SERIALIZER_IGBINARY) {
+			if (lval == SERIALIZER_IGBINARY) {
 				memc_user_data->serializer = SERIALIZER_IGBINARY;
 			} else
 #endif
 #ifdef HAVE_JSON_API
-			if (Z_LVAL_P(value) == SERIALIZER_JSON) {
+			if (lval == SERIALIZER_JSON) {
 				memc_user_data->serializer = SERIALIZER_JSON;
-			} else if (Z_LVAL_P(value) == SERIALIZER_JSON_ARRAY) {
+			} else if (lval == SERIALIZER_JSON_ARRAY) {
 				memc_user_data->serializer = SERIALIZER_JSON_ARRAY;
 			} else
 #endif
 			/* msgpack serializer */
 #ifdef HAVE_MEMCACHED_MSGPACK
-			if (Z_LVAL_P(value) == SERIALIZER_MSGPACK) {
+			if (lval == SERIALIZER_MSGPACK) {
 				memc_user_data->serializer = SERIALIZER_MSGPACK;
 			} else
 #endif
 			/* php serializer */
-			if (Z_LVAL_P(value) == SERIALIZER_PHP) {
+			if (lval == SERIALIZER_PHP) {
 				memc_user_data->serializer = SERIALIZER_PHP;
 			} else {
 				memc_user_data->serializer = SERIALIZER_PHP;
@@ -2953,23 +2958,23 @@ int php_memc_set_option(php_memc_object_t *intern, long option, zval *value)
 		}
 
 		case MEMC_OPT_USER_FLAGS:
-			convert_to_long(value);
+			lval = zval_get_long(value);
 
-			if (Z_LVAL_P(value) < 0) {
+			if (lval < 0) {
 				memc_user_data->set_udf_flags = -1;
 				return 1;
 			}
 
-			if (Z_LVAL_P(value) > MEMC_VAL_USER_FLAGS_MAX) {
+			if (lval > MEMC_VAL_USER_FLAGS_MAX) {
 				php_error_docref(NULL, E_WARNING, "MEMC_OPT_USER_FLAGS must be < %u", MEMC_VAL_USER_FLAGS_MAX);
 				return 0;
 			}
-			memc_user_data->set_udf_flags = Z_LVAL_P(value);
+			memc_user_data->set_udf_flags = lval;
 			break;
 
 		case MEMC_OPT_STORE_RETRY_COUNT:
-			convert_to_long(value);
-			memc_user_data->store_retry_count = Z_LVAL_P(value);
+			lval = zval_get_long(value);
+			memc_user_data->store_retry_count = lval;
 			break;
 
 		default:
@@ -2981,10 +2986,10 @@ int php_memc_set_option(php_memc_object_t *intern, long option, zval *value)
 			}
 			else {
 				flag = (memcached_behavior) option;
-				convert_to_long(value);
+				lval = zval_get_long(value);
 
 				if (flag < MEMCACHED_BEHAVIOR_MAX) {
-					rc = memcached_behavior_set(intern->memc, flag, (uint64_t) Z_LVAL_P(value));
+					rc = memcached_behavior_set(intern->memc, flag, (uint64_t)lval);
 				}
 				else {
 					rc = MEMCACHED_INVALID_ARGUMENTS;
@@ -3016,15 +3021,9 @@ uint32_t *s_zval_to_uint32_array (zval *input, size_t *num_elements)
 	retval = ecalloc(*num_elements, sizeof(uint32_t));
 
 	ZEND_HASH_FOREACH_VAL(Z_ARRVAL_P(input), pzval) {
-		long value = 0;
+		zend_long value = 0;
 
-		if (Z_TYPE_P(pzval) == IS_LONG) {
-			value = Z_LVAL_P(pzval);
-		} else {
-			value = zval_get_long(pzval);
-			value = value > 0? value : 0;
-		}
-
+		value = zval_get_long(pzval);
 		if (value < 0) {
 			php_error_docref(NULL, E_WARNING, "the map must contain positive integers");
 			efree (retval);
@@ -3126,14 +3125,9 @@ static PHP_METHOD(Memcached, setOptions)
 			php_error_docref(NULL, E_WARNING, "invalid configuration option");
 			ok = 0;
 		} else {
-			zval copy;
-			ZVAL_DUP(&copy, value);
-
-			if (!php_memc_set_option(intern, (long) key_index, &copy)) {
+			if (!php_memc_set_option(intern, (long) key_index, value)) {
 				ok = 0;
 			}
-
-			zval_dtor(&copy);
 		}
 	} ZEND_HASH_FOREACH_END();
 
