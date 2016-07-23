@@ -67,7 +67,7 @@ function memc_create_combinations ($name, $serializer, $ignore_object_type = fal
 	);
 }
 
-function memc_get_version($memc, $host = '') {
+function memc_get_version($memc) {
 	$version = $memc->getVersion();
 	return array_pop($version);
 }
