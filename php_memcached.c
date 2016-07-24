@@ -3565,8 +3565,8 @@ zend_class_entry *php_memc_get_exception_base(int root)
 			zval *pce_z;
 
 			if ((pce_z = zend_hash_str_find(CG(class_table),
-											"runtimeexception",
-											sizeof("RuntimeException") - 1)) != NULL) {
+							"runtimeexception",
+							sizeof("RuntimeException") - 1)) != NULL) {
 				pce = Z_CE_P(pce_z);
 				spl_ce_RuntimeException = pce;
 				return pce;
@@ -3576,11 +3576,7 @@ zend_class_entry *php_memc_get_exception_base(int root)
 		}
 	}
 #endif
-#if (PHP_MAJOR_VERSION == 5) && (PHP_MINOR_VERSION < 2)
 	return zend_exception_get_default();
-#else
-	return zend_exception_get_default();
-#endif
 }
 
 
