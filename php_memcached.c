@@ -525,15 +525,14 @@ static
 void s_uint64_to_zval (zval *target, uint64_t value)
 {
 	if (value >= ((uint64_t) LONG_MAX)) {
-		char *buffer;
+		zend_string *buffer;
 #ifdef PRIu64
-		spprintf (&buffer, 0, "%" PRIu64, value);
+		buffer = strpprintf (0, "%" PRIu64, value);
 #else
 		/* Best effort */
-		spprintf (&buffer, 0, "%llu", value);
+		buffer = strpprintf (0, "%llu", value);
 #endif
-		ZVAL_STRING (target, buffer);
-		efree(buffer);
+		ZVAL_STR(target, buffer);
 	}
 	else {
 		ZVAL_LONG (target, (zend_long) value);
@@ -3331,28 +3330,28 @@ memcached_return s_server_cursor_list_servers_cb(const memcached_st *ptr, php_me
 static
 memcached_return s_server_cursor_version_cb(const memcached_st *ptr, php_memcached_instance_st instance, void *in_context)
 {
-	char *address, *version;
-	size_t address_len, version_len;
-
-	zval *return_value = (zval *) in_context;
+	zend_string *address, *version;
+	zval rv, *return_value = (zval *)in_context;
 
 #if defined(LIBMEMCACHED_VERSION_HEX) && LIBMEMCACHED_VERSION_HEX >= 0x01000009
-	version_len = spprintf(&version, sizeof(version), "%d.%d.%d",
+	version = strpprintf(0, "%d.%d.%d",
 				memcached_server_major_version(instance),
 				memcached_server_minor_version(instance),
 				memcached_server_micro_version(instance));
 #else
-	version_len = spprintf(&version, sizeof(version) - 1, "%d.%d.%d",
+	version = strpprintf(0, "%d.%d.%d",
 				instance->major_version,
 				instance->minor_version,
 				instance->micro_version);
 #endif
 
-	address_len = spprintf(&address, 0, "%s:%d", memcached_server_name(instance), memcached_server_port(instance) - 1);
-	add_assoc_stringl_ex(return_value, address, address_len, version, version_len);
+	address = strpprintf(0, "%s:%d", memcached_server_name(instance), memcached_server_port(instance) - 1);
 
-	efree(address);
-	efree(version);
+	ZVAL_STR(&rv, version);
+	zend_hash_add(Z_ARRVAL_P(return_value), address, &rv);
+
+	zend_string_release(address);
+
 	return MEMCACHED_SUCCESS;
 }
 
