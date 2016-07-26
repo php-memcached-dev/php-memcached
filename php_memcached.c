@@ -386,7 +386,7 @@ static void php_memc_deleteMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by
 static void php_memc_getDelayed_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key);
 
 /* Invoke PHP functions */
-static zend_bool s_invoke_cache_callback(zval *zobject, zend_fcall_info *fci, zend_fcall_info_cache *fcc, zend_string *key, zval *value);
+static zend_bool s_invoke_cache_callback(zval *zobject, zend_fcall_info *fci, zend_fcall_info_cache *fcc, zend_bool with_cas, zend_string *key, zval *value);
 
 /* Iterate result sets */
 typedef zend_bool (*php_memc_result_apply_fn)(php_memc_object_t *intern, zend_string *key, zval *value, zval *cas, uint32_t flags, void *context);
@@ -750,7 +750,7 @@ zend_bool s_invoke_new_instance_cb(zval *object, zend_fcall_info *fci, zend_fcal
 }
 
 static
-zend_bool s_invoke_cache_callback(zval *zobject, zend_fcall_info *fci, zend_fcall_info_cache *fcc, zend_string *key, zval *value)
+zend_bool s_invoke_cache_callback(zval *zobject, zend_fcall_info *fci, zend_fcall_info_cache *fcc, zend_bool with_cas, zend_string *key, zval *value)
 {
 	zend_bool status = 0;
 	zval params[4];
@@ -759,21 +759,42 @@ zend_bool s_invoke_cache_callback(zval *zobject, zend_fcall_info *fci, zend_fcal
 
 	/* Prepare params */
 	ZVAL_COPY(&params[0], zobject);
-	ZVAL_STR(&params[1], zend_string_copy(key)); /* key */
-	ZVAL_NEW_REF(&params[2], value);             /* value */
-	ZVAL_NEW_EMPTY_REF(&params[3]);              /* expiration */
-	ZVAL_NULL(Z_REFVAL(params[3]));
+	ZVAL_STR_COPY(&params[1], key);    /* key */
+	ZVAL_NEW_REF(&params[2], value);   /* value */
+
+	if (with_cas) {
+		fci->param_count = 3;
+	} else {
+		ZVAL_NEW_EMPTY_REF(&params[3]);    /* expiration */
+		ZVAL_NULL(Z_REFVAL(params[3]));
+		fci->param_count = 4;
+	}
 
 	fci->retval = &retval;
 	fci->params = params;
-	fci->param_count = 4;
 
 	if (zend_call_function(fci, fcc) == SUCCESS) {
 		if (zend_is_true(&retval)) {
-			time_t expiration = zval_get_long(Z_REFVAL(params[3]));
-			status = s_memc_write_zval (intern, MEMC_OP_SET, NULL, key, Z_REFVAL(params[2]), expiration);
-			/* memleak?  zval_ptr_dtor(value); */
-			ZVAL_COPY(value, Z_REFVAL(params[2]));
+			time_t expiration;
+			zval *val = Z_REFVAL(params[2]);
+
+			if (with_cas) {
+				if (Z_TYPE_P(val) == IS_ARRAY) {
+					zval *rv = zend_hash_str_find(Z_ARRVAL_P(val), "value", sizeof("value") - 1);
+					if (rv) {
+						zval *cas = zend_hash_str_find(Z_ARRVAL_P(val), "cas", sizeof("cas") -1);
+						expiration = cas? Z_LVAL_P(cas) : 0;
+						status = s_memc_write_zval (intern, MEMC_OP_SET, NULL, key, rv, expiration);
+					}
+					/* memleak?  zval_ptr_dtor(value); */
+					ZVAL_COPY(value, val);
+				}
+			} else {
+				expiration = zval_get_long(Z_REFVAL(params[3]));
+				status = s_memc_write_zval (intern, MEMC_OP_SET, NULL, key, val, expiration);
+				/* memleak?  zval_ptr_dtor(value); */
+				ZVAL_COPY(value, val);
+			}
 		}
 	}
 	else {
@@ -783,7 +804,9 @@ zend_bool s_invoke_cache_callback(zval *zobject, zend_fcall_info *fci, zend_fcal
 	zval_ptr_dtor(&params[0]);
 	zval_ptr_dtor(&params[1]);
 	zval_ptr_dtor(&params[2]);
-	zval_ptr_dtor(&params[3]);
+	if (!with_cas) {
+		zval_ptr_dtor(&params[3]);
+	}
 	zval_ptr_dtor(&retval);
 
 	return status;
@@ -1408,7 +1431,7 @@ void php_memc_get_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 
 	if (!mget_status) {
 		if (s_memc_status_has_result_code(intern, MEMCACHED_NOTFOUND) && fci.size > 0) {
-			status = s_invoke_cache_callback(object, &fci, &fcc, key, return_value);
+			status = s_invoke_cache_callback(object, &fci, &fcc, context.extended, key, return_value);
 
 			if (!status) {
 				zval_ptr_dtor(return_value);
@@ -1488,9 +1511,15 @@ static void php_memc_getMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 	}
 
 	MEMC_METHOD_FETCH_OBJECT;
-	s_memc_set_status(intern, MEMCACHED_SUCCESS, 0);
 
 	array_init(return_value);
+	if (zend_hash_num_elements(Z_ARRVAL_P(keys)) == 0) {
+		/* BC compatible */
+		s_memc_set_status(intern, MEMCACHED_NOTFOUND, 0);
+		return;
+	}
+
+	s_memc_set_status(intern, MEMCACHED_SUCCESS, 0);
 
 	preserve_order = (flags & MEMC_GET_PRESERVE_ORDER);
 	s_hash_to_keys(&keys_out, Z_ARRVAL_P(keys), preserve_order, return_value);

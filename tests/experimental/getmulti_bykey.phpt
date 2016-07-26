@@ -11,12 +11,10 @@ $m->set('foo', 1, 10);
 $m->set('bar', 2, 10);
 $m->delete('baz');
 
-$cas = array();
-var_dump($m->getMultiByKey('foo', array('foo', 'bar', 'baz'), $cas, Memcached::GET_PRESERVE_ORDER));
+var_dump($m->getMultiByKey('foo', array('foo', 'bar', 'baz'), Memcached::GET_PRESERVE_ORDER));
 echo $m->getResultMessage(), "\n";
 
-$cas = array();
-var_dump($m->getMultiByKey('foo', array(), $cas, Memcached::GET_PRESERVE_ORDER));
+var_dump($m->getMultiByKey('foo', array(), Memcached::GET_PRESERVE_ORDER));
 echo $m->getResultMessage(), "\n";
 
 --EXPECT--
