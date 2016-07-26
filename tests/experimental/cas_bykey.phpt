@@ -8,12 +8,12 @@ include dirname(dirname(__FILE__)) . '/config.inc';
 $m = memc_get_instance ();
 
 $m->delete('cas_test');
-$cas_token = null;
 
 $m->setByKey('keffe', 'cas_test', 10);
-$v = $m->getbyKey('keffe', 'cas_test', null, $cas_token);
+$v = $m->getbyKey('keffe', 'cas_test', null, Memcached::GET_EXTENDED);
 
-if (is_null($cas_token)) {
+$cas_token = $v["cas"];
+if (empty($cas_token)) {
 	echo "Null cas token for key: cas_test value: 10\n";
 	return;
 }
