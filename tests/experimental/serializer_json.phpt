@@ -2,7 +2,7 @@
 Serialize JSON
 --SKIPIF--
 <?php
-	if (!extension_loaded("memcached")) print "skip";
+	include dirname(__FILE__) . "/skipif.inc";
 	if (!extension_loaded('json')) echo "skip no JSON loaded";
 	if (!Memcached::HAVE_JSON) echo "skip JSON support not enabled";
 ?>

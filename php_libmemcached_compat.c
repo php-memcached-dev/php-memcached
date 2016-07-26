@@ -18,35 +18,20 @@
 #include "php_memcached_private.h"
 #include "php_libmemcached_compat.h"
 
-memcached_st *php_memc_create_str (const char *str, size_t str_len)
+memcached_return php_memcached_exist (memcached_st *memc, zend_string *key)
 {
-#ifdef HAVE_LIBMEMCACHED_MEMCACHED
-	return memcached (str, str_len);
+#ifdef HAVE_MEMCACHED_EXIST
+	return memcached_exist (memc, key->val, key->len);
 #else
-	memcached_return rc;
-	memcached_st *memc;
-	memcached_server_st *servers;
+	memcached_return rc = MEMCACHED_SUCCESS;
+	uint32_t flags = 0;
+	size_t value_length = 0;
+	char *value = NULL;
 
-	memc = memcached_create(NULL);
-
-	if (!memc) {
-		return NULL;
+	value = memcached_get (memc, key->val, key->len, &value_length, &flags, &rc);
+	if (value) {
+		free (value);
 	}
-
-	servers = memcached_servers_parse (str);
-
-	if (!servers) {
-		memcached_free (memc);
-		return NULL;
-	}
-
-	rc = memcached_server_push (memc, servers);
-	memcached_server_free (servers);
-
-	if (rc != MEMCACHED_SUCCESS) {
-		memcached_free (memc);
-		return NULL;
-	}
-	return memc;
+	return rc;
 #endif
 }

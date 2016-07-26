@@ -1,11 +1,11 @@
 --TEST--
 Memcached::set()/delete() UDP
 --SKIPIF--
-<?php if (!extension_loaded("memcached")) print "skip"; ?>
+<?php include dirname(dirname(__FILE__)) . "/skipif.inc";?>
 --FILE--
 <?php
-$m = new Memcached();
-$m->addServer('127.0.0.1', 11211, 1);
+include dirname(dirname(__FILE__)) . '/config.inc';
+$m = memc_get_instance ();
 
 $m_udp = new Memcached();
 $m_udp->setOption(Memcached::OPT_USE_UDP, true);

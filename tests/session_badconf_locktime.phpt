@@ -1,7 +1,7 @@
 --TEST--
 Session bad configurations, lock wait time
 --SKIPIF--
-<?php if (!extension_loaded("memcached")) print "skip";
+<?php include dirname(__FILE__) . "/skipif.inc";
 	print "skip skip until timeout in memcached set"
 ?>
 --INI--

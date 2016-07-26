@@ -2,7 +2,7 @@
 Serializer: exception while serializing
 --SKIPIF--
 <?php
-	if (!extension_loaded("memcached")) print "skip";
+	include dirname(__FILE__) . "/skipif.inc";
 	if ($_ENV['TEST_MEMC_SERIALIZER'] == 'Memcached::SERIALIZER_JSON') {
 		echo "skip skip when using JSON";
 	}
@@ -30,8 +30,8 @@ class Foo {
 	}
 }
 
-$m = new Memcached();
-$m->addServer('localhost', 11211, 1);
+include dirname(dirname(dirname(__FILE__))) . '/config.inc';
+$m = memc_get_instance ();
 $serializer = Memcached::SERIALIZER_PHP;
 if (isset($_ENV['TEST_MEMC_SERIALIZER'])) {
 	eval(sprintf('$serializer = %s;', $_ENV['TEST_MEMC_SERIALIZER']));

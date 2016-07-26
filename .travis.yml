@@ -1,9 +1,9 @@
 language: php
 php:
-    - 5.5
-    #- 5.4
-    #- 5.3
+    - 7.0
+
 env:
+    - LIBMEMCACHED_VERSION=1.0.18
     - LIBMEMCACHED_VERSION=1.0.17
     - LIBMEMCACHED_VERSION=1.0.16
     - LIBMEMCACHED_VERSION=1.0.15
@@ -13,15 +13,25 @@ env:
     - LIBMEMCACHED_VERSION=1.0.7
     - LIBMEMCACHED_VERSION=1.0.6
     - LIBMEMCACHED_VERSION=1.0.2
-    - LIBMEMCACHED_VERSION=0.53
-    - LIBMEMCACHED_VERSION=0.49
-    - LIBMEMCACHED_VERSION=0.44
-
-services:
-  - memcached # will start memcached
+    #- LIBMEMCACHED_VERSION=0.53
+    #- LIBMEMCACHED_VERSION=0.49
+    #- LIBMEMCACHED_VERSION=0.44
+addons:
+    apt:
+        packages:
+            - sasl2-bin
+            - libsasl2-dev
 
 before_script:
     - ./.travis/travis.sh before_script $LIBMEMCACHED_VERSION
 
 script:
     - ./.travis/travis.sh script $LIBMEMCACHED_VERSION
+
+sudo: false
+
+cache:
+    directories: 
+    - $HOME/cache
+
+    

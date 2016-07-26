@@ -1,7 +1,7 @@
 --TEST--
 Memcached::getServerByKey()
 --SKIPIF--
-<?php if (!extension_loaded("memcached")) print "skip"; ?>
+<?php include "skipif.inc";?>
 --FILE--
 <?php
 error_reporting(0);

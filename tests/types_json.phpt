@@ -2,7 +2,7 @@
 Memcached store & fetch type and value correctness using JSON serializer
 --SKIPIF--
 <?php
-if (!extension_loaded("memcached")) print "skip";
+include dirname(__FILE__) . "/skipif.inc";
 if (!Memcached::HAVE_JSON) print "skip json not enabled";
 ?>
 --FILE--

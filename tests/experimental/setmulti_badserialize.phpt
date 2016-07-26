@@ -1,11 +1,11 @@
 --TEST--
 Memcached::setMultiByKey() with bad serialize
 --SKIPIF--
-<?php if (!extension_loaded("memcached")) print "skip"; ?>
+<?php include dirname(dirname(__FILE__)) . "/skipif.inc";?>
 --FILE--
 <?php
-$m = new Memcached();
-$m->addServer('localhost', 11211, 1);
+include dirname(dirname(__FILE__)) . '/config.inc';
+$m = memc_get_instance ();
 
 class Foo implements Serializable {
 	public function __sleep() {
@@ -42,6 +42,6 @@ try {
 var_dump($m->getByKey('kef', 'foo'));
 
 --EXPECT--
-
+Memcached::setMultiByKey(): failed to set key foo
 1234
 int(10)

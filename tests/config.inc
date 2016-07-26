@@ -21,7 +21,9 @@ function memc_create_instance ($host, $port, array $opts = array (), $persistent
 		echo "Failed to set options" . PHP_EOL;
 
 	$memcached->addServer($host, $port);
-	$memcached->flush ();
+	if ($memcached->flush() === false) {
+		return NULL;
+	}
 	return $memcached;
 }
 
@@ -63,4 +65,9 @@ function memc_create_combinations ($name, $serializer, $ignore_object_type = fal
 				'ignore_object_type' => $ignore_object_type
 			),
 	);
+}
+
+function memc_get_version($memc) {
+	$version = $memc->getVersion();
+	return array_pop($version);
 }

@@ -1,7 +1,7 @@
 --TEST--
 make sure that callback exception behaves correctly
 --SKIPIF--
-<?php if (!extension_loaded("memcached")) print "skip"; ?>
+<?php include "skipif.inc";?>
 --FILE--
 <?php
 
@@ -37,9 +37,10 @@ try {
 }
 
 try {
-    
-} catch (Exception $e) {
+    $m = new Memcached(null, 'throw_something');
     echo "fail\n";
+} catch (Exception $e) {
+    echo "success\n";
 }
 
 echo "OK\n";
@@ -49,4 +50,5 @@ echo "OK\n";
 success
 success
 empty_cb called
+success
 OK

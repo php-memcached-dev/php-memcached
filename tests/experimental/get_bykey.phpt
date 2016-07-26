@@ -1,11 +1,11 @@
 --TEST--
 Memcached::getByKey()
 --SKIPIF--
-<?php if (!extension_loaded("memcached")) print "skip"; ?>
+<?php include dirname(dirname(__FILE__)) . "/skipif.inc";?>
 --FILE--
 <?php
-$m = new Memcached();
-$m->addServer('localhost', 11211, 1);
+include dirname(dirname(__FILE__)) . '/config.inc';
+$m = memc_get_instance ();
 
 $m->set('foo', 1, 10);
 

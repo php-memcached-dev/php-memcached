@@ -21,18 +21,40 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <email>mkoppanen@php.net</email>
   <active>yes</active>
  </lead>
- <date>2014-04-01</date>
+ <date>2016-02-22</date>
  <version>
-  <release>2.2.0</release>
-  <api>2.2.0</api>
+  <release>3.0.0a1</release>
+  <api>3.0.0</api>
  </version>
  <stability>
-  <release>stable</release>
-  <api>stable</api>
+  <release>alpha</release>
+  <api>alpha</api>
  </stability>
  <license uri="http://www.php.net/license">PHP</license>
  <notes>
-- Added the OPT_SERVER_TIMEOUT_LIMIT behaviour
+PHP7 release of memcached extension. Note that support for libmemcached 0.x series has been discontinued
+and the oldest actively tested version is 1.0.2. It is highly recommended to use version 1.0.18 of
+libmemcached. Please note that this is a beta release and reporting any issues would be highly appreciated
+before we move closer to releasing stable version.
+
+API
+ * get commands do not take cas or user flags parameters.
+ * get and getMulti commands take Memcached::GET_EXTENDED flag to retrieve user flags and cas tokens
+ * Fixes getStats command to return all stats from all servers
+ * Fixes allKeys command behaviour
+ * Fixes error where cache callback for get command was not setting expiration time properly
+ * Added server type to server list
+ * Remove use_sasl ini-variable and initialise sasl as needed
+ * CAS tokens are returned as integers and they overflow to strings as needed
+
+Session handler
+ * Session lock algorithm updated (new ini-values memcached.sess_lock_wait_min, memcached.sess_lock_wait_max and memcached.sess_lock_retries)
+ * Session extension uses PHP allocators (still some work to do on the rest of the extension)
+ * Ini-values take effect during session_start or session_regenerate_id
+ * Fixes crash with session_regenerate_id (work-around for PHP bug)
+
+Tests
+ * Fix several problematic tests
  </notes>
  <contents>
   <dir name="/">
@@ -100,6 +122,8 @@ http://pear.php.net/dtd/package-2.0.xsd">
     <file role='test' name='session_badconf_prefix.phpt'/>
     <file role='test' name='session_badconf_servers.phpt'/>
     <file role='test' name='session_basic.phpt'/>
+    <file role='test' name='session_basic2.phpt'/>
+    <file role='test' name='session_basic3.phpt'/>
     <file role='test' name='set_large.phpt'/>
     <file role='test' name='setoptions.phpt'/>
     <file role='test' name='touch_binary.phpt'/>
@@ -135,15 +159,18 @@ http://pear.php.net/dtd/package-2.0.xsd">
     <file role='test' name='sasl_basic.phpt'/>
     <file role='test' name='getserverbykey.phpt'/>
     <file role='test' name='gh_155.phpt'/>
+    <file role='test' name='get_flags.phpt'/>
+    <file role='test' name='session_lock.phpt'/>
+    <file role='test' name='session_regenerate.phpt'/>
+    <file role='test' name='stats.phpt'/>
+    <file role='test' name='default_behavior.phpt'/>
   </dir>
  </dir>
  </contents>
  <dependencies>
   <required>
    <php>
-    <min>5.2.0</min>
-    <max>6.0.0</max>
-    <exclude>6.0.0</exclude>
+    <min>7.0.0</min>
    </php>
    <pearinstaller>
     <min>1.4.0b1</min>
@@ -155,6 +182,42 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <configureoption name="with-libmemcached-dir" default="no" prompt="libmemcached directory"/>
  </extsrcrelease>
  <changelog>
+   <release>
+      <stability>
+        <release>alpha</release>
+        <api>alpha</api>
+      </stability>
+      <version>
+        <release>3.0.0a1</release>
+        <api>3.0.0</api>
+      </version>
+      <date>2016-02-22</date>
+      <notes>
+PHP7 release of memcached extension. Note that support for libmemcached 0.x series has been discontinued
+and the oldest actively tested version is 1.0.2. It is highly recommended to use version 1.0.18 of
+libmemcached. Please note that this is a beta release and reporting any issues would be highly appreciated
+before we move closer to releasing stable version.
+
+API
+ * get commands do not take cas or user flags parameters.
+ * get and getMulti commands take Memcached::GET_EXTENDED flag to retrieve user flags and cas tokens
+ * Fixes getStats command to return all stats from all servers
+ * Fixes allKeys command behaviour
+ * Fixes error where cache callback for get command was not setting expiration time properly
+ * Added server type to server list
+ * Remove use_sasl ini-variable and initialise sasl as needed
+ * CAS tokens are returned as integers and they overflow to strings as needed
+
+Session handler
+ * Session lock algorithm updated (new ini-values memcached.sess_lock_wait_min, memcached.sess_lock_wait_max and memcached.sess_lock_retries)
+ * Session extension uses PHP allocators (still some work to do on the rest of the extension)
+ * Ini-values take effect during session_start or session_regenerate_id
+ * Fixes crash with session_regenerate_id (work-around for PHP bug)
+
+Tests
+ * Fix several problematic tests
+      </notes>
+   </release>
    <release>
    <stability><release>stable</release><api>stable</api></stability>
    <version><release>2.2.0</release><api>2.2.0</api></version>
