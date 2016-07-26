@@ -382,7 +382,7 @@ static zend_bool s_invoke_cache_callback(zval *zobject, zend_fcall_info *fci, ze
 typedef zend_bool (*php_memc_result_apply_fn)(php_memc_object_t *intern, zend_string *key, zval *value, zval *cas, uint32_t flags, void *context);
 
 static
-memcached_return php_memc_result_apply(php_memc_object_t *intern, php_memc_result_apply_fn result_apply_fn, void *context);
+memcached_return php_memc_result_apply(php_memc_object_t *intern, php_memc_result_apply_fn result_apply_fn, zend_bool fetch_delay, void *context);
 
 static
 zend_bool php_memc_mget_apply(php_memc_object_t *intern, zend_string *server_key,
@@ -579,7 +579,7 @@ uint64_t s_zval_to_uint64 (zval *cas)
 ****************************************/
 
 static
-memcached_return php_memc_result_apply(php_memc_object_t *intern, php_memc_result_apply_fn result_apply_fn, void *context)
+memcached_return php_memc_result_apply(php_memc_object_t *intern, php_memc_result_apply_fn result_apply_fn, zend_bool fetch_delay, void *context)
 {
 	memcached_result_st result, *result_ptr;
 	memcached_return rc, status = MEMCACHED_SUCCESS;
@@ -599,7 +599,7 @@ memcached_return php_memc_result_apply(php_memc_object_t *intern, php_memc_resul
 		}
 		else {
 			zend_string *key;
-			zval zv_value, zv_cas;
+			zval val, zcas;
 			zend_bool retval;
 
 			uint64_t cas;
@@ -608,7 +608,7 @@ memcached_return php_memc_result_apply(php_memc_object_t *intern, php_memc_resul
 			const char *res_key;
 			size_t res_key_len;
 			
-			if (!s_memcached_result_to_zval(intern->memc, &result, &zv_value)) {
+			if (!s_memcached_result_to_zval(intern->memc, &result, &val)) {
 				if (EG(exception)) {
 					status = MEMC_RES_PAYLOAD_FAILURE;
 					memcached_quit(intern->memc);
@@ -623,19 +623,21 @@ memcached_return php_memc_result_apply(php_memc_object_t *intern, php_memc_resul
 			cas         = memcached_result_cas(&result);
 			flags       = memcached_result_flags(&result);
 
-			s_uint64_to_zval(&zv_cas, cas);
+			s_uint64_to_zval(&zcas, cas);
 
 			key = zend_string_init (res_key, res_key_len, 0);
-			retval = result_apply_fn(intern, key, &zv_value, &zv_cas, flags, context);
+			retval = result_apply_fn(intern, key, &val, &zcas, flags, context);
 
-			zend_string_release (key);
-			zval_ptr_dtor(&zv_value);
-			zval_ptr_dtor(&zv_cas);
+			zend_string_release(key);
+			zval_ptr_dtor(&val);
+			zval_ptr_dtor(&zcas);
 
 			/* Stop iterating on false */
 			if (!retval) {
-				/* Make sure we clear our results */
-				while (memcached_fetch_result(intern->memc, &result, &rc)) {}
+				if (!fetch_delay) {
+					/* Make sure we clear our results */
+					while (memcached_fetch_result(intern->memc, &result, &rc)) {}
+				}
 				break;
 			}
 		}
@@ -692,7 +694,7 @@ zend_bool php_memc_mget_apply(php_memc_object_t *intern, zend_string *server_key
 		return 1;
 	}
 
-	status = php_memc_result_apply(intern, result_apply_fn, context);
+	status = php_memc_result_apply(intern, result_apply_fn, 0, context);
 
 	if (s_memc_status_handle_result_code(intern, status) == FAILURE) {
 		return 0;
@@ -1543,8 +1545,11 @@ void s_create_result_array(zend_string *key, zval *value, zval *cas, uint32_t fl
 	add_assoc_str_ex(return_value, ZEND_STRL("key"), zend_string_copy(key));
 	add_assoc_zval_ex(return_value, ZEND_STRL("value"), value);
 
-	add_assoc_zval_ex(return_value, ZEND_STRL("cas"), cas);
-	add_assoc_long_ex(return_value, ZEND_STRL("flags"), MEMC_VAL_GET_USER_FLAGS(flags));
+	if (Z_LVAL_P(cas)) {
+		/* BC compatible */
+		add_assoc_zval_ex(return_value, ZEND_STRL("cas"), cas);
+		add_assoc_long_ex(return_value, ZEND_STRL("flags"), MEMC_VAL_GET_USER_FLAGS(flags));
+	}
 }
 
 static
@@ -1648,7 +1653,7 @@ PHP_METHOD(Memcached, fetch)
 	s_memc_set_status(intern, MEMCACHED_SUCCESS, 0);
 
 	array_init(return_value);
-	status = php_memc_result_apply(intern, s_fetch_apply, return_value);
+	status = php_memc_result_apply(intern, s_fetch_apply, 1, return_value);
 
 	if (s_memc_status_handle_result_code(intern, status) == FAILURE) {
 		zval_ptr_dtor(return_value);
@@ -1685,7 +1690,7 @@ PHP_METHOD(Memcached, fetchAll)
 	s_memc_set_status(intern, MEMCACHED_SUCCESS, 0);
 
 	array_init(return_value);
-	status = php_memc_result_apply(intern, s_fetch_all_apply, return_value);
+	status = php_memc_result_apply(intern, s_fetch_all_apply, 0, return_value);
 
 	if (s_memc_status_handle_result_code(intern, status) == FAILURE) {
 		zval_dtor(return_value);
