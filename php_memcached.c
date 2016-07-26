@@ -1353,7 +1353,7 @@ zend_bool s_get_apply_fn(php_memc_object_t *intern, zend_string *key, zval *valu
 		add_assoc_long (context->return_value, "flags", (zend_long) MEMC_VAL_GET_USER_FLAGS(flags));
     }
 	else {
-		ZVAL_ZVAL(context->return_value, value, 1, 0);
+		ZVAL_COPY(context->return_value, value);
 	}
 	return 0; /* Stop after one */
 }
