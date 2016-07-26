@@ -195,7 +195,6 @@ ZEND_BEGIN_MODULE_GLOBALS(php_memcached)
 	/* For deprecated values */
 	zend_long no_effect;
 
-
 #ifdef HAVE_MEMCACHED_PROTOCOL
 	struct {
 		php_memc_server_cb_t callbacks [MEMC_SERVER_ON_MAX];

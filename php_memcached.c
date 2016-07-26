@@ -217,10 +217,20 @@ static inline php_memc_object_t *php_memc_fetch_object(zend_object *obj) {
 #ifdef HAVE_MEMCACHED_PROTOCOL
 
 typedef struct {
-	zend_object zo;
 	php_memc_proto_handler_t *handler;
+	zend_object zo;
 } php_memc_server_t;
 
+static inline php_memc_server_t *php_memc_server_fetch_object(zend_object *obj) {
+	return (php_memc_server_t *)((char *)obj - XtOffsetOf(php_memc_server_t, zo));
+}
+#define Z_MEMC_SERVER_P(zv) php_memc_server_fetch_object(Z_OBJ_P(zv))
+
+#ifdef ZTS
+#define MEMC_SERVER_G(v) TSRMG(php_memcached_globals_id, zend_php_memcached_globals *, server.v)
+#else
+#define MEMC_SERVER_G(v) (php_memcached_globals.server.v)
+#endif
 #endif
 
 static zend_class_entry *memcached_ce = NULL;
@@ -3276,28 +3286,24 @@ zend_object *php_memc_object_new(zend_class_entry *ce)
 
 #ifdef HAVE_MEMCACHED_PROTOCOL
 static
-void php_memc_server_free_storage(php_memc_server_t *intern)
+void php_memc_server_free_storage(zend_object *object)
 {
+	php_memc_server_t *intern = php_memc_server_fetch_object(object);
 	zend_object_std_dtor(&intern->zo);
-	efree (intern);
 }
 
-zend_object_value php_memc_server_new(zend_class_entry *ce)
+zend_object *php_memc_server_new(zend_class_entry *ce)
 {
-	zend_object_value retval;
 	php_memc_server_t *intern;
-	zval *tmp;
 
-	intern = ecalloc(1, sizeof(php_memc_server_t));
+	intern = ecalloc(1, sizeof(php_memc_server_t) + zend_object_properties_size(ce));
+
 	zend_object_std_init(&intern->zo, ce);
 	object_properties_init(&intern->zo, ce);
 
-	intern->handler = php_memc_proto_handler_new ();
+	intern->zo.handlers = &memcached_server_object_handlers;
 
-	retval.handle = zend_objects_store_put(intern, (zend_objects_store_dtor_t)zend_objects_destroy_object, (zend_objects_free_object_storage_t)php_memc_server_free_storage, NULL);
-	retval.handlers = &memcached_server_object_handlers;
-
-	return retval;
+	return &intern->zo;
 }
 #endif
 
@@ -3592,8 +3598,8 @@ void s_destroy_cb (zend_fcall_info *fci)
 {
 	if (fci->size > 0) {
 		zval_ptr_dtor(&fci->function_name);
-		if (fci->object_ptr != NULL) {
-			zval_ptr_dtor(&fci->object_ptr);
+		if (fci->object) {
+			OBJ_RELEASE(fci->object);
 		}
 	}
 }
@@ -3603,19 +3609,19 @@ PHP_METHOD(MemcachedServer, run)
 {
 	int i;
 	zend_bool rc;
-	zend *address;
+	zend_string *address;
 
 	php_memc_server_t *intern;
-	intern = Z_MEMC_OBJ_P(getThis());
+	intern = Z_MEMC_SERVER_P(getThis());
 
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "S", &address) == FAILURE) {
 		return;
 	}
 
-	rc = php_memc_proto_handler_run (intern->handler, address);
+	rc = php_memc_proto_handler_run(intern->handler, address);
 
 	for (i = MEMC_SERVER_ON_MIN + 1; i < MEMC_SERVER_ON_MAX; i++) {
-		s_destroy_cb (&MEMC_G(server.callbacks) [i].fci);
+		s_destroy_cb(&MEMC_SERVER_G(callbacks) [i].fci);
 	}
 
 	RETURN_BOOL(rc);
@@ -3638,14 +3644,14 @@ PHP_METHOD(MemcachedServer, on)
 	}
 
 	if (fci.size > 0) {
-		s_destroy_cb (&MEMC_G(server.callbacks) [event].fci);
+		s_destroy_cb (&MEMC_SERVER_G(callbacks) [event].fci);
 
-		MEMC_G(server.callbacks) [event].fci       = fci;
-		MEMC_G(server.callbacks) [event].fci_cache = fci_cache;
+		MEMC_SERVER_G(callbacks) [event].fci       = fci;
+		MEMC_SERVER_G(callbacks) [event].fci_cache = fci_cache;
 
-		Z_ADDREF_P (fci.function_name);
-		if (fci.object_ptr) {
-			Z_ADDREF_P (fci.object_ptr);
+		Z_TRY_ADDREF(fci.function_name);
+		if (fci.object) {
+			GC_REFCOUNT(fci.object)++;
 		}
 	}
 	RETURN_BOOL(rc);
@@ -4375,7 +4381,9 @@ PHP_MINIT_FUNCTION(memcached)
 
 #ifdef HAVE_MEMCACHED_PROTOCOL
 	memcpy(&memcached_server_object_handlers, zend_get_std_object_handlers(), sizeof(zend_object_handlers));
+	memcached_server_object_handlers.offset = XtOffsetOf(php_memc_server_t, zo);
 	memcached_server_object_handlers.clone_obj = NULL;
+	memcached_server_object_handlers.free_obj = php_memc_server_free_storage;
 
 	INIT_CLASS_ENTRY(ce, "MemcachedServer", memcached_server_class_methods);
 	memcached_server_ce = zend_register_internal_class(&ce);
