@@ -67,8 +67,8 @@ function install_libmemcached() {
 }
 
 function install_igbinary() {
-    git clone https://github.com/igbinary/igbinary7.git
-    pushd igbinary7
+    git clone https://github.com/igbinary/igbinary.git
+    pushd igbinary
         phpize
         ./configure
         make
