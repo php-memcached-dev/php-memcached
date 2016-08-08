@@ -189,13 +189,13 @@ class Memcached {
 
 	public function __construct( $persistent_id = '', $on_new_object_cb = null ) {}
 	
-	public function get( $key, $cache_cb = null, &$cas_token = null, &$udf_flags = null ) {}
+	public function get( $key, callable $cache_cb = null, $flags = 0) {}
 
-	public function getByKey( $server_key, $key, $cache_cb = null, &$cas_token = null, &$udf_flags = null ) {}
+	public function getByKey( $server_key, $key, callable $cache_cb = null, $flags = 0 ) {}
 
-	public function getMulti( array $keys, &$cas_tokens = null, $flags = 0, &$udf_flags = null ) {}
+	public function getMulti( array $keys, $flags = 0) {}
 
-	public function getMultiByKey( $server_key, array $keys, &$cas_tokens = null, $flags = 0, &$udf_flags = null ) {}
+	public function getMultiByKey( $server_key, array $keys, $flags = 0) {}
 
 	public function getDelayed( array $keys, $with_cas = null, $value_cb = null ) {}
 

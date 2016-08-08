@@ -38,8 +38,9 @@ libmemcached. Please note that this is a beta release and reporting any issues w
 before we move closer to releasing stable version.
 
 API
- * get commands do not take cas or user flags parameters.
- * get and getMulti commands take Memcached::GET_EXTENDED flag to retrieve user flags and cas tokens
+ * The method signature of get, getByKey, getMulti, and getMultiByKey changed.
+ * get* and getMulti* commands no longer take cas or user flags parameters.
+ * get* and getMulti* commands now take the Memcached::GET_EXTENDED flag to retrieve user flags and cas tokens.
  * Fixes getStats command to return all stats from all servers
  * Fixes allKeys command behaviour
  * Fixes error where cache callback for get command was not setting expiration time properly
@@ -48,6 +49,7 @@ API
  * CAS tokens are returned as integers and they overflow to strings as needed
 
 Session handler
+ * The session memcached protocol config name was changed, and the default protocol was changed from text to binary protocol. If your memcached setup does not support the binary protocol(e.g. if using twemproxy), then set memcached.sess_binary_protocol = Off. (Previously called memcached.sess_binary)
  * Session lock algorithm updated (new ini-values memcached.sess_lock_wait_min, memcached.sess_lock_wait_max and memcached.sess_lock_retries)
  * Session extension uses PHP allocators (still some work to do on the rest of the extension)
  * Ini-values take effect during session_start or session_regenerate_id
