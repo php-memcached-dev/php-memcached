@@ -1,7 +1,7 @@
 --TEST--
 Memcached GET_PRESERVE_ORDER flag in getMulti
 --SKIPIF--
-<?php if (!extension_loaded("memcached")) print "skip"; ?>
+<?php include "skipif.inc";?>
 --FILE--
 <?php
 include dirname (__FILE__) . '/config.inc';
@@ -21,10 +21,9 @@ foreach ($data as $k => $v) {
 	$m->set($k, $v, 3600);
 }
 
-$null = null;
 $keys = array_keys($data);
 $keys[] = 'zoo';
-$got = $m->getMulti($keys, $null, Memcached::GET_PRESERVE_ORDER);
+$got = $m->getMulti($keys, Memcached::GET_PRESERVE_ORDER);
 
 foreach ($got as $k => $v) {
 	echo "$k $v\n";

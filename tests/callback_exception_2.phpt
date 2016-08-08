@@ -1,7 +1,7 @@
 --TEST--
 Callback initializer throws and dies
 --SKIPIF--
-<?php if (!extension_loaded("memcached")) print "skip"; ?>
+<?php include "skipif.inc";?>
 --FILE--
 <?php 
 

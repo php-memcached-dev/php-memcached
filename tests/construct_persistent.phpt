@@ -1,7 +1,7 @@
 --TEST--
 persistent memcached connection
 --SKIPIF--
-<?php if (!extension_loaded("memcached")) print "skip"; ?>
+<?php include "skipif.inc";?>
 --FILE--
 <?php 
 $m1 = new Memcached('id1');

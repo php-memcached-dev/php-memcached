@@ -1,7 +1,7 @@
 --TEST--
 Memcached::addServer() unix doamin socket
 --SKIPIF--
-<?php if (!extension_loaded("memcached")) print "skip"; ?>
+<?php include dirname(dirname(__FILE__)) . "/skipif.inc";?>
 --CLEAN--
 <?php
 unlink('/tmp/memc_test_unix_socket');

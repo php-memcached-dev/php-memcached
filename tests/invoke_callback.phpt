@@ -1,7 +1,7 @@
 --TEST--
 Test that callback is invoked on new object
 --SKIPIF--
-<?php if (!extension_loaded("memcached")) print "skip"; ?>
+<?php include "skipif.inc";?>
 --FILE--
 <?php
 
@@ -13,6 +13,7 @@ function my_func(Memcached $obj, $persistent_id = null)
 }
 
 $m = new Memcached('hi', 'my_func');
+$m = new Memcached('hi', 'my_func');
 
 var_dump($m->getServerList());
 
@@ -21,11 +22,13 @@ echo "OK\n";
 --EXPECTF--
 array(1) {
   [0]=>
-  array(2) {
+  array(3) {
     ["host"]=>
-    string(9) "127.0.0.1"
+    string(9) "%s"
     ["port"]=>
-    int(11211)
+    int(%d)
+    ["type"]=>
+    string(3) "TCP"
   }
 }
 OK

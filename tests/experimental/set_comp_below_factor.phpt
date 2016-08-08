@@ -1,11 +1,11 @@
 --TEST--
 Compress below factor and fail to plain.
 --SKIPIF--
-<?php if (!extension_loaded("memcached")) print "skip"; ?>
+<?php include dirname(dirname(__FILE__)) . "/skipif.inc";?>
 --FILE--
 <?php
-$m = new Memcached();
-$m->addServer('localhost', 11211, 1);
+include dirname(dirname(__FILE__)) . '/config.inc';
+$m = memc_get_instance ();
 
 ini_set('memcached.compression_threshold', 100);
 ini_set('memcached.compression_factor', 10);

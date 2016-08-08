@@ -1,11 +1,11 @@
 --TEST--
 Memcached::getByKey() with CAS
 --SKIPIF--
-<?php if (!extension_loaded("memcached")) print "skip"; ?>
+<?php include dirname(dirname(__FILE__)) . "/skipif.inc";?>
 --FILE--
 <?php
-$m = new Memcached();
-$m->addServer('localhost', 11211, 1);
+include dirname(dirname(__FILE__)) . '/config.inc';
+$m = memc_get_instance ();
 
 function the_callback(Memcached $memc, $key, &$value) {
 	echo "called\n";
@@ -59,7 +59,7 @@ string(4) "asdf"
 float(%d)
 SUCCESS
 bool(false)
-NULL
+float(0)
 NOT FOUND
 bool(false)
 NULL

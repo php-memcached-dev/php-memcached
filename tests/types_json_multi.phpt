@@ -2,8 +2,8 @@
 Memcached multi store & multi fetch type and value correctness using JSON serializer
 --SKIPIF--
 <?php
-if (!extension_loaded("memcached")) print "skip";
-if (!Memcached::HAVE_IGBINARY) print "skip json not enabled";
+include dirname(__FILE__) . "/skipif.inc";
+if (!Memcached::HAVE_JSON) print "skip json not enabled";
 ?>
 --FILE--
 <?php

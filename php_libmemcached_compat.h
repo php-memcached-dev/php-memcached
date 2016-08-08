@@ -20,7 +20,7 @@
 /* this is the version(s) we support */
 #include <libmemcached/memcached.h>
 
-memcached_st *php_memc_create_str (const char *str, size_t str_len);
+memcached_return php_memcached_exist (memcached_st *memc, zend_string *key);
 
 #if defined(LIBMEMCACHED_VERSION_HEX) && LIBMEMCACHED_VERSION_HEX < 0x00052000
 #  define MEMCACHED_SERVER_TEMPORARILY_DISABLED (1024 << 2)

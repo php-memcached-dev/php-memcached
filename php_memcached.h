@@ -20,13 +20,14 @@
 #define PHP_MEMCACHED_H
 
 #include "php.h"
+#include "Zend/zend_smart_str.h"
 #include "main/php_config.h"
 
 #ifdef HAVE_CONFIG_H
 # include "config.h"
 #endif
 
-#define PHP_MEMCACHED_VERSION "2.2.0"
+#define PHP_MEMCACHED_VERSION "3.0.0b1"
 
 #if defined(PHP_WIN32) && defined(MEMCACHED_EXPORTS)
 #define PHP_MEMCACHED_API __declspec(dllexport)
@@ -36,7 +37,7 @@
 
 PHP_MEMCACHED_API zend_class_entry *php_memc_get_ce(void);
 PHP_MEMCACHED_API zend_class_entry *php_memc_get_exception(void);
-PHP_MEMCACHED_API zend_class_entry *php_memc_get_exception_base(int root TSRMLS_DC);
+PHP_MEMCACHED_API zend_class_entry *php_memc_get_exception_base(int root);
 
 extern zend_module_entry memcached_module_entry;
 #define phpext_memcached_ptr &memcached_module_entry
