@@ -104,11 +104,8 @@ typedef struct {
 #define SERIALIZER_DEFAULT_NAME "php"
 #endif /* HAVE_MEMCACHED_IGBINARY / HAVE_MEMCACHED_MSGPACK */
 
-#if LIBMEMCACHED_WITH_SASL_SUPPORT
-# if defined(HAVE_SASL_SASL_H)
-#  include <sasl/sasl.h>
-#  define HAVE_MEMCACHED_SASL 1
-# endif
+#ifdef HAVE_MEMCACHED_SASL
+# include <sasl/sasl.h>
 #endif
 
 #ifdef HAVE_MEMCACHED_PROTOCOL
