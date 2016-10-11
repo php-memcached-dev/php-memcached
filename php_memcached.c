@@ -190,9 +190,9 @@ static inline php_memc_object_t *php_memc_fetch_object(zend_object *obj) {
 #define Z_MEMC_OBJ_P(zv) php_memc_fetch_object(Z_OBJ_P(zv));
 
 #define MEMC_METHOD_INIT_VARS                          \
-    zval*                  object         = getThis(); \
-    php_memc_object_t*     intern         = NULL;      \
-    php_memc_user_data_t*  memc_user_data = NULL;
+	zval*                  object         = getThis(); \
+	php_memc_object_t*     intern         = NULL;      \
+	php_memc_user_data_t*  memc_user_data = NULL;
 
 #define MEMC_METHOD_FETCH_OBJECT                                                      \
 	intern = Z_MEMC_OBJ_P(object);                                                    \
@@ -1341,13 +1341,13 @@ void s_hash_to_keys(php_memc_keys_t *keys_out, HashTable *hash_in, zend_bool pre
 static
 void s_key_to_keys(php_memc_keys_t *keys_out, zend_string *key)
 {
-    zval zv_keys;
+	zval zv_keys;
 
-    array_init(&zv_keys);
-    add_next_index_str(&zv_keys, zend_string_copy(key));
+	array_init(&zv_keys);
+	add_next_index_str(&zv_keys, zend_string_copy(key));
 
-    s_hash_to_keys(keys_out, Z_ARRVAL(zv_keys), 0, NULL);
-    zval_ptr_dtor(&zv_keys);
+	s_hash_to_keys(keys_out, Z_ARRVAL(zv_keys), 0, NULL);
+	zval_ptr_dtor(&zv_keys);
 }
 
 static
@@ -1385,7 +1385,7 @@ zend_bool s_get_apply_fn(php_memc_object_t *intern, zend_string *key, zval *valu
 		add_assoc_zval (context->return_value, "value", value);
 		add_assoc_zval (context->return_value, "cas",   cas);
 		add_assoc_long (context->return_value, "flags", (zend_long) MEMC_VAL_GET_USER_FLAGS(flags));
-    }
+	}
 	else {
 		ZVAL_COPY(context->return_value, value);
 	}
@@ -1650,7 +1650,7 @@ static void php_memc_getDelayed_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_
 	MEMC_METHOD_FETCH_OBJECT;
 	s_memc_set_status(intern, MEMCACHED_SUCCESS, 0);
 
-    s_hash_to_keys(&keys_out, Z_ARRVAL_P(keys), 0, NULL);
+	s_hash_to_keys(&keys_out, Z_ARRVAL_P(keys), 0, NULL);
 
 	if (fci.size > 0) {
 		php_memc_result_callback_ctx_t context = {
@@ -1758,7 +1758,7 @@ PHP_METHOD(Memcached, setByKey)
    Sets a new expiration for the given key */
 PHP_METHOD(Memcached, touch)
 {
-    php_memc_store_impl(INTERNAL_FUNCTION_PARAM_PASSTHRU, MEMC_OP_TOUCH, 0);
+	php_memc_store_impl(INTERNAL_FUNCTION_PARAM_PASSTHRU, MEMC_OP_TOUCH, 0);
 }
 /* }}} */
 
@@ -1766,7 +1766,7 @@ PHP_METHOD(Memcached, touch)
    Sets a new expiration for the given key */
 PHP_METHOD(Memcached, touchByKey)
 {
-    php_memc_store_impl(INTERNAL_FUNCTION_PARAM_PASSTHRU, MEMC_OP_TOUCH, 1);
+	php_memc_store_impl(INTERNAL_FUNCTION_PARAM_PASSTHRU, MEMC_OP_TOUCH, 1);
 }
 /* }}} */
 #endif
@@ -2466,16 +2466,16 @@ PHP_METHOD(Memcached, getServerByKey)
    Reset the server list in use */
 PHP_METHOD(Memcached, resetServerList)
 {
-    MEMC_METHOD_INIT_VARS;
+	MEMC_METHOD_INIT_VARS;
 
 	if (zend_parse_parameters_none() == FAILURE) {
 		return;
 	}
 
-    MEMC_METHOD_FETCH_OBJECT;
+	MEMC_METHOD_FETCH_OBJECT;
 
-    memcached_servers_reset(intern->memc);
-    RETURN_TRUE;
+	memcached_servers_reset(intern->memc);
+	RETURN_TRUE;
 }
 /* }}} */
 
@@ -2483,16 +2483,16 @@ PHP_METHOD(Memcached, resetServerList)
    Close any open connections */
 PHP_METHOD(Memcached, quit)
 {
-    MEMC_METHOD_INIT_VARS;
+	MEMC_METHOD_INIT_VARS;
 
 	if (zend_parse_parameters_none() == FAILURE) {
 		return;
 	}
 
-    MEMC_METHOD_FETCH_OBJECT;
+	MEMC_METHOD_FETCH_OBJECT;
 
-    memcached_quit(intern->memc);
-    RETURN_TRUE;
+	memcached_quit(intern->memc);
+	RETURN_TRUE;
 }
 /* }}} */
 
@@ -2506,7 +2506,7 @@ PHP_METHOD(Memcached, flushBuffers)
 		return;
 	}
 
-    MEMC_METHOD_FETCH_OBJECT;
+	MEMC_METHOD_FETCH_OBJECT;
 	RETURN_BOOL(memcached_flush_buffers(intern->memc) == MEMCACHED_SUCCESS);
 }
 /* }}} */
@@ -3494,7 +3494,7 @@ zend_bool s_unserialize_value (memcached_st *memc, int val_type, zend_string *pa
 #endif
 			break;
 
-        case MEMC_VAL_IS_MSGPACK:
+		case MEMC_VAL_IS_MSGPACK:
 #ifdef HAVE_MEMCACHED_MSGPACK
 			php_msgpack_unserialize(return_value, ZSTR_VAL(payload), ZSTR_LEN(payload));
 #else
@@ -4050,7 +4050,7 @@ static zend_function_entry memcached_class_methods[] = {
 	MEMC_ME(setOptions,         arginfo_setOptions)
 	MEMC_ME(setBucket,          arginfo_setBucket)
 #ifdef HAVE_MEMCACHED_SASL
-    MEMC_ME(setSaslAuthData,    arginfo_setSaslAuthData)
+	MEMC_ME(setSaslAuthData,    arginfo_setSaslAuthData)
 #endif
 	MEMC_ME(isPersistent,       arginfo_isPersistent)
 	MEMC_ME(isPristine,         arginfo_isPristine)
@@ -4191,9 +4191,9 @@ static void php_memc_register_constants(INIT_FUNC_ARGS)
 	REGISTER_MEMC_CLASS_CONST_LONG(HAVE_JSON, 0);
 #endif
 
-    /*
-     * Indicate whether msgpack serializer is available
-     */
+	/*
+	 * Indicate whether msgpack serializer is available
+	 */
 #ifdef HAVE_MEMCACHED_MSGPACK
 	REGISTER_MEMC_CLASS_CONST_LONG(HAVE_MSGPACK, 1);
 #else
@@ -4330,7 +4330,7 @@ static void php_memc_register_constants(INIT_FUNC_ARGS)
 	REGISTER_MEMC_CLASS_CONST_LONG(SERIALIZER_IGBINARY,   SERIALIZER_IGBINARY);
 	REGISTER_MEMC_CLASS_CONST_LONG(SERIALIZER_JSON,       SERIALIZER_JSON);
 	REGISTER_MEMC_CLASS_CONST_LONG(SERIALIZER_JSON_ARRAY, SERIALIZER_JSON_ARRAY);
-    REGISTER_MEMC_CLASS_CONST_LONG(SERIALIZER_MSGPACK,    SERIALIZER_MSGPACK);
+	REGISTER_MEMC_CLASS_CONST_LONG(SERIALIZER_MSGPACK,    SERIALIZER_MSGPACK);
 
 	/*
 	 * Compression types
