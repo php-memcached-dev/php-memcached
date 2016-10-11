@@ -155,7 +155,7 @@ typedef struct {
 	zend_long store_retry_count;
 	zend_long set_udf_flags;
 
-#if HAVE_MEMCACHED_SASL
+#ifdef HAVE_MEMCACHED_SASL
 	zend_bool has_sasl_data;
 #endif
 } php_memc_user_data_t;
@@ -243,7 +243,7 @@ static zend_object_handlers memcached_server_object_handlers;
 static zend_class_entry *memcached_server_ce = NULL;
 #endif
 
-#if HAVE_SPL
+#ifdef HAVE_SPL
 static zend_class_entry *spl_ce_RuntimeException = NULL;
 #endif
 
@@ -431,7 +431,7 @@ static
 
 zend_bool php_memc_init_sasl_if_needed()
 {
-#if HAVE_MEMCACHED_SASL
+#ifdef HAVE_MEMCACHED_SASL
 	if (MEMC_G(sasl_initialised)) {
 		return 1;
 	}
@@ -3273,7 +3273,7 @@ static PHP_METHOD(Memcached, isPristine)
 static
 void php_memc_destroy(memcached_st *memc, php_memc_user_data_t *memc_user_data)
 {
-#if HAVE_MEMCACHED_SASL
+#ifdef HAVE_MEMCACHED_SASL
 	if (memc_user_data->has_sasl_data) {
 		memcached_destroy_sasl_auth_data(memc);
 	}
@@ -3597,7 +3597,7 @@ zend_class_entry *php_memc_get_exception(void)
 PHP_MEMCACHED_API
 zend_class_entry *php_memc_get_exception_base(int root)
 {
-#if HAVE_SPL
+#ifdef HAVE_SPL
 	if (!root) {
 		if (!spl_ce_RuntimeException) {
 			zend_class_entry *pce;
@@ -4311,7 +4311,7 @@ static void php_memc_register_constants(INIT_FUNC_ARGS)
 	REGISTER_MEMC_CLASS_CONST_LONG(RES_SERVER_MEMORY_ALLOCATION_FAILURE, MEMCACHED_SERVER_MEMORY_ALLOCATION_FAILURE);
 #endif
 
-#if HAVE_MEMCACHED_SASL
+#ifdef HAVE_MEMCACHED_SASL
 	REGISTER_MEMC_CLASS_CONST_LONG(RES_AUTH_PROBLEM,  MEMCACHED_AUTH_PROBLEM);
 	REGISTER_MEMC_CLASS_CONST_LONG(RES_AUTH_FAILURE,  MEMCACHED_AUTH_FAILURE);
 	REGISTER_MEMC_CLASS_CONST_LONG(RES_AUTH_CONTINUE, MEMCACHED_AUTH_CONTINUE);
@@ -4437,7 +4437,7 @@ PHP_MINIT_FUNCTION(memcached)
 /* {{{ PHP_MSHUTDOWN_FUNCTION */
 PHP_MSHUTDOWN_FUNCTION(memcached)
 {
-#if HAVE_MEMCACHED_SASL
+#ifdef HAVE_MEMCACHED_SASL
 	if (MEMC_G(sasl_initialised)) {
 		sasl_done();
 	}
@@ -4456,7 +4456,7 @@ PHP_MINFO_FUNCTION(memcached)
 	php_info_print_table_row(2, "Version", PHP_MEMCACHED_VERSION);
 	php_info_print_table_row(2, "libmemcached version", memcached_lib_version());
 
-#if HAVE_MEMCACHED_SASL
+#ifdef HAVE_MEMCACHED_SASL
 	php_info_print_table_row(2, "SASL support", "yes");
 #else
 	php_info_print_table_row(2, "SASL support", "no");
