@@ -135,6 +135,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
     <file role='test' name='sasl_basic.phpt'/>
     <file role='test' name='getserverbykey.phpt'/>
     <file role='test' name='gh_155.phpt'/>
+    <file role='test' name='getmulti_poll_timeout.phpt'/>
   </dir>
  </dir>
  </contents>
