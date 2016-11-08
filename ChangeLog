@@ -1,7 +1,17 @@
 memcached extension changelog
 
-Version 2.2.0b1
----------------
+Version 2.2.0 (2014-04-01)
+--------------------------
+	* Added the OPT_SERVER_TIMEOUT_LIMIT behaviour
+
+Version 2.2.0RC1 (2014-03-12)
+-----------------------------
+	* Added the OPT_SERVER_TIMEOUT_LIMIT behaviour
+	* Fixes incorrect size when compressing serialized objects
+	* Fixes endianess of compressed values
+
+Version 2.2.0b1 (2013-10-28)
+----------------------------
 	* Reinstate support for libememcached 0.x series
 	* Added SASL support to session handler
 	* Added Memcached::flushBuffers as per GH #78
@@ -20,28 +30,28 @@ Version 2.2.0b1
 	* Added Memcached::setBucket for virtual bucket support
 	* Added support for msgpack serialization
 	* Memcached::setSaslAuthData returns correct status on success
-    * Added support for user-defined flags in set and get operations
+	* Added support for user-defined flags in set and get operations
 
-Version 2.1.0
--------------
+Version 2.1.0 (2012-08-06)
+--------------------------
 	* Drop support for libmemcached 0.x series, now 1.0.x is required
 	* Add support for virtual bucket distribution
 	* Fix compilation against PHP 5.2
 
-Version 2.0.1
--------------
+Version 2.0.1 (2012-03-03)
+--------------------------
 	* Fix embedded version number to be not -dev
 
-Version 2.0.0
--------------
+Version 2.0.0 (2012-03-02)
+--------------------------
 	* Add touch() and touchByKey() methods
 	* Add resetServerList() and quit() methods
 	* Support binary protocol in sessions
 	* Make it work with libmemcached up to 1.0.4
 	* Test against PHP 5.4.0
 
-Version 2.0.0b2
----------------
+Version 2.0.0b2 (2011-06-24)
+----------------------------
 	* Add OPT_REMOVE_FAILED_SERVERS option.
 	* Make it work with libmemcached up to 0.49.
 	* Fix a case where invalid session ID could lock the script.
@@ -61,8 +71,8 @@ Version 2.0.0b2
 	* Make increment/decrement initialize value when it is not available (when
 	  using binary protocol)
 
-Version 2.0.0b1
----------------
+Version 2.0.0b1 (2011-03-12)
+----------------------------
 	* Add fastlz library that provides better/faster payload compression
 	* Add configure switch to enable/disable JSON serialization support
 	* Add getAllKeys() method
@@ -84,23 +94,27 @@ Version 2.0.0b1
 	* Add 'on_new' callback to constructor
 	* Add SASL support
 
-Version 1.0.1
--------------
+Version 1.0.2 (2010-05-03)
+--------------------------
+	* Fix build for libmemcached-0.39 (memcached_server_list() issue)
+
+Version 1.0.1 (2010-03-11)
+--------------------------
 	* Fix JSON API handling to account for PHP 5.2/5.3 version differences.
 	* Add memcached.sess_locking, memcached.sess_lock_wait, and
 	  memcached.sess_prefix INI entries.
 	* Add OPT_AUTO_EJECT_HOSTS option.
 
-Version 1.0.0
--------------
+Version 1.0.0 (2009-07-04)
+--------------------------
 	* First stable release.
 	* Add getResultMessage() method.
 	* Fix OPT_RECV_TIMEOUT definition.
 	* Initialize Session lock wait to max execution time (if max execution
 	  time is unlimited, default to 30 seconds).
 
-Version 0.2.0
--------------
+Version 0.2.0 (2009-06-04)
+--------------------------
 	* Add JSON serializer support, requires PHP 5.2.10+.
 	* Add HAVE_JSON and HAVE_IGBINARY class constants that indicate
 	  whether the respective serializers are available.
@@ -114,25 +128,25 @@ Version 0.2.0
 	  the cache when upgrading to this version.
 	* Add several tests.
 
-Version 0.1.5
--------------
+Version 0.1.5 (2009-03-31)
+--------------------------
 	* Implement getVersion().
 	* Add support for preserving boolean value types.
 	* Fix crash when child class does not call constructor.
 	* Fix bug #16084 (Crash when addServers is called with an associative array).
 	* ZTS compilation fixes.
 
-Version 0.1.4
--------------
+Version 0.1.4 (2009-02-13)
+--------------------------
 	* Fix compilation against PHP 5.3.
 	* Add support for 'igbinary' serializer (Oleg Grenrus)
 
-Version 0.1.3
--------------
+Version 0.1.3 (2009-02-06)
+--------------------------
 	* Bludgeon bug #15896 (Memcached setMulti error) into submission.
 
-Version 0.1.2
--------------
+Version 0.1.2 (2009-02-06)
+--------------------------
 	* Fix bug #15896 (Memcached setMulti error).
 	* Check for empty key in getServerByKey().
 	* Allow passing 'null' for callbacks.
@@ -141,12 +155,12 @@ Version 0.1.2
 	* Allow only strings as the append/prepend value.
 	* Remove expiration parameter from append/prepend.
 
-Version 0.1.1
--------------
+Version 0.1.1 (2009-02-02)
+--------------------------
 	* Add OPT_LIBKETAMA_COMPATIBLE option.
 	* Implement addServers() method.
 	* Swap internal compressed and serialized flags to be compatible with other clients.
 
-Version 0.1.0
--------------
+Version 0.1.0 (2009-01-29)
+--------------------------
 	* Initial release
