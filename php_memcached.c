@@ -49,6 +49,8 @@
 # include "ext/msgpack/php_msgpack.h"
 #endif
 
+#include <netinet/in.h>
+
 /*
  * This is needed because PHP 5.3.[01] does not install JSON_parser.h by default. This
  * constant will move into php_json.h in the future anyway.
@@ -97,9 +99,10 @@
 #define MEMC_VAL_IS_JSON       6
 #define MEMC_VAL_IS_MSGPACK    7
 
-#define MEMC_VAL_COMPRESSED          (1<<0)
-#define MEMC_VAL_COMPRESSION_ZLIB    (1<<1)
-#define MEMC_VAL_COMPRESSION_FASTLZ  (1<<2)
+#define MEMC_VAL_COMPRESSED                (1<<0)
+#define MEMC_VAL_COMPRESSION_ZLIB          (1<<1)
+#define MEMC_VAL_COMPRESSION_FASTLZ        (1<<2)
+#define MEMC_VAL_COMPRESSION_NETWORK_ORDER (1<<3)
 
 #define MEMC_VAL_GET_FLAGS(internal_flags)               ((internal_flags & MEMC_MASK_INTERNAL) >> 4)
 #define MEMC_VAL_SET_FLAG(internal_flags, internal_flag) ((internal_flags) |= ((internal_flag << 4) & MEMC_MASK_INTERNAL))
@@ -3093,10 +3096,13 @@ char *s_compress_value (enum memcached_compression_type compression_type, const 
 
 	/* Store compressed size here */
 	size_t compressed_size = 0;
-    uint32_t plen = *payload_len;
+
+	/* Convert to network order */
+	uint32_t nl_plen = htonl ((uint32_t) (*payload_len));
+	MEMC_VAL_SET_FLAG(*flags, MEMC_VAL_COMPRESSION_NETWORK_ORDER);
 
 	/* Copy the uin32_t at the beginning */
-	memcpy(buffer, &plen, sizeof(uint32_t));
+	memcpy(buffer, &nl_plen, sizeof(uint32_t));
 	buffer += sizeof(uint32_t);
 
 	switch (compression_type) {
@@ -3302,8 +3308,11 @@ char *s_decompress_value (const char *payload, size_t *payload_len, uint32_t fla
 
 	/* Stored with newer memcached extension? */
 	if (MEMC_VAL_HAS_FLAG(flags, MEMC_VAL_COMPRESSION_FASTLZ) || MEMC_VAL_HAS_FLAG(flags, MEMC_VAL_COMPRESSION_ZLIB)) {
-		/* This is copied from Ilia's patch */
 		memcpy(&len, payload, sizeof(uint32_t));
+		// Convert to host order, older versions won't have MEMC_VAL_COMPRESSION_NETWORK_ORDER set
+		if (MEMC_VAL_HAS_FLAG(flags, MEMC_VAL_COMPRESSION_NETWORK_ORDER)) {
+			len = ntohl (len);
+		}
 		buffer = emalloc(len + 1);
 		*payload_len -= sizeof(uint32_t);
 		payload += sizeof(uint32_t);
