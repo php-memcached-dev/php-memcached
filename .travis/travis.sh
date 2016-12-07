@@ -77,7 +77,7 @@ function install_igbinary() {
 }
 
 function install_msgpack() {
-    git clone https://github.com/sodabrew/msgpack-php.git
+    git clone https://github.com/msgpack/msgpack-php.git
     pushd msgpack-php
         git checkout struct_unserialize_data
         phpize
