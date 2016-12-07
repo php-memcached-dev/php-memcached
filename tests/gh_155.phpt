@@ -1,7 +1,6 @@
 --TEST--
 Test for bug 155
 --SKIPIF--
-<<<<<<< HEAD
 <?php
 $min_version = "1.4.8";
 include dirname(__FILE__) . "/skipif.inc";
