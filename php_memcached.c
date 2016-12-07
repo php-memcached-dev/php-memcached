@@ -2623,6 +2623,7 @@ memcached_return s_stat_execute_cb (php_memcached_instance_st instance, const ch
 	zend_long long_val;
 	double d_val;
 	char *buffer;
+	zval zv;
 
 	zval *return_value = (zval *) context;
 	zval *server_values;
@@ -2631,7 +2632,6 @@ memcached_return s_stat_execute_cb (php_memcached_instance_st instance, const ch
 	server_values = zend_hash_find(Z_ARRVAL_P(return_value), server_key);
 
 	if (!server_values) {
-		zval zv;
 		array_init(&zv);
 
 		server_values = zend_hash_add(Z_ARRVAL_P(return_value), server_key, &zv);
