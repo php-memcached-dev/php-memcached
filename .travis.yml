@@ -1,34 +1,33 @@
+sudo: required
+dist: trusty
+
 language: php
 php:
     - 7.0
+    - 7.1
+
+matrix:
+    fast_finish: true
+    allow_failures:
+        - php: 7.1
 
 env:
-    - LIBMEMCACHED_VERSION=1.0.18
-    - LIBMEMCACHED_VERSION=1.0.17
-    - LIBMEMCACHED_VERSION=1.0.16
-    - LIBMEMCACHED_VERSION=1.0.15
-    - LIBMEMCACHED_VERSION=1.0.14
-    - LIBMEMCACHED_VERSION=1.0.10
-    - LIBMEMCACHED_VERSION=1.0.8
-    - LIBMEMCACHED_VERSION=1.0.7
-    - LIBMEMCACHED_VERSION=1.0.6
-    - LIBMEMCACHED_VERSION=1.0.2
-    #- LIBMEMCACHED_VERSION=0.53
-    #- LIBMEMCACHED_VERSION=0.49
-    #- LIBMEMCACHED_VERSION=0.44
+    - LIBMEMCACHED_VERSION=1.0.18 # Debian Jessie / Ubuntu Xenial
+    - LIBMEMCACHED_VERSION=1.0.16 # RHEL / CentOS 7
+    - LIBMEMCACHED_VERSION=1.0.8  # Debian Wheezy / Ubuntu Trusty
+
 addons:
     apt:
         packages:
             - sasl2-bin
             - libsasl2-dev
+            - libevent-dev
 
 before_script:
     - ./.travis/travis.sh before_script $LIBMEMCACHED_VERSION
 
 script:
     - ./.travis/travis.sh script $LIBMEMCACHED_VERSION
-
-sudo: false
 
 cache:
     directories: 
