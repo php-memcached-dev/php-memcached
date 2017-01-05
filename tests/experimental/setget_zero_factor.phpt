@@ -1,11 +1,11 @@
 --TEST--
 Compress with 0 factor and get
 --SKIPIF--
-<?php if (!extension_loaded("memcached")) print "skip"; ?>
+<?php include dirname(dirname(__FILE__)) . "/skipif.inc";?>
 --FILE--
 <?php
-$m = new Memcached();
-$m->addServer('localhost', 11211, 1);
+include dirname(dirname(__FILE__)) . '/config.inc';
+$m = memc_get_instance ();
 
 ini_set('memcached.compression_factor', 0);
 $array = range(1, 20000, 1);

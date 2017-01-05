@@ -54,11 +54,12 @@ function memc_types_test ($m, $options)
 				if ($value == $actual && get_class($value) == get_class($actual))
 					continue;
 			}
-			echo "=== $types[0] ===\n";
+			echo "=== {$key} ===\n";
 			echo "Expected: ";
-			var_dump($types[1]);
+			var_dump($value);
 			echo "Actual: ";
 			var_dump($actual);
+			
 		}
 	}
 

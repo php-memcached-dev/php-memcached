@@ -1,22 +1,20 @@
 --TEST--
 Memcached::getMultiByKey()
 --SKIPIF--
-<?php if (!extension_loaded("memcached")) print "skip"; ?>
+<?php include dirname(dirname(__FILE__)) . "/skipif.inc";?>
 --FILE--
 <?php
-$m = new Memcached();
-$m->addServer('localhost', 11211, 1);
+include dirname(dirname(__FILE__)) . '/config.inc';
+$m = memc_get_instance ();
 
 $m->set('foo', 1, 10);
 $m->set('bar', 2, 10);
 $m->delete('baz');
 
-$cas = array();
-var_dump($m->getMultiByKey('foo', array('foo', 'bar', 'baz'), $cas, Memcached::GET_PRESERVE_ORDER));
+var_dump($m->getMultiByKey('foo', array('foo', 'bar', 'baz'), Memcached::GET_PRESERVE_ORDER));
 echo $m->getResultMessage(), "\n";
 
-$cas = array();
-var_dump($m->getMultiByKey('foo', array(), $cas, Memcached::GET_PRESERVE_ORDER));
+var_dump($m->getMultiByKey('foo', array(), Memcached::GET_PRESERVE_ORDER));
 echo $m->getResultMessage(), "\n";
 
 --EXPECT--

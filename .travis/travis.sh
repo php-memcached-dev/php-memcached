@@ -44,6 +44,12 @@ function validate_package_xml() {
 
 function install_libmemcached() {
 
+    if test -d "${LIBMEMCACHED_PREFIX}"
+    then
+        echo "Using cached libmemcached: ${LIBMEMCACHED_PREFIX}"
+        return
+    fi
+
     wget "https://launchpad.net/libmemcached/1.0/${LIBMEMCACHED_VERSION}/+download/libmemcached-${LIBMEMCACHED_VERSION}.tar.gz" -O libmemcached-${LIBMEMCACHED_VERSION}.tar.gz
 
     tar xvfz libmemcached-${LIBMEMCACHED_VERSION}.tar.gz
@@ -73,7 +79,6 @@ function install_igbinary() {
 function install_msgpack() {
     git clone https://github.com/msgpack/msgpack-php.git
     pushd msgpack-php
-        git checkout php5
         phpize
         ./configure
         make
@@ -81,35 +86,52 @@ function install_msgpack() {
     popd
 }
 
-function install_sasl() {
+function install_memcached() {
+    local prefix="${HOME}/cache/memcached-sasl-${MEMCACHED_VERSION}"
 
-    wget http://memcached.googlecode.com/files/memcached-1.4.15.tar.gz -O memcached-1.4.15.tar.gz
-    tar xfz memcached-1.4.15.tar.gz
+    if test -d "$prefix"
+    then
+        echo "Using cached memcached: ${prefix}"
+        return
+    fi
 
-    pushd memcached-1.4.15
-        ./configure --enable-sasl --prefix="${HOME}/memcached"
+    wget http://www.memcached.org/files/memcached-${MEMCACHED_VERSION}.tar.gz -O memcached-${MEMCACHED_VERSION}.tar.gz
+    tar xfz memcached-${MEMCACHED_VERSION}.tar.gz
+
+    pushd memcached-${MEMCACHED_VERSION}
+        ./configure --enable-sasl --enable-sasl-pwdb --prefix="${prefix}"
         make
         make install
     popd
+}
 
-    sudo apt-get install sasl2-bin
-    export SASL_CONF_PATH="${HOME}/sasl2"
+function run_memcached() {
+    local prefix="${HOME}/cache/memcached-sasl-${MEMCACHED_VERSION}"
 
-    # Create config path
+    export SASL_CONF_PATH="/tmp/sasl2"
+
+    if test -d "${SASL_CONF_PATH}"
+    then
+        rm -rf "${SASL_CONF_PATH}"
+    fi
+
     mkdir "${SASL_CONF_PATH}"
+    export MEMCACHED_SASL_PWDB="${SASL_CONF_PATH}/sasldb2"
 
     # Create configuration
     cat<<EOF > "${SASL_CONF_PATH}/memcached.conf"
 mech_list: PLAIN
 plainlog_level: 5
-sasldb_path: ${SASL_CONF_PATH}/sasldb2
+sasldb_path: ${MEMCACHED_SASL_PWDB}
 EOF
 
-    # Create password
-    echo "test" | /usr/sbin/saslpasswd2 -c memcached -a memcached -f "${SASL_CONF_PATH}/sasldb2"
+    echo "test" | /usr/sbin/saslpasswd2 -c memcached -a memcached -f "${MEMCACHED_SASL_PWDB}"
+
+    # Run normal memcached
+    "${prefix}/bin/memcached" -d -p 11211
 
     # Run memcached on port 11212 with SASL support
-    "${HOME}/memcached/bin/memcached" -S -d -p 11212
+    "${prefix}/bin/memcached" -S -d -p 11212
 }
 
 function build_php_memcached() {
@@ -129,7 +151,8 @@ function build_php_memcached() {
             sasl_flag="--enable-memcached-sasl"
         fi
 
-        ./configure --with-libmemcached-dir="$LIBMEMCACHED_PREFIX" $protocol_flag $sasl_flag --enable-memcached-json --enable-memcached-igbinary --enable-memcached-msgpack
+        # ./configure --with-libmemcached-dir="$LIBMEMCACHED_PREFIX" $protocol_flag $sasl_flag 
+        ./configure --with-libmemcached-dir="$LIBMEMCACHED_PREFIX" $protocol_flag $sasl_flag --enable-memcached-json --enable-memcached-msgpack --enable-memcached-igbinary
         make
         make install
     popd
@@ -152,30 +175,24 @@ EOF
 function run_memcached_tests() {
     export NO_INTERACTION=1
     export REPORT_EXIT_STATUS=1
-    export TEST_PHP_EXECUTABLE=`which php`
+    export TEST_PHP_EXECUTABLE=$(which php)
 
     pushd "${PHP_MEMCACHED_BUILD_DIR}/memcached-${PHP_MEMCACHED_VERSION}"
         # We have one xfail test, we run it separately
-        php run-tests.php -d extension=msgpack.so -d extension=igbinary.so -d extension=memcached.so -n ./tests/expire.phpt
+        php run-tests.php -d extension=memcached.so -n ./tests/expire.phpt
         rm ./tests/expire.phpt
 
         # Run normal tests
-        php run-tests.php -d extension=msgpack.so -d extension=igbinary.so -d extension=memcached.so -n ./tests/*.phpt
+        php run-tests.php --show-diff -d extension=modules/memcached.so -d extension=msgpack.so -d extension=igbinary.so -n ./tests/*.phpt
         retval=$?
-        for i in `ls tests/*.out 2>/dev/null`; do
-            echo "-- START ${i}";
-            cat $i;
-            echo "";
-            echo "-- END";
-        done
     popd
-
     return $retval;
 }
 
 # Command line arguments
 ACTION=$1
 LIBMEMCACHED_VERSION=$2
+MEMCACHED_VERSION="1.4.25"
 
 if test "x$ACTION" = "x"; then
     echo "Usage: $0 <action> <libmemcached version>"
@@ -187,11 +204,15 @@ if test "x$LIBMEMCACHED_VERSION" = "x"; then
     exit 1
 fi
 
+if test "x$3" != "x"; then
+    MEMCACHED_VERSION=$3
+fi
+
 # the extension version
 PHP_MEMCACHED_VERSION=$(php -r '$sxe = simplexml_load_file ("package.xml"); echo (string) $sxe->version->release;')
 
 # Libmemcached install dir
-LIBMEMCACHED_PREFIX="${HOME}/libmemcached-${LIBMEMCACHED_VERSION}"
+LIBMEMCACHED_PREFIX="${HOME}/cache/libmemcached-${LIBMEMCACHED_VERSION}"
 
 # Where to do the build
 PHP_MEMCACHED_BUILD_DIR="/tmp/php-memcached-build"
@@ -216,13 +237,11 @@ case $ACTION in
         # Install igbinary extension
         install_igbinary
 
-        # install msgpack
+        # Install msgpack extension
         install_msgpack
-        
-        # install SASL
-        if test "x$ENABLE_SASL" = "xyes"; then
-            install_sasl
-        fi
+
+        install_memcached
+        run_memcached
     ;;
 
     script)

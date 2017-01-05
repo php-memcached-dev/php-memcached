@@ -41,7 +41,7 @@
 #include <ext/standard/info.h>
 #include <zend_extensions.h>
 #include <zend_exceptions.h>
-#include <ext/standard/php_smart_str.h>
+#include <ext/standard/php_smart_string.h>
 #include <ext/standard/php_var.h>
 #include <ext/standard/basic_functions.h>
 
@@ -75,29 +75,37 @@ typedef unsigned long int uint32_t;
 /****************************************
   Structures and definitions
 ****************************************/
-enum memcached_serializer {
-	SERIALIZER_PHP = 1,
-	SERIALIZER_IGBINARY = 2,
-	SERIALIZER_JSON = 3,
+typedef enum {
+	SERIALIZER_PHP        = 1,
+	SERIALIZER_IGBINARY   = 2,
+	SERIALIZER_JSON       = 3,
 	SERIALIZER_JSON_ARRAY = 4,
-	SERIALIZER_MSGPACK = 5,
-};
-#ifdef HAVE_MEMCACHED_IGBINARY
-#define SERIALIZER_DEFAULT SERIALIZER_IGBINARY
-#define SERIALIZER_DEFAULT_NAME "igbinary"
-#elif HAVE_MEMCACHED_MSGPACK
-#define SERIALIZER_DEFAULT SERIALIZER_MSGPACK
-#define SERIALIZER_DEFAULT_NAME "msgpack"
+	SERIALIZER_MSGPACK    = 5
+} php_memc_serializer_type;
+
+typedef enum {
+	COMPRESSION_TYPE_ZLIB   = 1,
+	COMPRESSION_TYPE_FASTLZ = 2
+} php_memc_compression_type;
+
+typedef struct {
+	const char *name;
+	php_memc_serializer_type type;
+} php_memc_serializer;
+
+#if defined(HAVE_MEMCACHED_IGBINARY)
+# define SERIALIZER_DEFAULT SERIALIZER_IGBINARY
+# define SERIALIZER_DEFAULT_NAME "igbinary"
+#elif defined(HAVE_MEMCACHED_MSGPACK)
+# define SERIALIZER_DEFAULT SERIALIZER_MSGPACK
+# define SERIALIZER_DEFAULT_NAME "msgpack"
 #else
-#define SERIALIZER_DEFAULT SERIALIZER_PHP
-#define SERIALIZER_DEFAULT_NAME "php"
+# define SERIALIZER_DEFAULT SERIALIZER_PHP
+# define SERIALIZER_DEFAULT_NAME "php"
 #endif /* HAVE_MEMCACHED_IGBINARY / HAVE_MEMCACHED_MSGPACK */
 
-#if LIBMEMCACHED_WITH_SASL_SUPPORT
-# if defined(HAVE_SASL_SASL_H)
-#  include <sasl/sasl.h>
-#  define HAVE_MEMCACHED_SASL 1
-# endif
+#ifdef HAVE_MEMCACHED_SASL
+# include <sasl/sasl.h>
 #endif
 
 #ifdef HAVE_MEMCACHED_PROTOCOL
@@ -129,46 +137,67 @@ typedef struct {
 #endif
 
 ZEND_BEGIN_MODULE_GLOBALS(php_memcached)
+
 #ifdef HAVE_MEMCACHED_SESSION
-	zend_bool sess_locking_enabled;
-	long  sess_lock_wait;
-	long  sess_lock_max_wait;
-	long  sess_lock_expire;
-	char* sess_prefix;
-	zend_bool sess_locked;
-	char* sess_lock_key;
-	int   sess_lock_key_len;
+	/* Session related variables */
+	struct {
+		zend_bool lock_enabled;
+		zend_long lock_wait_max;
+		zend_long lock_wait_min;
+		zend_long lock_retries;
+		zend_long lock_expiration;
 
-	int   sess_number_of_replicas;
-	zend_bool sess_randomize_replica_read;
-	zend_bool sess_remove_failed_enabled;
-	long  sess_connect_timeout;
-	zend_bool sess_consistent_hash_enabled;
-	zend_bool sess_binary_enabled;
+		zend_bool binary_protocol_enabled;
+		zend_bool consistent_hash_enabled;
 
-#if HAVE_MEMCACHED_SASL
-	char *sess_sasl_username;
-	char *sess_sasl_password;
-	zend_bool sess_sasl_data;
+		zend_long server_failure_limit;
+		zend_long number_of_replicas;
+		zend_bool randomize_replica_read_enabled;
+		zend_bool remove_failed_servers_enabled;
+
+		zend_long connect_timeout;
+
+		char *prefix;
+		zend_bool persistent_enabled;
+
+		char *sasl_username;
+		char *sasl_password;
+	} session;
 #endif
-#endif
-	char *serializer_name;
-	enum memcached_serializer serializer;
 
-	char *compression_type;
-	int   compression_type_real;
-	int   compression_threshold;
+	struct {
+		char     *serializer_name;
+		char     *compression_name;
+		zend_long compression_threshold;
+		double    compression_factor;
+		zend_long store_retry_count;
 
-	double compression_factor;
-#if HAVE_MEMCACHED_SASL
-	zend_bool use_sasl;
-#endif
+		/* Converted values*/
+		php_memc_serializer_type  serializer_type;
+		php_memc_compression_type compression_type;
+
+		/* Whether we have initialised sasl for this process */
+		zend_bool sasl_initialised;
+
+		struct {
+
+			zend_bool consistent_hash_enabled;
+			zend_bool binary_protocol_enabled;
+			zend_long connect_timeout;
+
+		} default_behavior;
+
+	} memc;
+
+	/* For deprecated values */
+	zend_long no_effect;
+
 #ifdef HAVE_MEMCACHED_PROTOCOL
 	struct {
 		php_memc_server_cb_t callbacks [MEMC_SERVER_ON_MAX];
 	} server;
 #endif
-	long store_retry_count;
+
 ZEND_END_MODULE_GLOBALS(php_memcached)
 
 PHP_RINIT_FUNCTION(memcached);
@@ -177,20 +206,11 @@ PHP_MINIT_FUNCTION(memcached);
 PHP_MSHUTDOWN_FUNCTION(memcached);
 PHP_MINFO_FUNCTION(memcached);
 
-#ifdef ZTS
-#define MEMC_G(v) TSRMG(php_memcached_globals_id, zend_php_memcached_globals *, v)
-#else
-#define MEMC_G(v) (php_memcached_globals.v)
-#endif
+char *php_memc_printable_func (zend_fcall_info *fci, zend_fcall_info_cache *fci_cache);
 
-typedef struct {
-	memcached_st *memc_sess;
-	zend_bool is_persistent;
-} memcached_sess;
+memcached_return php_memcached_exist (memcached_st *memc, zend_string *key);
 
-int php_memc_sess_list_entry(void);
-
-char *php_memc_printable_func (zend_fcall_info *fci, zend_fcall_info_cache *fci_cache TSRMLS_DC);
+zend_bool php_memc_init_sasl_if_needed();
 
 #endif /* PHP_MEMCACHED_PRIVATE_H */
 

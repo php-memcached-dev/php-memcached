@@ -1,11 +1,11 @@
 --TEST--
 Memcached::get()
 --SKIPIF--
-<?php if (!extension_loaded("memcached")) print "skip"; ?>
+<?php include dirname(dirname(__FILE__)) . "/skipif.inc";?>
 --FILE--
 <?php
-$m = new Memcached();
-$m->addServer('localhost', 11211, 1);
+include dirname(dirname(__FILE__)) . '/config.inc';
+$m = memc_get_instance ();
 
 $m->delete('foo');
 
@@ -30,4 +30,4 @@ A BAD KEY WAS PROVIDED/CHARACTERS OUT OF RANGE
 string(4) "asdf"
 SUCCESS
 bool(false)
-NOT FOUND
+A BAD KEY WAS PROVIDED/CHARACTERS OUT OF RANGE

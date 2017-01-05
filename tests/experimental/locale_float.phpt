@@ -2,14 +2,15 @@
 Float should not consider locale
 --SKIPIF--
 <?php
-	if (!extension_loaded("memcached")) die("skip extension not loaded";
-	if (!setlocale(LC_NUMERIC, "fi_FI", 'sv_SV', 'nl_NL')) {
-		die("skip no suitable locale");
-	}
+include dirname(dirname(__FILE__)) . "/skipif.inc";
+if (!setlocale(LC_NUMERIC, "fi_FI", 'sv_SV', 'nl_NL')) {
+	die("skip no suitable locale");
+}
 --FILE--
 <?php
-$memcache = new Memcached();
-$memcache->addServer('127.0.0.1', 11211);
+
+include dirname(dirname(__FILE__)) . '/config.inc';
+$memcache = memc_get_instance ();
 
 setlocale(LC_NUMERIC,
 	"fi_FI", 'sv_SV', 'nl_NL');

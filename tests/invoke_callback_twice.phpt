@@ -1,7 +1,7 @@
 --TEST--
 Test that callback is invoked on new object only once
 --SKIPIF--
-<?php if (!extension_loaded("memcached")) print "skip"; ?>
+<?php include "skipif.inc";?>
 --FILE--
 <?php
 

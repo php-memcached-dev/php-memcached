@@ -1,7 +1,7 @@
 --TEST--
 Memcached result codes.
 --SKIPIF--
-<?php if (!extension_loaded("memcached")) print "skip"; ?>
+<?php include "skipif.inc";?>
 --FILE--
 <?php
 include dirname (__FILE__) . '/config.inc';
@@ -23,6 +23,7 @@ $m->delete('bar_foo');
 echo $m->getResultCode(), "\n";
 echo $m->getResultMessage(), "\n";
 
+$m->set ('asdf_a', 'aa');
 $m->getMulti(array('asdf_a', 'jkhjkhjkb', 'nbahsdgc'));
 echo $m->getResultMessage(), "\n";
 $code = $m->getResultCode();

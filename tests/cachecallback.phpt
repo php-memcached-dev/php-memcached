@@ -1,7 +1,7 @@
 --TEST--
 Memcached::get() with cache callback
 --SKIPIF--
-<?php if (!extension_loaded("memcached")) print "skip"; ?>
+<?php include "skipif.inc";?>
 --FILE--
 <?php
 include dirname (__FILE__) . '/config.inc';
@@ -12,6 +12,10 @@ $runs = 0;
 $first_key  = uniqid ('cache_test_');
 $second_key = uniqid ('cache_test_');
 $third_key  = uniqid ('cache_test_');
+
+$m->delete($first_key);
+$m->delete($second_key);
+$m->delete($third_key);
 
 var_dump (
 $m->get ($first_key, function (Memcached $memc, $key, &$value, &$expiration) {
