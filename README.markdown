@@ -22,9 +22,17 @@ Building
 Dependencies
 ------------
 
-php-memcached 3.x releases support PHP 7.0 - 7.1, and require libmemcached 1.x or higher, and optionally support igbinary 2.0 or higher.
+php-memcached 3.x:
+* Supports PHP 7.0 - 7.1.
+* Requires libmemcached 1.x or higher.
+* Optionally supports igbinary 2.0 or higher.
+* Optionally supports msgpack 2.0 or higher.
 
-php-memcached 2.x releases support PHP 5.2 - 5.6, and require libmemcached 0.44 or higher, and optionally support igbinary 1.0 or higher.
+php-memcached 2.x:
+* Supports PHP 5.2 - 5.6.
+* Requires libmemcached 0.44 or higher.
+* Optionally supports igbinary 1.0 or higher.
+* Optionally supports msgpack 0.5 or higher.
 
 [libmemcached](http://libmemcached.org/libMemcached.html) version 1.0.16 or
 higher is recommended for best performance and compatibility with memcached
@@ -35,3 +43,9 @@ binary serializer for PHP data structures. When installing php-memcached from
 source code, the igbinary module must be installed first so that php-memcached
 can access its C header files. Load both modules in your `php.ini` at runtime
 to begin using igbinary.
+
+[msgpack](https://msgpack.org) is a faster and more compact data structure
+representation that is interoperable with msgpack implementations for other
+languages. When installing php-memcached from source code, the msgpack module
+must be installed first so that php-memcached can access its C header files.
+Load both modules in your `php.ini` at runtime to begin using msgpack.
