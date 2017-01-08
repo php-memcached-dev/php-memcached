@@ -57,3 +57,4 @@ typedef memcached_server_instance_st php_memcached_instance_st;
 #endif
 
 #endif
+typedef const struct memcached_instance_st *memcached_server_instance_st;

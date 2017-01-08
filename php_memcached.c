@@ -2458,6 +2458,7 @@ PHP_METHOD(Memcached, getServerByKey)
 	array_init(return_value);
 	add_assoc_string(return_value, "host", (char*) memcached_server_name(server_instance));
 	add_assoc_long(return_value, "port", memcached_server_port(server_instance));
+    /* TODO: can't find a memcached_server_weight() call, we don't use weights, so 0? */
 	add_assoc_long(return_value, "weight", 0);
 }
 /* }}} */
