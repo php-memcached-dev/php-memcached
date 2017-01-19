@@ -2867,7 +2867,7 @@ int php_memc_set_option(php_memc_object_t *intern, long option, zval *value)
 			char tmp[MEMCACHED_PREFIX_KEY_MAX_SIZE - 1];
 #endif
 			str = zval_get_string(value);
-			if (ZSTR_VAL(str) == 0) {
+			if (ZSTR_LEN(str) == 0) {
 				key = NULL;
 			} else {
 				/*
