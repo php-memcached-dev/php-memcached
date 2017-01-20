@@ -58,5 +58,5 @@ bool(false)
 
 Warning: session_start(): Unable to clear session lock record in %s on line %d
 
-Warning: session_start(): Failed to read session data: memcached (path: 127.0.0.1:11211) in /mnt/serve-a-lot_arjen/checkouts/php-memcached/tests/session_lock-php71.php on line 27
+Warning: session_start(): Failed to read session data: memcached (path: 127.0.0.1:11211) in %s on line %d
 OK
