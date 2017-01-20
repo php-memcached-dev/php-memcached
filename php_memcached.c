@@ -1753,7 +1753,6 @@ PHP_METHOD(Memcached, setByKey)
 }
 /* }}} */
 
-#ifdef HAVE_MEMCACHED_TOUCH
 /* {{{ Memcached::touch(string key, [, int expiration ])
    Sets a new expiration for the given key */
 PHP_METHOD(Memcached, touch)
@@ -1769,8 +1768,6 @@ PHP_METHOD(Memcached, touchByKey)
 	php_memc_store_impl(INTERNAL_FUNCTION_PARAM_PASSTHRU, MEMC_OP_TOUCH, 1);
 }
 /* }}} */
-#endif
-
 
 /* {{{ Memcached::setMulti(array items [, int expiration  ])
    Sets the keys/values specified in the items array */
@@ -2305,17 +2302,7 @@ PHP_METHOD(Memcached, addServer)
 	MEMC_METHOD_FETCH_OBJECT;
 	s_memc_set_status(intern, MEMCACHED_SUCCESS, 0);
 
-#if defined(LIBMEMCACHED_VERSION_HEX) && LIBMEMCACHED_VERSION_HEX < 0x01000002
-	if (ZSTR_VAL(host)[0] == '/') { /* unix domain socket */
-		status = memcached_server_add_unix_socket_with_weight(intern->memc, ZSTR_VAL(host), weight);
-	} else if (memcached_behavior_get(intern->memc, MEMCACHED_BEHAVIOR_USE_UDP)) {
-		status = memcached_server_add_udp_with_weight(intern->memc, ZSTR_VAL(host), port, weight);
-	} else {
-		status = memcached_server_add_with_weight(intern->memc, ZSTR_VAL(host), port, weight);
-	}
-#else
 	status = memcached_server_add_with_weight(intern->memc, ZSTR_VAL(host), port, weight);
-#endif
 
 	if (s_memc_status_handle_result_code(intern, status) == FAILURE) {
 		RETURN_FALSE;
@@ -2511,7 +2498,6 @@ PHP_METHOD(Memcached, flushBuffers)
 }
 /* }}} */
 
-#ifdef HAVE_LIBMEMCACHED_CHECK_CONFIGURATION
 /* {{{ Memcached::getLastErrorMessage()
    Returns the last error message that occurred */
 PHP_METHOD(Memcached, getLastErrorMessage)
@@ -2559,7 +2545,6 @@ PHP_METHOD(Memcached, getLastErrorErrno)
 	RETURN_LONG(memcached_last_error_errno(intern->memc));
 }
 /* }}} */
-#endif
 
 /* {{{ Memcached::getLastDisconnectedServer()
    Returns the last disconnected server
@@ -2794,11 +2779,7 @@ static PHP_METHOD(Memcached, getOption)
 
 			result = memcached_callback_get(intern->memc, MEMCACHED_CALLBACK_PREFIX_KEY, &retval);
 			if (retval == MEMCACHED_SUCCESS && result) {
-#if defined(LIBMEMCACHED_VERSION_HEX) && LIBMEMCACHED_VERSION_HEX == 0x00049000
-				RETURN_STRINGL(result, strlen(result));
-#else
 				RETURN_STRING(result);
-#endif
 			} else {
 				RETURN_EMPTY_STRING();
 			}
@@ -2863,23 +2844,11 @@ int php_memc_set_option(php_memc_object_t *intern, long option, zval *value)
 		{
 			zend_string *str;
 			char *key;
-#if defined(LIBMEMCACHED_VERSION_HEX) && LIBMEMCACHED_VERSION_HEX == 0x00049000
-			char tmp[MEMCACHED_PREFIX_KEY_MAX_SIZE - 1];
-#endif
 			str = zval_get_string(value);
 			if (ZSTR_LEN(str) == 0) {
 				key = NULL;
 			} else {
-				/*
-				   work-around a bug in libmemcached in version 0.49 that truncates the trailing
-				   character of the key prefix, to avoid the issue we pad it with a '0'
-				*/
-#if defined(LIBMEMCACHED_VERSION_HEX) && LIBMEMCACHED_VERSION_HEX == 0x00049000
-				snprintf(tmp, sizeof(tmp), "%s0", ZSTR_VAL(str));
-				key = tmp;
-#else
 				key = ZSTR_VAL(str);
-#endif
 			}
 			if (memcached_callback_set(intern->memc, MEMCACHED_CALLBACK_PREFIX_KEY, key) == MEMCACHED_BAD_KEY_PROVIDED) {
 				zend_string_release(str);
@@ -2908,14 +2877,9 @@ int php_memc_set_option(php_memc_object_t *intern, long option, zval *value)
 			 * (non-weighted) case. We have to clean up ourselves.
 			 */
 			if (!lval) {
-#if defined(LIBMEMCACHED_VERSION_HEX) && LIBMEMCACHED_VERSION_HEX > 0x00037000
-			(void)memcached_behavior_set_key_hash(intern->memc, MEMCACHED_HASH_DEFAULT);
-			(void)memcached_behavior_set_distribution_hash(intern->memc, MEMCACHED_HASH_DEFAULT);
-			(void)memcached_behavior_set_distribution(intern->memc, MEMCACHED_DISTRIBUTION_MODULA);
-#else
-				intern->memc->hash = 0;
-				intern->memc->distribution = 0;
-#endif
+				(void)memcached_behavior_set_key_hash(intern->memc, MEMCACHED_HASH_DEFAULT);
+				(void)memcached_behavior_set_distribution_hash(intern->memc, MEMCACHED_HASH_DEFAULT);
+				(void)memcached_behavior_set_distribution(intern->memc, MEMCACHED_DISTRIBUTION_MODULA);
 			}
 			break;
 
@@ -3997,10 +3961,10 @@ static zend_function_entry memcached_class_methods[] = {
 
 	MEMC_ME(set,                arginfo_set)
 	MEMC_ME(setByKey,           arginfo_setByKey)
-#ifdef HAVE_MEMCACHED_TOUCH
+
 	MEMC_ME(touch,              arginfo_touch)
 	MEMC_ME(touchByKey,         arginfo_touchByKey)
-#endif
+
 	MEMC_ME(setMulti,           arginfo_setMulti)
 	MEMC_ME(setMultiByKey,      arginfo_setMultiByKey)
 
@@ -4032,11 +3996,10 @@ static zend_function_entry memcached_class_methods[] = {
 	MEMC_ME(quit,               arginfo_quit)
 	MEMC_ME(flushBuffers,       arginfo_flushBuffers)
 
-#if defined(LIBMEMCACHED_VERSION_HEX) && LIBMEMCACHED_VERSION_HEX >= 0x00049000
 	MEMC_ME(getLastErrorMessage,		arginfo_getLastErrorMessage)
 	MEMC_ME(getLastErrorCode,		arginfo_getLastErrorCode)
 	MEMC_ME(getLastErrorErrno,		arginfo_getLastErrorErrno)
-#endif
+
 	MEMC_ME(getLastDisconnectedServer,	arginfo_getLastDisconnectedServer)
 
 	MEMC_ME(getStats,           arginfo_getStats)
@@ -4229,9 +4192,8 @@ static void php_memc_register_constants(INIT_FUNC_ARGS)
 	REGISTER_MEMC_CLASS_CONST_LONG(OPT_DISTRIBUTION, MEMCACHED_BEHAVIOR_DISTRIBUTION);
 	REGISTER_MEMC_CLASS_CONST_LONG(DISTRIBUTION_MODULA, MEMCACHED_DISTRIBUTION_MODULA);
 	REGISTER_MEMC_CLASS_CONST_LONG(DISTRIBUTION_CONSISTENT, MEMCACHED_DISTRIBUTION_CONSISTENT);
-#if defined(LIBMEMCACHED_VERSION_HEX) && LIBMEMCACHED_VERSION_HEX >= 0x00049000
 	REGISTER_MEMC_CLASS_CONST_LONG(DISTRIBUTION_VIRTUAL_BUCKET, MEMCACHED_DISTRIBUTION_VIRTUAL_BUCKET);
-#endif
+
 	REGISTER_MEMC_CLASS_CONST_LONG(OPT_LIBKETAMA_COMPATIBLE, MEMCACHED_BEHAVIOR_KETAMA_WEIGHTED);
 	REGISTER_MEMC_CLASS_CONST_LONG(OPT_LIBKETAMA_HASH, MEMCACHED_BEHAVIOR_KETAMA_HASH);
 	REGISTER_MEMC_CLASS_CONST_LONG(OPT_TCP_KEEPALIVE, MEMCACHED_BEHAVIOR_TCP_KEEPALIVE);
@@ -4257,14 +4219,10 @@ static void php_memc_register_constants(INIT_FUNC_ARGS)
 	REGISTER_MEMC_CLASS_CONST_LONG(OPT_SORT_HOSTS, MEMCACHED_BEHAVIOR_SORT_HOSTS);
 	REGISTER_MEMC_CLASS_CONST_LONG(OPT_VERIFY_KEY, MEMCACHED_BEHAVIOR_VERIFY_KEY);
 	REGISTER_MEMC_CLASS_CONST_LONG(OPT_USE_UDP, MEMCACHED_BEHAVIOR_USE_UDP);
-#if defined(LIBMEMCACHED_VERSION_HEX) && LIBMEMCACHED_VERSION_HEX >= 0x00037000
 	REGISTER_MEMC_CLASS_CONST_LONG(OPT_NUMBER_OF_REPLICAS, MEMCACHED_BEHAVIOR_NUMBER_OF_REPLICAS);
 	REGISTER_MEMC_CLASS_CONST_LONG(OPT_RANDOMIZE_REPLICA_READ, MEMCACHED_BEHAVIOR_RANDOMIZE_REPLICA_READ);
-#endif
-#ifdef HAVE_MEMCACHED_BEHAVIOR_REMOVE_FAILED_SERVERS
 	REGISTER_MEMC_CLASS_CONST_LONG(OPT_REMOVE_FAILED_SERVERS, MEMCACHED_BEHAVIOR_REMOVE_FAILED_SERVERS);
-#endif
-#ifdef HAVE_MEMCACHED_BEHAVIOR_SERVER_TIMEOUT_LIMIT
+#if defined(LIBMEMCACHED_VERSION_HEX) && LIBMEMCACHED_VERSION_HEX >= 0x01000018
 	REGISTER_MEMC_CLASS_CONST_LONG(OPT_SERVER_TIMEOUT_LIMIT, MEMCACHED_BEHAVIOR_SERVER_TIMEOUT_LIMIT);
 #endif
 
