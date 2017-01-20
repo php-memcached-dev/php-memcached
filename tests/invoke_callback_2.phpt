@@ -19,7 +19,7 @@ function init_cb_fail($m, $id) {
 }
 
 function init_cb_arg($m, $id) {
-    var_dump(func_num_args());
+	var_dump(func_num_args());
 	var_dump($id);
 }
 
@@ -34,7 +34,7 @@ class Foo extends Memcached {
 	}
 
 	function init($obj, $id) {
-	    var_dump(func_num_args());
+		var_dump(func_num_args());
 		var_dump($this->isPristine());
 		var_dump($this->isPersistent());
 		var_dump($id);
