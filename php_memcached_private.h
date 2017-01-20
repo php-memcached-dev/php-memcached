@@ -25,7 +25,13 @@
 # include "config.h"
 #endif
 
-#include "php_libmemcached_compat.h"
+#include <libmemcached/memcached.h>
+
+#if defined(LIBMEMCACHED_VERSION_HEX) && LIBMEMCACHED_VERSION_HEX >= 0x01000017
+typedef const memcached_instance_st * php_memcached_instance_st;
+#else
+typedef memcached_server_instance_st php_memcached_instance_st;
+#endif
 
 #include <stdlib.h>
 #include <string.h>
@@ -207,8 +213,6 @@ PHP_MSHUTDOWN_FUNCTION(memcached);
 PHP_MINFO_FUNCTION(memcached);
 
 char *php_memc_printable_func (zend_fcall_info *fci, zend_fcall_info_cache *fci_cache);
-
-memcached_return php_memcached_exist (memcached_st *memc, zend_string *key);
 
 zend_bool php_memc_init_sasl_if_needed();
 
