@@ -165,6 +165,7 @@ Tests
     <file role='test' name='stats.phpt'/>
     <file role='test' name='default_behavior.phpt'/>
     <file role='test' name='reset_keyprefix.phpt'/>
+    <file role='test' name='session_lock-php71.phpt'/>
   </dir>
  </dir>
  </contents>

@@ -5,7 +5,7 @@ Session lock
 include dirname(__FILE__) . "/skipif.inc"; 
 if (!Memcached::HAVE_SESSION) print "skip";
 
-if (PHP_VERSION_ID >= 70100) print "skip";
+if (PHP_VERSION_ID < 70100) print "skip";
 ?>
 --INI--
 memcached.sess_locking       = true
@@ -57,4 +57,6 @@ string(1) "1"
 bool(false)
 
 Warning: session_start(): Unable to clear session lock record in %s on line %d
+
+Warning: session_start(): Failed to read session data: memcached (path: 127.0.0.1:11211) in %s on line %d
 OK
