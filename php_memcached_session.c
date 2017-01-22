@@ -113,7 +113,7 @@ time_t s_lock_expiration()
 		return s_adjust_expiration(MEMC_SESS_INI(lock_expiration));
 	}
 	else {
-		zend_long max_execution_time = zend_ini_long(ZEND_STRS("max_execution_time"), 0);
+		zend_long max_execution_time = zend_ini_long(ZEND_STRL("max_execution_time"), 0);
 		if (max_execution_time > 0) {
 			return s_adjust_expiration(max_execution_time);
 		}
