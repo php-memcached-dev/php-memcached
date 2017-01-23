@@ -3353,7 +3353,7 @@ memcached_return s_server_cursor_version_cb(const memcached_st *ptr, php_memcach
 				instance->micro_version);
 #endif
 
-	address = strpprintf(0, "%s:%d", memcached_server_name(instance), memcached_server_port(instance) - 1);
+	address = strpprintf(0, "%s:%d", memcached_server_name(instance), memcached_server_port(instance));
 
 	ZVAL_STR(&rv, version);
 	zend_hash_add(Z_ARRVAL_P(return_value), address, &rv);
