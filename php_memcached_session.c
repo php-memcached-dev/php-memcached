@@ -442,6 +442,7 @@ PS_READ_FUNC(memcached)
 		*val = ZSTR_EMPTY_ALLOC();
 		return SUCCESS;
 	} else {
+		php_error_docref(NULL TSRMLS_CC, E_WARNING, "error getting session from memcached: %s", memcached_last_error_message(memc_sess->memc_sess));
 		return FAILURE;
 	}
 }
@@ -470,6 +471,8 @@ PS_WRITE_FUNC(memcached)
 	do {
 		if (memcached_set(memc, key->val, key->len, val->val, val->len, expiration, 0) == MEMCACHED_SUCCESS) {
 			return SUCCESS;
+		} else {
+			php_error_docref(NULL TSRMLS_CC, E_WARNING, "error saving session to memcached: %s", memcached_last_error_message(memc_sess->memc_sess));
 		}
 	} while (--retries > 0);
 
