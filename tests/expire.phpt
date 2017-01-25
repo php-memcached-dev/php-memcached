@@ -3,7 +3,9 @@ Memcached store, fetch & touch expired key
 --XFAIL--
 https://code.google.com/p/memcached/issues/detail?id=275
 --SKIPIF--
-<?php if (!extension_loaded("memcached")) print "skip";
+<?php
+$min_version = "1.4.8";
+include dirname(__FILE__) . "/skipif.inc";
 if (!method_exists("memcached", "touch")) die ("skip memcached::touch is not available");
 ?>
 --FILE--
