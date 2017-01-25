@@ -2185,7 +2185,7 @@ static void php_memc_deleteMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by
 static void php_memc_incdec_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key, zend_bool incr)
 {
 	zend_string *key, *server_key = NULL;
-	long  offset = 1;
+	zend_long offset = 1;
 	uint64_t value = UINT64_MAX, initial = 0;
 	time_t expiry = 0;
 	memcached_return status;
@@ -2208,22 +2208,27 @@ static void php_memc_incdec_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key,
 	MEMC_CHECK_KEY(intern, key);
 
 	if (offset < 0) {
-		php_error_docref(NULL, E_WARNING, "offset has to be > 0");
+		php_error_docref(NULL, E_WARNING, "offset cannot be a negative value");
 		RETURN_FALSE;
 	}
 
 	if ((!by_key && n_args < 3) || (by_key && n_args < 4)) {
 		if (by_key) {
 			if (incr) {
-				status = memcached_increment_by_key(intern->memc, ZSTR_VAL(server_key), ZSTR_LEN(server_key), ZSTR_VAL(key), ZSTR_LEN(key), (unsigned int)offset, &value);
+				status = memcached_increment_by_key(intern->memc, ZSTR_VAL(server_key), ZSTR_LEN(server_key), ZSTR_VAL(key), ZSTR_LEN(key), offset, &value);
 			} else {
-				status = memcached_decrement_by_key(intern->memc, ZSTR_VAL(server_key), ZSTR_LEN(server_key), ZSTR_VAL(key), ZSTR_LEN(key), (unsigned int)offset, &value);
+				status = memcached_decrement_by_key(intern->memc, ZSTR_VAL(server_key), ZSTR_LEN(server_key), ZSTR_VAL(key), ZSTR_LEN(key), offset, &value);
 			}
 		} else {
+			/* The libmemcached API has a quirk that memcached_increment() takes only a 32-bit
+			 * offset, but memcached_increment_by_key() and all other increment and decrement
+			 * functions take a 64-bit offset. The memcached protocol allows increment/decrement
+			 * greater than UINT_MAX, so we just work around memcached_increment() here.
+			 */
 			if (incr) {
-				status = memcached_increment(intern->memc, ZSTR_VAL(key), ZSTR_LEN(key), (unsigned int)offset, &value);
+				status = memcached_increment_by_key(intern->memc, ZSTR_VAL(key), ZSTR_LEN(key), ZSTR_VAL(key), ZSTR_LEN(key), offset, &value);
 			} else {
-				status = memcached_decrement(intern->memc, ZSTR_VAL(key), ZSTR_LEN(key), (unsigned int)offset, &value);
+				status = memcached_decrement_by_key(intern->memc, ZSTR_VAL(key), ZSTR_LEN(key), ZSTR_VAL(key), ZSTR_LEN(key), offset, &value);
 			}
 		}
 
@@ -2237,15 +2242,15 @@ retry_inc_dec:
 		}
 		if (by_key) {
 			if (incr) {
-				status = memcached_increment_with_initial_by_key(intern->memc, ZSTR_VAL(server_key), ZSTR_LEN(server_key), ZSTR_VAL(key), ZSTR_LEN(key), (unsigned int)offset, initial, expiry, &value);
+				status = memcached_increment_with_initial_by_key(intern->memc, ZSTR_VAL(server_key), ZSTR_LEN(server_key), ZSTR_VAL(key), ZSTR_LEN(key), offset, initial, expiry, &value);
 			} else {
-				status = memcached_decrement_with_initial_by_key(intern->memc, ZSTR_VAL(server_key), ZSTR_LEN(server_key), ZSTR_VAL(key), ZSTR_LEN(key), (unsigned int)offset, initial, expiry, &value);
+				status = memcached_decrement_with_initial_by_key(intern->memc, ZSTR_VAL(server_key), ZSTR_LEN(server_key), ZSTR_VAL(key), ZSTR_LEN(key), offset, initial, expiry, &value);
 			}
 		} else {
 			if (incr) {
-				status = memcached_increment_with_initial(intern->memc, ZSTR_VAL(key), ZSTR_LEN(key), (unsigned int)offset, initial, expiry, &value);
+				status = memcached_increment_with_initial(intern->memc, ZSTR_VAL(key), ZSTR_LEN(key), offset, initial, expiry, &value);
 			} else {
-				status = memcached_decrement_with_initial(intern->memc, ZSTR_VAL(key), ZSTR_LEN(key), (unsigned int)offset, initial, expiry, &value);
+				status = memcached_decrement_with_initial(intern->memc, ZSTR_VAL(key), ZSTR_LEN(key), offset, initial, expiry, &value);
 			}
 		}
 		if (s_should_retry_write(intern, status) && retries-- > 0) {

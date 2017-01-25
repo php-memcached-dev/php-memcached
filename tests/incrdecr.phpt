@@ -29,12 +29,23 @@ $m->decrement('foo', 2);
 var_dump($m->get('foo'));
 
 error_reporting(0);
-echo "Invalid offset\n";
+
+echo "Negative offset\n";
+$php_errormsg = '';
 $m->increment('foo', -1);
 echo $php_errormsg, "\n";
 var_dump($m->get('foo'));
+
+$php_errormsg = '';
 $m->decrement('foo', -1);
 echo $php_errormsg, "\n";
+var_dump($m->get('foo'));
+
+echo "Enormous offset\n";
+$m->increment('foo', 4294967296);
+var_dump($m->get('foo'));
+
+$m->decrement('foo', 4294967296);
 var_dump($m->get('foo'));
 
 --EXPECT--
@@ -51,8 +62,11 @@ int(2)
 int(4)
 int(3)
 int(1)
-Invalid offset
-Memcached::increment(): offset has to be > 0
+Negative offset
+Memcached::increment(): offset cannot be a negative value
 int(1)
-Memcached::decrement(): offset has to be > 0
+Memcached::decrement(): offset cannot be a negative value
+int(1)
+Enormous offset
+int(4294967297)
 int(1)
