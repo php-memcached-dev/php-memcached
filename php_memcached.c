@@ -830,6 +830,7 @@ zend_bool s_compress_value (php_memc_compression_type compression_type, zend_str
 	/* status */
 	zend_bool compress_status = 0;
 	zend_string *payload = *payload_in;
+	uint32_t compression_type_flag = 0;
 
 	/* Additional 5% for the data */
 	size_t buffer_size = (size_t) (((double) ZSTR_LEN(payload) * 1.05) + 1.0);
@@ -847,7 +848,7 @@ zend_bool s_compress_value (php_memc_compression_type compression_type, zend_str
 
 			if (compressed_size > 0) {
 				compress_status = 1;
-				MEMC_VAL_SET_FLAG(*flags, MEMC_VAL_COMPRESSION_FASTLZ);
+				compression_type_flag = MEMC_VAL_COMPRESSION_FASTLZ;
 			}
 		}
 			break;
@@ -859,7 +860,7 @@ zend_bool s_compress_value (php_memc_compression_type compression_type, zend_str
 
 			if (status == Z_OK) {
 				compress_status = 1;
-				MEMC_VAL_SET_FLAG(*flags, MEMC_VAL_COMPRESSION_ZLIB);
+				compression_type_flag = MEMC_VAL_COMPRESSION_ZLIB;
 			}
 		}
 			break;
@@ -869,31 +870,29 @@ zend_bool s_compress_value (php_memc_compression_type compression_type, zend_str
 			break;
 	}
 
-	if (!compress_status) {
-		php_error_docref(NULL, E_WARNING, "could not compress value");
-		efree (buffer);
-		return 0;
+	/* This means the value was too small to be compressed and ended up larger */
+	if (ZSTR_LEN(payload) <= (compressed_size * MEMC_G(compression_factor))) {
+		compress_status = 0;
 	}
 
-	/* This means the value was too small to be compressed, still a success */
-	if (ZSTR_LEN(payload) <= (compressed_size * MEMC_G(compression_factor))) {
-		MEMC_VAL_DEL_FLAG(*flags, MEMC_VAL_COMPRESSION_FASTLZ | MEMC_VAL_COMPRESSION_ZLIB);
-		efree (buffer);
+	/* Replace the payload with the compressed copy */
+	if (compress_status) {
+		MEMC_VAL_SET_FLAG(*flags, MEMC_VAL_COMPRESSED | compression_type_flag);
+		payload = zend_string_realloc(payload, compressed_size + sizeof(uint32_t), 0);
+
+		/* Copy the uin32_t at the beginning */
+		memcpy(ZSTR_VAL(payload), &original_size, sizeof(uint32_t));
+		memcpy(ZSTR_VAL(payload) + sizeof (uint32_t), buffer, compressed_size);
+		efree(buffer);
+
+		zend_string_forget_hash_val(payload);
+		*payload_in = payload;
+
 		return 1;
 	}
 
-	MEMC_VAL_SET_FLAG(*flags, MEMC_VAL_COMPRESSED);
-
-	payload = zend_string_realloc(payload, compressed_size + sizeof(uint32_t), 0);
-
-	/* Copy the uin32_t at the beginning */
-	memcpy(ZSTR_VAL(payload), &original_size, sizeof(uint32_t));
-	memcpy(ZSTR_VAL(payload) + sizeof (uint32_t), buffer, compressed_size);
-	efree(buffer);
-
-	zend_string_forget_hash_val(payload);
-	*payload_in = payload;
-	return 1;
+	/* Original payload was not modified */
+	return 0;
 }
 
 static
@@ -1043,11 +1042,13 @@ zend_string *s_zval_to_payload(php_memc_object_t *intern, zval *value, uint32_t 
 
 	/* If we have compression flag, compress the value */
 	if (should_compress) {
-		/* status */
-		if (!s_compress_value (memc_user_data->compression_type, &payload, flags)) {
-			zend_string_release(payload);
-			return NULL;
-		}
+		/* s_compress_value() will always leave a valid payload, even if that payload
+		 * did not actually get compressed. The flags will be set according to the
+		 * to the compression type or no compression.
+		 *
+		 * No need to check the return value because the payload is always valid.
+		 */
+		(void)s_compress_value (memc_user_data->compression_type, &payload, flags);
 	}
 
 	if (memc_user_data->set_udf_flags >= 0) {
