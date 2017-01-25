@@ -154,16 +154,6 @@ error:
 				status = memcached_server_push(memc_sess->memc_sess, servers);
 				memcached_server_list_free(servers);
 
-				if (MEMC_G(sess_prefix) && MEMC_G(sess_prefix)[0] != 0 && memcached_callback_set(memc_sess->memc_sess, MEMCACHED_CALLBACK_PREFIX_KEY, MEMC_G(sess_prefix)) != MEMCACHED_SUCCESS) {
-					PS_SET_MOD_DATA(NULL);
-					if (plist_key) {
-						efree(plist_key);
-					}
-					memcached_free(memc_sess->memc_sess);
-					php_error_docref(NULL TSRMLS_CC, E_WARNING, "bad memcached key prefix in memcached.sess_prefix");
-					return FAILURE;
-				}
-
 				if (status == MEMCACHED_SUCCESS) {
 					goto success;
 				}
@@ -208,6 +198,13 @@ success:
 			if (MEMC_G(sess_binary_enabled)) {
 				if (memcached_behavior_set(memc_sess->memc_sess, MEMCACHED_BEHAVIOR_BINARY_PROTOCOL, (uint64_t) 1) == MEMCACHED_FAILURE) {
 					php_error_docref(NULL TSRMLS_CC, E_WARNING, "failed to set memcached session binary protocol");
+					return FAILURE;
+				}
+			}
+
+			if (MEMC_G(sess_prefix) && MEMC_G(sess_prefix)[0] != 0 ) {
+				if (memcached_callback_set(memc_sess->memc_sess, MEMCACHED_CALLBACK_PREFIX_KEY, MEMC_G(sess_prefix)) != MEMCACHED_SUCCESS) {
+					php_error_docref(NULL TSRMLS_CC, E_WARNING, "bad memcached key prefix in memcached.sess_prefix");
 					return FAILURE;
 				}
 			}
@@ -331,7 +328,11 @@ PS_READ_FUNC(memcached)
 		*vallen = payload_len;
 		free(payload);
 		return SUCCESS;
+	} else if (status == MEMCACHED_NOTFOUND) {
+		/* this is okey, session may not be in memcached yet */
+		return FAILURE;
 	} else {
+		php_error_docref(NULL TSRMLS_CC, E_WARNING, "error getting session from memcached: %s", memcached_last_error_message(memc_sess->memc_sess));
 		return FAILURE;
 	}
 }
@@ -371,6 +372,7 @@ PS_WRITE_FUNC(memcached)
 		if (status == MEMCACHED_SUCCESS) {
 			return SUCCESS;
 		} else {
+			php_error_docref(NULL TSRMLS_CC, E_WARNING, "error saving session to memcached: %s", memcached_last_error_message(memc_sess->memc_sess));
 			write_try_attempts--;
 		}
 	} while (write_try_attempts > 0);
