@@ -80,7 +80,6 @@ bool(true)
 len=[4877] set=[] factor=[1.3] threshold=[4]
 bool(true)
 len=[7] set=[zlib] factor=[1.3] threshold=[4]
-Memcached::set(): could not compress value
 bool(true)
 len=[7] set=[fastlz] factor=[1.3] threshold=[4]
 bool(true)
@@ -93,7 +92,6 @@ bool(true)
 len=[4877] set=[] factor=[0.3] threshold=[4]
 bool(true)
 len=[7] set=[zlib] factor=[0.3] threshold=[4]
-Memcached::set(): could not compress value
 bool(true)
 len=[7] set=[fastlz] factor=[0.3] threshold=[4]
 bool(true)
