@@ -2162,21 +2162,31 @@ static void php_memc_incdec_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key,
 {
 	zend_string *key, *server_key = NULL;
 	zend_long offset = 1;
-	uint64_t value = UINT64_MAX, initial = 0;
-	time_t expiry = 0;
+	zend_long expiry = 0;
+	zend_long initial = 0;
+	uint64_t value = UINT64_MAX;
 	memcached_return status;
 	int n_args = ZEND_NUM_ARGS();
 
 	MEMC_METHOD_INIT_VARS;
 
 	if (!by_key) {
-		if (zend_parse_parameters(n_args, "S|lll", &key, &offset, &initial, &expiry) == FAILURE) {
-			return;
-		}
+		ZEND_PARSE_PARAMETERS_START(1, 4)
+			Z_PARAM_STR(key)
+			Z_PARAM_OPTIONAL
+			Z_PARAM_LONG(offset)
+			Z_PARAM_LONG(initial)
+			Z_PARAM_LONG(expiry)
+		ZEND_PARSE_PARAMETERS_END();
 	} else {
-		if (zend_parse_parameters(n_args, "SS|lll", &server_key, &key, &offset, &initial, &expiry) == FAILURE) {
-			return;
-		}
+		ZEND_PARSE_PARAMETERS_START(2, 5)
+			Z_PARAM_STR(server_key)
+			Z_PARAM_STR(key)
+			Z_PARAM_OPTIONAL
+			Z_PARAM_LONG(offset)
+			Z_PARAM_LONG(initial)
+			Z_PARAM_LONG(expiry)
+		ZEND_PARSE_PARAMETERS_END();
 	}
 
 	MEMC_METHOD_FETCH_OBJECT;
@@ -2218,15 +2228,15 @@ retry_inc_dec:
 		}
 		if (by_key) {
 			if (incr) {
-				status = memcached_increment_with_initial_by_key(intern->memc, ZSTR_VAL(server_key), ZSTR_LEN(server_key), ZSTR_VAL(key), ZSTR_LEN(key), offset, initial, expiry, &value);
+				status = memcached_increment_with_initial_by_key(intern->memc, ZSTR_VAL(server_key), ZSTR_LEN(server_key), ZSTR_VAL(key), ZSTR_LEN(key), offset, initial, (time_t)expiry, &value);
 			} else {
-				status = memcached_decrement_with_initial_by_key(intern->memc, ZSTR_VAL(server_key), ZSTR_LEN(server_key), ZSTR_VAL(key), ZSTR_LEN(key), offset, initial, expiry, &value);
+				status = memcached_decrement_with_initial_by_key(intern->memc, ZSTR_VAL(server_key), ZSTR_LEN(server_key), ZSTR_VAL(key), ZSTR_LEN(key), offset, initial, (time_t)expiry, &value);
 			}
 		} else {
 			if (incr) {
-				status = memcached_increment_with_initial(intern->memc, ZSTR_VAL(key), ZSTR_LEN(key), offset, initial, expiry, &value);
+				status = memcached_increment_with_initial(intern->memc, ZSTR_VAL(key), ZSTR_LEN(key), offset, initial, (time_t)expiry, &value);
 			} else {
-				status = memcached_decrement_with_initial(intern->memc, ZSTR_VAL(key), ZSTR_LEN(key), offset, initial, expiry, &value);
+				status = memcached_decrement_with_initial(intern->memc, ZSTR_VAL(key), ZSTR_LEN(key), offset, initial, (time_t)expiry, &value);
 			}
 		}
 		if (s_should_retry_write(intern, status) && retries-- > 0) {
