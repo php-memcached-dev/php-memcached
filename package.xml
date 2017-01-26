@@ -21,21 +21,20 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <email>mkoppanen@php.net</email>
   <active>yes</active>
  </lead>
- <date>2016-02-22</date>
+ <date>2017-01-27</date>
  <version>
-  <release>3.0.0a1</release>
+  <release>3.0.0</release>
   <api>3.0.0</api>
  </version>
  <stability>
-  <release>alpha</release>
-  <api>alpha</api>
+  <release>stable</release>
+  <api>stable</api>
  </stability>
  <license uri="http://www.php.net/license">PHP</license>
  <notes>
 PHP7 release of memcached extension. Note that support for libmemcached 0.x series has been discontinued
 and the oldest actively tested version is 1.0.2. It is highly recommended to use version 1.0.18 of
-libmemcached. Please note that this is a beta release and reporting any issues would be highly appreciated
-before we move closer to releasing stable version.
+libmemcached.
 
 API
  * The method signature of get, getByKey, getMulti, and getMultiByKey changed.
@@ -179,6 +178,16 @@ Tests
     <min>1.4.0b1</min>
    </pearinstaller>
   </required>
+  <optional>
+    <extension>
+      <name>igbinary</name>
+      <min>2.0</min>
+    </extension>
+    <extension>
+      <name>msgpack</name>
+      <min>2.0</min>
+    </extension>
+  </optional>
  </dependencies>
  <providesextension>memcached</providesextension>
  <extsrcrelease>

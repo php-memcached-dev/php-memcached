@@ -1,5 +1,44 @@
 memcached extension changelog
 
+Version 3.0.0 (2017-01-27)
+--------------------------
+	* Support for PHP 7.0 and PHP 7.1
+	* Fix compiling with SASL disabled
+	* Improved the test suite and Travis CI test runners
+	* Fix small string compression / decompression
+	* Fix increment/decrement with adjustments greater than 32-bit integers
+	* Fix session.gc_maxlifetime to handle both relative and absolute times
+	* Fix inability to reset OPT_PREFIX_KEY
+
+Version 3.0.0a1 (2016-02-22)
+----------------------------
+	Dependencies
+	 * Support for PHP 7.0
+	 * Requires libmemcached 1.0 or higher
+	 * Optional extension igbinary must 2.0 or higher
+	 * Optional extension msgpack must be 2.0 or higher
+
+	API
+	 * The method signature of get, getByKey, getMulti, and getMultiByKey changed.
+	 * get* and getMulti* commands no longer take cas or user flags parameters.
+	 * get* and getMulti* commands now take the Memcached::GET_EXTENDED flag to retrieve user flags and cas tokens.
+	 * Fixes getStats command to return all stats from all servers
+	 * Fixes allKeys command behaviour
+	 * Fixes error where cache callback for get command was not setting expiration time properly
+	 * Added server type to server list
+	 * Remove use_sasl ini-variable and initialise sasl as needed
+	 * CAS tokens are returned as integers and they overflow to strings as needed
+
+	Session handler
+	 * The session memcached protocol config name was changed, and the default protocol was changed from text to binary protocol. If your memcached setup does not support the binary protocol(e.g. if using twemproxy), then set memcached.sess_binary_protocol = Off. (Previously called memcached.sess_binary)
+	 * Session lock algorithm updated (new ini-values memcached.sess_lock_wait_min, memcached.sess_lock_wait_max and memcached.sess_lock_retries)
+	 * Session extension uses PHP allocators (still some work to do on the rest of the extension)
+	 * Ini-values take effect during session_start or session_regenerate_id
+	 * Fixes crash with session_regenerate_id (work-around for PHP bug)
+
+	Tests
+	 * Fix several problematic tests
+
 Version 2.2.0 (2014-04-01)
 --------------------------
 	* Added the OPT_SERVER_TIMEOUT_LIMIT behaviour
