@@ -1174,9 +1174,12 @@ static PHP_METHOD(Memcached, __construct)
 
 	zend_bool is_persistent = 0;
 
-	if (zend_parse_parameters(ZEND_NUM_ARGS(), "|S!f!S", &persistent_id, &fci, &fci_cache, &conn_str) == FAILURE) {
-		return;
-	}
+	ZEND_PARSE_PARAMETERS_START(0, 3)
+	        Z_PARAM_OPTIONAL
+	        Z_PARAM_STR_EX(persistent_id, 0, 1)
+	        Z_PARAM_FUNC_EX(fci, fci_cache, 0, 1)
+	        Z_PARAM_STR(conn_str)
+	ZEND_PARSE_PARAMETERS_END();
 
 	intern = Z_MEMC_OBJ_P(getThis());
 	intern->is_pristine = 1;
@@ -1403,13 +1406,20 @@ void php_memc_get_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 	MEMC_METHOD_INIT_VARS;
 
 	if (by_key) {
-		if (zend_parse_parameters(ZEND_NUM_ARGS(), "SS|f!l", &server_key, &key, &fci, &fcc, &get_flags) == FAILURE) {
-			return;
-		}
+		ZEND_PARSE_PARAMETERS_START(2, 5)
+		        Z_PARAM_STR(server_key)
+		        Z_PARAM_STR(key)
+		        Z_PARAM_OPTIONAL
+		        Z_PARAM_FUNC_EX(fci, fcc, 0, 1)
+		        Z_PARAM_LONG(get_flags)
+		ZEND_PARSE_PARAMETERS_END();
 	} else {
-		if (zend_parse_parameters(ZEND_NUM_ARGS(), "S|f!l", &key, &fci, &fcc, &get_flags) == FAILURE) {
-			return;
-		}
+		ZEND_PARSE_PARAMETERS_START(1, 4)
+		        Z_PARAM_STR(key)
+		        Z_PARAM_OPTIONAL
+		        Z_PARAM_FUNC_EX(fci, fcc, 0, 1)
+		        Z_PARAM_LONG(get_flags)
+		ZEND_PARSE_PARAMETERS_END();
 	}
 
 	MEMC_METHOD_FETCH_OBJECT;
@@ -1495,14 +1505,18 @@ static void php_memc_getMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 	zend_bool retval, preserve_order;
 
 	if (by_key) {
-		if (zend_parse_parameters(ZEND_NUM_ARGS(), "Sa|l", &server_key,
-								  &keys, &flags) == FAILURE) {
-			return;
-		}
+		ZEND_PARSE_PARAMETERS_START(2, 3)
+		        Z_PARAM_STR(server_key)
+		        Z_PARAM_ARRAY(keys)
+		        Z_PARAM_OPTIONAL
+		        Z_PARAM_LONG(flags)
+		ZEND_PARSE_PARAMETERS_END();
 	} else {
-		if (zend_parse_parameters(ZEND_NUM_ARGS(), "a|l", &keys, &flags) == FAILURE) {
-			return;
-		}
+		ZEND_PARSE_PARAMETERS_START(1, 2)
+		        Z_PARAM_ARRAY(keys)
+		        Z_PARAM_OPTIONAL
+		        Z_PARAM_LONG(flags)
+		ZEND_PARSE_PARAMETERS_END();
 	}
 
 	MEMC_METHOD_FETCH_OBJECT;
@@ -1632,15 +1646,20 @@ static void php_memc_getDelayed_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_
 
 
 	if (by_key) {
-		if (zend_parse_parameters(ZEND_NUM_ARGS(), "Sa/|bf!", &server_key,
-								  &keys, &with_cas, &fci, &fcc) == FAILURE) {
-			return;
-		}
+		ZEND_PARSE_PARAMETERS_START(2, 4)
+		        Z_PARAM_STR(server_key)
+		        Z_PARAM_ARRAY(keys)
+		        Z_PARAM_OPTIONAL
+		        Z_PARAM_BOOL(with_cas)
+		        Z_PARAM_FUNC_EX(fci, fcc, 0, 1)
+		ZEND_PARSE_PARAMETERS_END();
 	} else {
-		if (zend_parse_parameters(ZEND_NUM_ARGS(), "a/|bf!", &keys, &with_cas,
-								  &fci, &fcc) == FAILURE) {
-			return;
-		}
+		ZEND_PARSE_PARAMETERS_START(1, 3)
+		        Z_PARAM_ARRAY(keys)
+		        Z_PARAM_OPTIONAL
+		        Z_PARAM_BOOL(with_cas)
+		        Z_PARAM_FUNC_EX(fci, fcc, 0, 1)
+		ZEND_PARSE_PARAMETERS_END();
 	}
 
 	MEMC_METHOD_FETCH_OBJECT;
@@ -1786,7 +1805,7 @@ static void php_memc_setMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 {
 	zval *entries;
 	zend_string *server_key = NULL;
-	time_t expiration = 0;
+	zend_long expiration = 0, ignored;
 	zval *value;
 	zend_string *skey;
 	zend_ulong num_key;
@@ -1794,14 +1813,20 @@ static void php_memc_setMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 	MEMC_METHOD_INIT_VARS;
 
 	if (by_key) {
-		if (zend_parse_parameters(ZEND_NUM_ARGS(), "Sa|ll", &server_key,
-								  &entries, &expiration) == FAILURE) {
-			return;
-		}
+		ZEND_PARSE_PARAMETERS_START(2, 4)
+		        Z_PARAM_STR(server_key)
+		        Z_PARAM_ARRAY(entries)
+		        Z_PARAM_OPTIONAL
+		        Z_PARAM_LONG(expiration)
+		        Z_PARAM_LONG(ignored)
+		ZEND_PARSE_PARAMETERS_END();
 	} else {
-		if (zend_parse_parameters(ZEND_NUM_ARGS(), "a|ll", &entries, &expiration) == FAILURE) {
-			return;
-		}
+		ZEND_PARSE_PARAMETERS_START(1, 3)
+		        Z_PARAM_ARRAY(entries)
+		        Z_PARAM_OPTIONAL
+		        Z_PARAM_LONG(expiration)
+		        Z_PARAM_LONG(ignored)
+		ZEND_PARSE_PARAMETERS_END();
 	}
 
 	MEMC_METHOD_FETCH_OBJECT;
@@ -1911,35 +1936,56 @@ static void php_memc_store_impl(INTERNAL_FUNCTION_PARAMETERS, int op, zend_bool 
 
 	if (by_key) {
 		if (op == MEMC_OP_APPEND || op == MEMC_OP_PREPEND) {
-			if (zend_parse_parameters(ZEND_NUM_ARGS(), "SSS", &server_key, &key, &s_value) == FAILURE) {
-				return;
-			}
+			/* "SSS" */
+			ZEND_PARSE_PARAMETERS_START(3, 3)
+			        Z_PARAM_STR(server_key)
+			        Z_PARAM_STR(key)
+			        Z_PARAM_STR(s_value)
+			ZEND_PARSE_PARAMETERS_END();
 			value = &s_zvalue;
 			ZVAL_STR(value, s_value);
 		} else if (op == MEMC_OP_TOUCH) {
-			if (zend_parse_parameters(ZEND_NUM_ARGS(), "SS|l", &server_key, &key, &expiration) == FAILURE) {
-				return;
-			}
+			/* "SS|l" */
+			ZEND_PARSE_PARAMETERS_START(2, 3)
+			        Z_PARAM_STR(server_key)
+			        Z_PARAM_STR(key)
+				Z_PARAM_OPTIONAL
+				Z_PARAM_LONG(expiration)
+			ZEND_PARSE_PARAMETERS_END();
 		} else {
-			if (zend_parse_parameters(ZEND_NUM_ARGS(), "SSz|l", &server_key, &key, &value, &expiration) == FAILURE) {
-				return;
-			}
+			/* "SSz|l" */
+			ZEND_PARSE_PARAMETERS_START(3, 4)
+			        Z_PARAM_STR(server_key)
+			        Z_PARAM_STR(key)
+			        Z_PARAM_ZVAL(value)
+				Z_PARAM_OPTIONAL
+				Z_PARAM_LONG(expiration)
+			ZEND_PARSE_PARAMETERS_END();
 		}
 	} else {
 		if (op == MEMC_OP_APPEND || op == MEMC_OP_PREPEND) {
-			if (zend_parse_parameters(ZEND_NUM_ARGS(), "SS", &key, &s_value) == FAILURE) {
-				return;
-			}
+			/* "SS" */
+			ZEND_PARSE_PARAMETERS_START(2, 2)
+			        Z_PARAM_STR(key)
+			        Z_PARAM_STR(s_value)
+			ZEND_PARSE_PARAMETERS_END();
 			value = &s_zvalue;
 			ZVAL_STR(value, s_value);
 		} else if (op == MEMC_OP_TOUCH) {
-			if (zend_parse_parameters(ZEND_NUM_ARGS(), "S|l", &key, &expiration) == FAILURE) {
-				return;
-			}
+			/* "S|l */
+			ZEND_PARSE_PARAMETERS_START(1, 2)
+			        Z_PARAM_STR(key)
+			        Z_PARAM_OPTIONAL
+			        Z_PARAM_LONG(expiration)
+			ZEND_PARSE_PARAMETERS_END();
 		} else {
-			if (zend_parse_parameters(ZEND_NUM_ARGS(), "Sz|l", &key, &value, &expiration) == FAILURE) {
-				return;
-			}
+			/* "Sz|l" */
+			ZEND_PARSE_PARAMETERS_START(2, 3)
+			        Z_PARAM_STR(key)
+			        Z_PARAM_ZVAL(value)
+			        Z_PARAM_OPTIONAL
+			        Z_PARAM_LONG(expiration)
+			ZEND_PARSE_PARAMETERS_END();
 		}
 	}
 
