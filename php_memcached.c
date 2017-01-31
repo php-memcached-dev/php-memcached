@@ -892,6 +892,7 @@ zend_bool s_compress_value (php_memc_compression_type compression_type, zend_str
 	}
 
 	/* Original payload was not modified */
+	efree(buffer);
 	return 0;
 }
 
