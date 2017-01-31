@@ -1176,8 +1176,8 @@ static PHP_METHOD(Memcached, __construct)
 
 	ZEND_PARSE_PARAMETERS_START(0, 3)
 	        Z_PARAM_OPTIONAL
-	        Z_PARAM_STR_EX(persistent_id, 0, 1)
-	        Z_PARAM_FUNC_EX(fci, fci_cache, 0, 1)
+	        Z_PARAM_STR_EX(persistent_id, 1, 0)
+	        Z_PARAM_FUNC_EX(fci, fci_cache, 1, 0)
 	        Z_PARAM_STR(conn_str)
 	ZEND_PARSE_PARAMETERS_END();
 
@@ -1410,14 +1410,14 @@ void php_memc_get_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 		        Z_PARAM_STR(server_key)
 		        Z_PARAM_STR(key)
 		        Z_PARAM_OPTIONAL
-		        Z_PARAM_FUNC_EX(fci, fcc, 0, 1)
+		        Z_PARAM_FUNC_EX(fci, fcc, 1, 0)
 		        Z_PARAM_LONG(get_flags)
 		ZEND_PARSE_PARAMETERS_END();
 	} else {
 		ZEND_PARSE_PARAMETERS_START(1, 4)
 		        Z_PARAM_STR(key)
 		        Z_PARAM_OPTIONAL
-		        Z_PARAM_FUNC_EX(fci, fcc, 0, 1)
+		        Z_PARAM_FUNC_EX(fci, fcc, 1, 0)
 		        Z_PARAM_LONG(get_flags)
 		ZEND_PARSE_PARAMETERS_END();
 	}
@@ -1651,14 +1651,14 @@ static void php_memc_getDelayed_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_
 		        Z_PARAM_ARRAY(keys)
 		        Z_PARAM_OPTIONAL
 		        Z_PARAM_BOOL(with_cas)
-		        Z_PARAM_FUNC_EX(fci, fcc, 0, 1)
+		        Z_PARAM_FUNC_EX(fci, fcc, 1, 0)
 		ZEND_PARSE_PARAMETERS_END();
 	} else {
 		ZEND_PARSE_PARAMETERS_START(1, 3)
 		        Z_PARAM_ARRAY(keys)
 		        Z_PARAM_OPTIONAL
 		        Z_PARAM_BOOL(with_cas)
-		        Z_PARAM_FUNC_EX(fci, fcc, 0, 1)
+		        Z_PARAM_FUNC_EX(fci, fcc, 1, 0)
 		ZEND_PARSE_PARAMETERS_END();
 	}
 
