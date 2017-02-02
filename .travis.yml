@@ -13,6 +13,7 @@ env:
     - LIBMEMCACHED_VERSION=1.0.18 # Debian Jessie / Ubuntu Xenial
     - LIBMEMCACHED_VERSION=1.0.16 # RHEL / CentOS 7
     - LIBMEMCACHED_VERSION=1.0.8  # Debian Wheezy / Ubuntu Trusty
+    - LIBMEMCACHED_VERSION=1.0.2  # Ancient
 
 addons:
     apt:
@@ -22,6 +23,7 @@ addons:
             - libevent-dev
 
 before_script:
+    - sudo apt-get purge -qq '^memcached*' '^libmemcached*'
     - ./.travis/travis.sh before_script $LIBMEMCACHED_VERSION
 
 script:
