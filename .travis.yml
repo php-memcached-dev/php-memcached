@@ -23,7 +23,7 @@ addons:
             - libevent-dev
 
 before_script:
-    - sudo apt-get purge -qq '^memcached*' ^libmemcached*'
+    - sudo apt-get purge -qq '^memcached*' '^libmemcached*'
     - ./.travis/travis.sh before_script $LIBMEMCACHED_VERSION
 
 script:
