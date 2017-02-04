@@ -1174,6 +1174,7 @@ static PHP_METHOD(Memcached, __construct)
 
 	zend_bool is_persistent = 0;
 
+	/* |S!f!S */
 	ZEND_PARSE_PARAMETERS_START(0, 3)
 	        Z_PARAM_OPTIONAL
 	        Z_PARAM_STR_EX(persistent_id, 1, 0)
@@ -1406,7 +1407,8 @@ void php_memc_get_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 	MEMC_METHOD_INIT_VARS;
 
 	if (by_key) {
-		ZEND_PARSE_PARAMETERS_START(2, 5)
+		/* SS|f!l */
+		ZEND_PARSE_PARAMETERS_START(2, 4)
 		        Z_PARAM_STR(server_key)
 		        Z_PARAM_STR(key)
 		        Z_PARAM_OPTIONAL
@@ -1414,7 +1416,8 @@ void php_memc_get_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 		        Z_PARAM_LONG(get_flags)
 		ZEND_PARSE_PARAMETERS_END();
 	} else {
-		ZEND_PARSE_PARAMETERS_START(1, 4)
+		/* S|f!l */
+		ZEND_PARSE_PARAMETERS_START(1, 3)
 		        Z_PARAM_STR(key)
 		        Z_PARAM_OPTIONAL
 		        Z_PARAM_FUNC_EX(fci, fcc, 1, 0)
@@ -2020,22 +2023,34 @@ static void php_memc_cas_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 	zend_string *key;
 	zend_string *server_key = NULL;
 	zval *value;
-	time_t expiration = 0;
+	zend_long expiration = 0;
+	zend_long ignored;
 	zend_string *payload;
 	uint32_t flags = 0;
 	memcached_return status;
 	MEMC_METHOD_INIT_VARS;
 
 	if (by_key) {
-		if (zend_parse_parameters(ZEND_NUM_ARGS(), "zSSz|ll", &zv_cas, &server_key, &key,
-								  &value, &expiration) == FAILURE) {
-			return;
-		}
+		/* zSSz|ll */
+		ZEND_PARSE_PARAMETERS_START(4, 6)
+		        Z_PARAM_ZVAL(zv_cas)
+		        Z_PARAM_STR(server_key)
+		        Z_PARAM_STR(key)
+		        Z_PARAM_ZVAL(value)
+		        Z_PARAM_OPTIONAL
+		        Z_PARAM_LONG(expiration)
+		        Z_PARAM_LONG(ignored)
+		ZEND_PARSE_PARAMETERS_END();
 	} else {
-		if (zend_parse_parameters(ZEND_NUM_ARGS(), "zSz|ll", &zv_cas, &key, &value,
-								  &expiration) == FAILURE) {
-			return;
-		}
+		/* zSz|ll */
+		ZEND_PARSE_PARAMETERS_START(3, 5)
+		        Z_PARAM_ZVAL(zv_cas)
+		        Z_PARAM_STR(key)
+		        Z_PARAM_ZVAL(value)
+		        Z_PARAM_OPTIONAL
+		        Z_PARAM_LONG(expiration)
+		        Z_PARAM_LONG(ignored)
+		ZEND_PARSE_PARAMETERS_END();
 	}
 
 	MEMC_METHOD_FETCH_OBJECT;
@@ -2117,18 +2132,25 @@ PHP_METHOD(Memcached, deleteMultiByKey)
 static void php_memc_delete_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 {
 	zend_string *key, *server_key;
-	time_t expiration = 0;
+	zend_long expiration = 0;
 	memcached_return status;
 	MEMC_METHOD_INIT_VARS;
 
 	if (by_key) {
-		if (zend_parse_parameters(ZEND_NUM_ARGS(), "SS|l", &server_key, &key, &expiration) == FAILURE) {
-			return;
-		}
+		/* SS|l */
+		ZEND_PARSE_PARAMETERS_START(2, 3)
+		        Z_PARAM_STR(server_key)
+		        Z_PARAM_STR(key)
+		        Z_PARAM_OPTIONAL
+		        Z_PARAM_LONG(expiration)
+		ZEND_PARSE_PARAMETERS_END();
 	} else {
-		if (zend_parse_parameters(ZEND_NUM_ARGS(), "S|l", &key, &expiration) == FAILURE) {
-			return;
-		}
+		/* S|l */
+		ZEND_PARSE_PARAMETERS_START(1, 2)
+		        Z_PARAM_STR(key)
+		        Z_PARAM_OPTIONAL
+		        Z_PARAM_LONG(expiration)
+		ZEND_PARSE_PARAMETERS_END();
 		server_key = key;
 	}
 
@@ -2156,20 +2178,27 @@ static void php_memc_deleteMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by
 {
 	zval *entries, *zv, ret;
 	zend_string *server_key = NULL;
-	time_t expiration = 0;
+	zend_long expiration = 0;
 	zend_string *entry;
 
 	memcached_return status;
 	MEMC_METHOD_INIT_VARS;
 
 	if (by_key) {
-		if (zend_parse_parameters(ZEND_NUM_ARGS(), "Sa/|l", &server_key, &entries, &expiration) == FAILURE) {
-			return;
-		}
+		/* Sa/|l */
+		ZEND_PARSE_PARAMETERS_START(2, 3)
+		        Z_PARAM_STR(server_key)
+		        Z_PARAM_ARRAY_EX(entries, 0, 1)
+		        Z_PARAM_OPTIONAL
+		        Z_PARAM_LONG(expiration)
+		ZEND_PARSE_PARAMETERS_END();
 	} else {
-		if (zend_parse_parameters(ZEND_NUM_ARGS(), "a/|l", &entries, &expiration) == FAILURE) {
-			return;
-		}
+		/* a/|l */
+		ZEND_PARSE_PARAMETERS_START(1, 2)
+		        Z_PARAM_ARRAY_EX(entries, 0, 1)
+		        Z_PARAM_OPTIONAL
+		        Z_PARAM_LONG(expiration)
+		ZEND_PARSE_PARAMETERS_END();
 	}
 
 	MEMC_METHOD_FETCH_OBJECT;
@@ -2339,13 +2368,17 @@ PHP_METHOD(Memcached, incrementByKey)
 PHP_METHOD(Memcached, addServer)
 {
 	zend_string *host;
-	long  port, weight = 0;
+	zend_long port, weight = 0;
 	memcached_return status;
 	MEMC_METHOD_INIT_VARS;
 
-	if (zend_parse_parameters(ZEND_NUM_ARGS(), "Sl|l", &host, &port, &weight) == FAILURE) {
-		return;
-	}
+	/* Sa/|l */
+	ZEND_PARSE_PARAMETERS_START(2, 3)
+	        Z_PARAM_STR(host)
+	        Z_PARAM_LONG(port)
+	        Z_PARAM_OPTIONAL
+	        Z_PARAM_LONG(weight)
+	ZEND_PARSE_PARAMETERS_END();
 
 	MEMC_METHOD_FETCH_OBJECT;
 	s_memc_set_status(intern, MEMCACHED_SUCCESS, 0);
@@ -2373,9 +2406,10 @@ PHP_METHOD(Memcached, addServers)
 	memcached_return status;
 	MEMC_METHOD_INIT_VARS;
 
-	if (zend_parse_parameters(ZEND_NUM_ARGS(), "a/", &servers) == FAILURE) {
-		return;
-	}
+	/* a/ */
+	ZEND_PARSE_PARAMETERS_START(1, 1)
+	        Z_PARAM_ARRAY_EX(servers, 0, 1)
+	ZEND_PARSE_PARAMETERS_END();
 
 	MEMC_METHOD_FETCH_OBJECT;
 	s_memc_set_status(intern, MEMCACHED_SUCCESS, 0);
@@ -2477,9 +2511,10 @@ PHP_METHOD(Memcached, getServerByKey)
 	memcached_return error;
 	MEMC_METHOD_INIT_VARS;
 
-	if (zend_parse_parameters(ZEND_NUM_ARGS(), "S", &server_key) == FAILURE) {
-		return;
-	}
+	/* S */
+	ZEND_PARSE_PARAMETERS_START(1, 1)
+	        Z_PARAM_STR(server_key)
+	ZEND_PARSE_PARAMETERS_END();
 
 	MEMC_METHOD_FETCH_OBJECT;
 	s_memc_set_status(intern, MEMCACHED_SUCCESS, 0);
@@ -2697,9 +2732,11 @@ PHP_METHOD(Memcached, getStats)
 	zend_string *args_string = NULL;
 	MEMC_METHOD_INIT_VARS;
 
-	if (zend_parse_parameters(ZEND_NUM_ARGS(), "|S!", &args_string) == FAILURE) {
-		return;
-	}
+	/* |S! */
+	ZEND_PARSE_PARAMETERS_START(0, 1)
+	        Z_PARAM_OPTIONAL
+	        Z_PARAM_STR_EX(args_string, 1, 0)
+	ZEND_PARSE_PARAMETERS_END();
 
 	MEMC_METHOD_FETCH_OBJECT;
 
@@ -2791,13 +2828,15 @@ PHP_METHOD(Memcached, getAllKeys)
    Flushes the data on all the servers */
 static PHP_METHOD(Memcached, flush)
 {
-	time_t delay = 0;
+	zend_long delay = 0;
 	memcached_return status;
 	MEMC_METHOD_INIT_VARS;
 
-	if (zend_parse_parameters(ZEND_NUM_ARGS(), "|l", &delay) == FAILURE) {
-		return;
-	}
+	/* |l */
+	ZEND_PARSE_PARAMETERS_START(0, 1)
+	        Z_PARAM_OPTIONAL
+	        Z_PARAM_LONG(delay)
+	ZEND_PARSE_PARAMETERS_END();
 
 	MEMC_METHOD_FETCH_OBJECT;
 	s_memc_set_status(intern, MEMCACHED_SUCCESS, 0);
@@ -2815,14 +2854,15 @@ static PHP_METHOD(Memcached, flush)
    Returns the value for the given option constant */
 static PHP_METHOD(Memcached, getOption)
 {
-	long option;
+	zend_long option;
 	uint64_t result;
 	memcached_behavior flag;
 	MEMC_METHOD_INIT_VARS;
 
-	if (zend_parse_parameters(ZEND_NUM_ARGS(), "l", &option) == FAILURE) {
-		return;
-	}
+	/* l */
+	ZEND_PARSE_PARAMETERS_START(1, 1)
+	        Z_PARAM_LONG(option)
+	ZEND_PARSE_PARAMETERS_END();
 
 	MEMC_METHOD_FETCH_OBJECT;
 
@@ -3064,7 +3104,7 @@ PHP_METHOD(Memcached, setBucket)
 {
 	zval *zserver_map;
 	zval *zforward_map = NULL;
-	long replicas = 0;
+	zend_long replicas = 0;
 	zend_bool retval = 1;
 
 	uint32_t *server_map = NULL, *forward_map = NULL;
@@ -3072,9 +3112,12 @@ PHP_METHOD(Memcached, setBucket)
 	memcached_return rc;
 	MEMC_METHOD_INIT_VARS;
 
-	if (zend_parse_parameters(ZEND_NUM_ARGS(), "aa!l", &zserver_map, &zforward_map, &replicas) == FAILURE) {
-		return;
-	}
+	/* aa!l */
+	ZEND_PARSE_PARAMETERS_START(3, 3)
+	        Z_PARAM_ARRAY(zserver_map)
+	        Z_PARAM_ARRAY_EX(zforward_map, 1, 0)
+	        Z_PARAM_LONG(replicas)
+	ZEND_PARSE_PARAMETERS_END();
 
 	MEMC_METHOD_FETCH_OBJECT;
 
@@ -3135,9 +3178,11 @@ static PHP_METHOD(Memcached, setOptions)
 
 	MEMC_METHOD_INIT_VARS;
 
-	if (zend_parse_parameters(ZEND_NUM_ARGS(), "a", &options) == FAILURE) {
-		return;
-	}
+	/* a */
+	ZEND_PARSE_PARAMETERS_START(1, 1)
+	        Z_PARAM_ARRAY(options)
+	ZEND_PARSE_PARAMETERS_END();
+
 
 	MEMC_METHOD_FETCH_OBJECT;
 
@@ -3160,13 +3205,15 @@ static PHP_METHOD(Memcached, setOptions)
    Sets the value for the given option constant */
 static PHP_METHOD(Memcached, setOption)
 {
-	long option;
+	zend_long option;
 	zval *value;
 	MEMC_METHOD_INIT_VARS;
 
-	if (zend_parse_parameters(ZEND_NUM_ARGS(), "lz/", &option, &value) == FAILURE) {
-		return;
-	}
+	/* lz/ */
+	ZEND_PARSE_PARAMETERS_START(2, 2)
+	        Z_PARAM_LONG(option)
+	        Z_PARAM_ZVAL_EX(value, 0, 1)
+	ZEND_PARSE_PARAMETERS_END();
 
 	MEMC_METHOD_FETCH_OBJECT;
 
@@ -3183,9 +3230,11 @@ static PHP_METHOD(Memcached, setSaslAuthData)
 	memcached_return status;
 	zend_string *user, *pass;
 
-	if (zend_parse_parameters(ZEND_NUM_ARGS(), "SS", &user, &pass) == FAILURE) {
-		return;
-	}
+	/* SS/ */
+	ZEND_PARSE_PARAMETERS_START(2, 2)
+	        Z_PARAM_STR(user)
+	        Z_PARAM_STR(pass)
+	ZEND_PARSE_PARAMETERS_END();
 
 	if (!php_memc_init_sasl_if_needed()) {
 		RETURN_FALSE;
@@ -3667,9 +3716,10 @@ PHP_METHOD(MemcachedServer, run)
 	php_memc_server_t *intern;
 	intern = Z_MEMC_SERVER_P(getThis());
 
-	if (zend_parse_parameters(ZEND_NUM_ARGS(), "S", &address) == FAILURE) {
-		return;
-	}
+	/* S */
+	ZEND_PARSE_PARAMETERS_START(1, 1)
+	        Z_PARAM_STR(address)
+	ZEND_PARSE_PARAMETERS_END();
 
 	rc = php_memc_proto_handler_run(intern->handler, address);
 
@@ -3688,9 +3738,11 @@ PHP_METHOD(MemcachedServer, on)
 	zend_fcall_info_cache fci_cache;
 	zend_bool rc = 0;
 
-	if (zend_parse_parameters(ZEND_NUM_ARGS(), "lf!", &event, &fci, &fci_cache) == FAILURE) {
-		return;
-	}
+	/* lf! */
+	ZEND_PARSE_PARAMETERS_START(2, 2)
+	        Z_PARAM_LONG(event)
+	        Z_PARAM_FUNC_EX(fci, fci_cache, 1, 0)
+	ZEND_PARSE_PARAMETERS_END();
 
 	if (event <= MEMC_SERVER_ON_MIN || event >= MEMC_SERVER_ON_MAX) {
 		RETURN_FALSE;
