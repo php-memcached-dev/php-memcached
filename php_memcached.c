@@ -1174,7 +1174,7 @@ static PHP_METHOD(Memcached, __construct)
 
 	zend_bool is_persistent = 0;
 
-	/* |S!f!S */
+	/* "|S!f!S" */
 	ZEND_PARSE_PARAMETERS_START(0, 3)
 	        Z_PARAM_OPTIONAL
 	        Z_PARAM_STR_EX(persistent_id, 1, 0)
@@ -1407,7 +1407,7 @@ void php_memc_get_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 	MEMC_METHOD_INIT_VARS;
 
 	if (by_key) {
-		/* SS|f!l */
+		/* "SS|f!l" */
 		ZEND_PARSE_PARAMETERS_START(2, 4)
 		        Z_PARAM_STR(server_key)
 		        Z_PARAM_STR(key)
@@ -1416,7 +1416,7 @@ void php_memc_get_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 		        Z_PARAM_LONG(get_flags)
 		ZEND_PARSE_PARAMETERS_END();
 	} else {
-		/* S|f!l */
+		/* "S|f!l" */
 		ZEND_PARSE_PARAMETERS_START(1, 3)
 		        Z_PARAM_STR(key)
 		        Z_PARAM_OPTIONAL
@@ -1508,6 +1508,7 @@ static void php_memc_getMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 	zend_bool retval, preserve_order;
 
 	if (by_key) {
+		/* "Sa|l" */
 		ZEND_PARSE_PARAMETERS_START(2, 3)
 		        Z_PARAM_STR(server_key)
 		        Z_PARAM_ARRAY(keys)
@@ -1515,6 +1516,7 @@ static void php_memc_getMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 		        Z_PARAM_LONG(flags)
 		ZEND_PARSE_PARAMETERS_END();
 	} else {
+		/* "a|l" */
 		ZEND_PARSE_PARAMETERS_START(1, 2)
 		        Z_PARAM_ARRAY(keys)
 		        Z_PARAM_OPTIONAL
@@ -1649,16 +1651,18 @@ static void php_memc_getDelayed_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_
 
 
 	if (by_key) {
+		/* "Sa/|bf!" */
 		ZEND_PARSE_PARAMETERS_START(2, 4)
 		        Z_PARAM_STR(server_key)
-		        Z_PARAM_ARRAY(keys)
+		        Z_PARAM_ARRAY_EX(keys, 0, 1)
 		        Z_PARAM_OPTIONAL
 		        Z_PARAM_BOOL(with_cas)
 		        Z_PARAM_FUNC_EX(fci, fcc, 1, 0)
 		ZEND_PARSE_PARAMETERS_END();
 	} else {
+		/* "a/|bf!" */
 		ZEND_PARSE_PARAMETERS_START(1, 3)
-		        Z_PARAM_ARRAY(keys)
+		        Z_PARAM_ARRAY_EX(keys, 0, 1)
 		        Z_PARAM_OPTIONAL
 		        Z_PARAM_BOOL(with_cas)
 		        Z_PARAM_FUNC_EX(fci, fcc, 1, 0)
@@ -1816,6 +1820,7 @@ static void php_memc_setMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 	MEMC_METHOD_INIT_VARS;
 
 	if (by_key) {
+		/* "Sa|ll" */
 		ZEND_PARSE_PARAMETERS_START(2, 4)
 		        Z_PARAM_STR(server_key)
 		        Z_PARAM_ARRAY(entries)
@@ -1824,6 +1829,7 @@ static void php_memc_setMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 		        Z_PARAM_LONG(ignored)
 		ZEND_PARSE_PARAMETERS_END();
 	} else {
+		/* "a|ll" */
 		ZEND_PARSE_PARAMETERS_START(1, 3)
 		        Z_PARAM_ARRAY(entries)
 		        Z_PARAM_OPTIONAL
@@ -2031,7 +2037,7 @@ static void php_memc_cas_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 	MEMC_METHOD_INIT_VARS;
 
 	if (by_key) {
-		/* zSSz|ll */
+		/* "zSSz|ll" */
 		ZEND_PARSE_PARAMETERS_START(4, 6)
 		        Z_PARAM_ZVAL(zv_cas)
 		        Z_PARAM_STR(server_key)
@@ -2042,7 +2048,7 @@ static void php_memc_cas_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 		        Z_PARAM_LONG(ignored)
 		ZEND_PARSE_PARAMETERS_END();
 	} else {
-		/* zSz|ll */
+		/* "zSz|ll" */
 		ZEND_PARSE_PARAMETERS_START(3, 5)
 		        Z_PARAM_ZVAL(zv_cas)
 		        Z_PARAM_STR(key)
@@ -2137,7 +2143,7 @@ static void php_memc_delete_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 	MEMC_METHOD_INIT_VARS;
 
 	if (by_key) {
-		/* SS|l */
+		/* "SS|l" */
 		ZEND_PARSE_PARAMETERS_START(2, 3)
 		        Z_PARAM_STR(server_key)
 		        Z_PARAM_STR(key)
@@ -2145,7 +2151,7 @@ static void php_memc_delete_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 		        Z_PARAM_LONG(expiration)
 		ZEND_PARSE_PARAMETERS_END();
 	} else {
-		/* S|l */
+		/* "S|l" */
 		ZEND_PARSE_PARAMETERS_START(1, 2)
 		        Z_PARAM_STR(key)
 		        Z_PARAM_OPTIONAL
@@ -2185,7 +2191,7 @@ static void php_memc_deleteMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by
 	MEMC_METHOD_INIT_VARS;
 
 	if (by_key) {
-		/* Sa/|l */
+		/* "Sa/|l" */
 		ZEND_PARSE_PARAMETERS_START(2, 3)
 		        Z_PARAM_STR(server_key)
 		        Z_PARAM_ARRAY_EX(entries, 0, 1)
@@ -2193,7 +2199,7 @@ static void php_memc_deleteMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by
 		        Z_PARAM_LONG(expiration)
 		ZEND_PARSE_PARAMETERS_END();
 	} else {
-		/* a/|l */
+		/* "a/|l" */
 		ZEND_PARSE_PARAMETERS_START(1, 2)
 		        Z_PARAM_ARRAY_EX(entries, 0, 1)
 		        Z_PARAM_OPTIONAL
@@ -2246,6 +2252,7 @@ static void php_memc_incdec_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key,
 	MEMC_METHOD_INIT_VARS;
 
 	if (!by_key) {
+		/* "S|lll" */
 		ZEND_PARSE_PARAMETERS_START(1, 4)
 			Z_PARAM_STR(key)
 			Z_PARAM_OPTIONAL
@@ -2254,6 +2261,7 @@ static void php_memc_incdec_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key,
 			Z_PARAM_LONG(expiry)
 		ZEND_PARSE_PARAMETERS_END();
 	} else {
+		/* "SS|lll" */
 		ZEND_PARSE_PARAMETERS_START(2, 5)
 			Z_PARAM_STR(server_key)
 			Z_PARAM_STR(key)
@@ -2372,7 +2380,7 @@ PHP_METHOD(Memcached, addServer)
 	memcached_return status;
 	MEMC_METHOD_INIT_VARS;
 
-	/* Sa/|l */
+	/* "Sa/|l" */
 	ZEND_PARSE_PARAMETERS_START(2, 3)
 	        Z_PARAM_STR(host)
 	        Z_PARAM_LONG(port)
@@ -2406,7 +2414,7 @@ PHP_METHOD(Memcached, addServers)
 	memcached_return status;
 	MEMC_METHOD_INIT_VARS;
 
-	/* a/ */
+	/* "a/" */
 	ZEND_PARSE_PARAMETERS_START(1, 1)
 	        Z_PARAM_ARRAY_EX(servers, 0, 1)
 	ZEND_PARSE_PARAMETERS_END();
@@ -2511,7 +2519,7 @@ PHP_METHOD(Memcached, getServerByKey)
 	memcached_return error;
 	MEMC_METHOD_INIT_VARS;
 
-	/* S */
+	/* "S" */
 	ZEND_PARSE_PARAMETERS_START(1, 1)
 	        Z_PARAM_STR(server_key)
 	ZEND_PARSE_PARAMETERS_END();
@@ -2732,7 +2740,7 @@ PHP_METHOD(Memcached, getStats)
 	zend_string *args_string = NULL;
 	MEMC_METHOD_INIT_VARS;
 
-	/* |S! */
+	/* "|S!" */
 	ZEND_PARSE_PARAMETERS_START(0, 1)
 	        Z_PARAM_OPTIONAL
 	        Z_PARAM_STR_EX(args_string, 1, 0)
@@ -2832,7 +2840,7 @@ static PHP_METHOD(Memcached, flush)
 	memcached_return status;
 	MEMC_METHOD_INIT_VARS;
 
-	/* |l */
+	/* "|l" */
 	ZEND_PARSE_PARAMETERS_START(0, 1)
 	        Z_PARAM_OPTIONAL
 	        Z_PARAM_LONG(delay)
@@ -2859,7 +2867,7 @@ static PHP_METHOD(Memcached, getOption)
 	memcached_behavior flag;
 	MEMC_METHOD_INIT_VARS;
 
-	/* l */
+	/* "l" */
 	ZEND_PARSE_PARAMETERS_START(1, 1)
 	        Z_PARAM_LONG(option)
 	ZEND_PARSE_PARAMETERS_END();
@@ -3112,7 +3120,7 @@ PHP_METHOD(Memcached, setBucket)
 	memcached_return rc;
 	MEMC_METHOD_INIT_VARS;
 
-	/* aa!l */
+	/* "aa!l" */
 	ZEND_PARSE_PARAMETERS_START(3, 3)
 	        Z_PARAM_ARRAY(zserver_map)
 	        Z_PARAM_ARRAY_EX(zforward_map, 1, 0)
@@ -3178,7 +3186,7 @@ static PHP_METHOD(Memcached, setOptions)
 
 	MEMC_METHOD_INIT_VARS;
 
-	/* a */
+	/* "a" */
 	ZEND_PARSE_PARAMETERS_START(1, 1)
 	        Z_PARAM_ARRAY(options)
 	ZEND_PARSE_PARAMETERS_END();
@@ -3209,7 +3217,7 @@ static PHP_METHOD(Memcached, setOption)
 	zval *value;
 	MEMC_METHOD_INIT_VARS;
 
-	/* lz/ */
+	/* "lz/" */
 	ZEND_PARSE_PARAMETERS_START(2, 2)
 	        Z_PARAM_LONG(option)
 	        Z_PARAM_ZVAL_EX(value, 0, 1)
@@ -3230,7 +3238,7 @@ static PHP_METHOD(Memcached, setSaslAuthData)
 	memcached_return status;
 	zend_string *user, *pass;
 
-	/* SS/ */
+	/* "SS/" */
 	ZEND_PARSE_PARAMETERS_START(2, 2)
 	        Z_PARAM_STR(user)
 	        Z_PARAM_STR(pass)
@@ -3716,7 +3724,7 @@ PHP_METHOD(MemcachedServer, run)
 	php_memc_server_t *intern;
 	intern = Z_MEMC_SERVER_P(getThis());
 
-	/* S */
+	/* "S" */
 	ZEND_PARSE_PARAMETERS_START(1, 1)
 	        Z_PARAM_STR(address)
 	ZEND_PARSE_PARAMETERS_END();
@@ -3738,7 +3746,7 @@ PHP_METHOD(MemcachedServer, on)
 	zend_fcall_info_cache fci_cache;
 	zend_bool rc = 0;
 
-	/* lf! */
+	/* "lf!" */
 	ZEND_PARSE_PARAMETERS_START(2, 2)
 	        Z_PARAM_LONG(event)
 	        Z_PARAM_FUNC_EX(fci, fci_cache, 1, 0)
