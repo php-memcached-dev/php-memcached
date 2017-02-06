@@ -530,7 +530,7 @@ PS_VALIDATE_SID_FUNC(memcached)
 {
 	memcached_st *memc = PS_GET_MOD_DATA();
 
-	if (memcached_exist(memc, key->val, key->len) == MEMCACHED_SUCCESS) {
+	if (php_memcached_exist(memc, key) == MEMCACHED_SUCCESS) {
 		return SUCCESS;
 	} else {
 		return FAILURE;
