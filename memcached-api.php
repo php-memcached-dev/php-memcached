@@ -275,7 +275,11 @@ class Memcached {
 
 	public function flush( $delay = 0 ) {}
 
+	public function flushBuffers( ) {}
+
 	public function getStats( $type = null ) {}
+
+	public function getAllKeys( ) {}
 	
 	public function getVersion( ) {}
 
