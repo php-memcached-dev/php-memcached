@@ -21,9 +21,9 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <email>mkoppanen@php.net</email>
   <active>yes</active>
  </lead>
- <date>2017-01-27</date>
+ <date>2017-02-07</date>
  <version>
-  <release>3.0.0</release>
+  <release>3.0.1</release>
   <api>3.0.0</api>
  </version>
  <stability>
@@ -36,26 +36,12 @@ PHP7 release of memcached extension. Note that support for libmemcached 0.x seri
 and the oldest actively tested version is 1.0.2. It is highly recommended to use version 1.0.18 of
 libmemcached.
 
-API
- * The method signature of get, getByKey, getMulti, and getMultiByKey changed.
- * get* and getMulti* commands no longer take cas or user flags parameters.
- * get* and getMulti* commands now take the Memcached::GET_EXTENDED flag to retrieve user flags and cas tokens.
- * Fixes getStats command to return all stats from all servers
- * Fixes allKeys command behaviour
- * Fixes error where cache callback for get command was not setting expiration time properly
- * Added server type to server list
- * Remove use_sasl ini-variable and initialise sasl as needed
- * CAS tokens are returned as integers and they overflow to strings as needed
-
-Session handler
- * The session memcached protocol config name was changed, and the default protocol was changed from text to binary protocol. If your memcached setup does not support the binary protocol(e.g. if using twemproxy), then set memcached.sess_binary_protocol = Off. (Previously called memcached.sess_binary)
- * Session lock algorithm updated (new ini-values memcached.sess_lock_wait_min, memcached.sess_lock_wait_max and memcached.sess_lock_retries)
- * Session extension uses PHP allocators (still some work to do on the rest of the extension)
- * Ini-values take effect during session_start or session_regenerate_id
- * Fixes crash with session_regenerate_id (work-around for PHP bug)
-
-Tests
- * Fix several problematic tests
+Fixes
+ * Add API entries for flushBuffers() and getAllKeys() (#316)
+ * Ignore specific errors from memcached_dump for getAllKeys() with newer memcached servers (#315)
+ * Fix compiling with memcached binary protocol enabled (#312)
+ * Restore php_libmemcached_compat with workaround for missing memcached_exists (#314)
+ * Travis CI purge old versions of memcached and libmemcached (#309)
  </notes>
  <contents>
   <dir name="/">
@@ -196,6 +182,43 @@ Tests
   <configureoption name="with-libmemcached-dir" default="no" prompt="libmemcached directory"/>
  </extsrcrelease>
  <changelog>
+    <release>
+      <stability>
+        <release>stable</release>
+        <api>stable</api>
+      </stability>
+      <version>
+        <release>3.0.0</release>
+        <api>3.0.0</api>
+      </version>
+      <date>2016-01-27</date>
+      <notes>
+PHP7 release of memcached extension. Note that support for libmemcached 0.x series has been discontinued
+and the oldest actively tested version is 1.0.2. It is highly recommended to use version 1.0.18 of
+libmemcached.
+
+API
+ * The method signature of get, getByKey, getMulti, and getMultiByKey changed.
+ * get* and getMulti* commands no longer take cas or user flags parameters.
+ * get* and getMulti* commands now take the Memcached::GET_EXTENDED flag to retrieve user flags and cas tokens.
+ * Fixes getStats command to return all stats from all servers
+ * Fixes allKeys command behaviour
+ * Fixes error where cache callback for get command was not setting expiration time properly
+ * Added server type to server list
+ * Remove use_sasl ini-variable and initialise sasl as needed
+ * CAS tokens are returned as integers and they overflow to strings as needed
+
+Session handler
+ * The session memcached protocol config name was changed, and the default protocol was changed from text to binary protocol. If your memcached setup does not support the binary protocol(e.g. if using tw
+ * Session lock algorithm updated (new ini-values memcached.sess_lock_wait_min, memcached.sess_lock_wait_max and memcached.sess_lock_retries)
+ * Session extension uses PHP allocators (still some work to do on the rest of the extension)
+ * Ini-values take effect during session_start or session_regenerate_id
+ * Fixes crash with session_regenerate_id (work-around for PHP bug)
+
+Tests
+ * Fix several problematic tests
+     </notes>
+   </release>
    <release>
       <stability>
         <release>alpha</release>

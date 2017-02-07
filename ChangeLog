@@ -1,5 +1,14 @@
 memcached extension changelog
 
+Version 3.0.1 (2017-02-07)
+-------------
+
+	* Add API entries for flushBuffers() and getAllKeys() (#316)
+	* Ignore specific errors from memcached_dump for getAllKeys() with newer memcached servers (#315)
+	* Fix compiling with memcached binary protocol enabled (#312)
+	* Restore php_libmemcached_compat with workaround for missing memcached_exists (#314)
+	* Travis CI purge old versions of memcached and libmemcached (#309)
+
 Version 3.0.0 (2017-01-27)
 --------------------------
 	* Support for PHP 7.0 and PHP 7.1
