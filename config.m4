@@ -318,7 +318,7 @@ if test "$PHP_MEMCACHED" != "no"; then
       AC_DEFINE(HAVE_MEMCACHED_EXIST, [1], [Whether memcached_exist is defined])
     fi
 
-    PHP_MEMCACHED_FILES="php_memcached.c g_fmt.c"
+    PHP_MEMCACHED_FILES="php_memcached.c php_libmemcached_compat.c  g_fmt.c"
 
     if test "$PHP_SYSTEM_FASTLZ" != "no"; then
       AC_CHECK_HEADERS([fastlz.h], [ac_cv_have_fastlz="yes"], [ac_cv_have_fastlz="no"])
