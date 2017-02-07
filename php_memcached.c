@@ -2725,7 +2725,15 @@ PHP_METHOD(Memcached, getAllKeys)
 	array_init(return_value);
 
 	rc = memcached_dump(intern->memc, callback, return_value, 1);
-	if (s_memc_status_handle_result_code(intern, rc) == FAILURE) {
+
+	/* Ignore two errors. libmemcached has a hardcoded loop of 200 slab
+	 * classes that matches memcached < 1.4.24, at which version the server
+	 * has only 63 slabs and throws an error when requesting the 64th slab.
+	 *
+	 * In multi-server some non-deterministic number of elements will be dropped.
+	 */
+	if (rc != MEMCACHED_CLIENT_ERROR && rc != MEMCACHED_SERVER_ERROR
+	    && s_memc_status_handle_result_code(intern, rc) == FAILURE) {
 		zval_dtor(return_value);
 		RETURN_FALSE;
 	}
