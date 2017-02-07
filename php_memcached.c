@@ -51,12 +51,6 @@
 # include "ext/msgpack/php_msgpack.h"
 #endif
 
-#ifdef ZTS
-#define MEMC_G(v) TSRMG(php_memcached_globals_id, zend_php_memcached_globals *, memc.v)
-#else
-#define MEMC_G(v) (php_memcached_globals.memc.v)
-#endif
-
 static int le_memc;
 
 static int php_memc_list_entry(void) {
@@ -238,23 +232,13 @@ static inline php_memc_server_t *php_memc_server_fetch_object(zend_object *obj) 
 }
 #define Z_MEMC_SERVER_P(zv) php_memc_server_fetch_object(Z_OBJ_P(zv))
 
-#ifdef ZTS
-#define MEMC_SERVER_G(v) TSRMG(php_memcached_globals_id, zend_php_memcached_globals *, server.v)
-#else
-#define MEMC_SERVER_G(v) (php_memcached_globals.server.v)
-#endif
-#endif
-
-static zend_class_entry *memcached_ce = NULL;
-
-static zend_class_entry *memcached_exception_ce = NULL;
-
-static zend_object_handlers memcached_object_handlers;
-
-#ifdef HAVE_MEMCACHED_PROTOCOL
 static zend_object_handlers memcached_server_object_handlers;
 static zend_class_entry *memcached_server_ce = NULL;
 #endif
+
+static zend_class_entry *memcached_ce = NULL;
+static zend_class_entry *memcached_exception_ce = NULL;
+static zend_object_handlers memcached_object_handlers;
 
 #ifdef HAVE_SPL
 static zend_class_entry *spl_ce_RuntimeException = NULL;
@@ -3644,7 +3628,7 @@ PHP_METHOD(MemcachedServer, run)
 static
 PHP_METHOD(MemcachedServer, on)
 {
-	long event;
+	zend_long event;
 	zend_fcall_info fci;
 	zend_fcall_info_cache fci_cache;
 	zend_bool rc = 0;
