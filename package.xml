@@ -21,6 +21,12 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <email>mkoppanen@php.net</email>
   <active>yes</active>
  </lead>
+ <lead>
+  <name>Aaron Stone</name>
+  <user>sodabrew</user>
+  <email>aaron@serendipity.cx</email>
+  <active>yes</active>
+ </lead>
  <date>2017-02-07</date>
  <version>
   <release>3.0.1</release>
