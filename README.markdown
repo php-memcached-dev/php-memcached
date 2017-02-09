@@ -34,7 +34,7 @@ php-memcached 2.x:
 * Optionally supports igbinary 1.0 or higher.
 * Optionally supports msgpack 0.5 or higher.
 
-[libmemcached](http://libmemcached.org/libMemcached.html) version 1.0.16 or
+[libmemcached](http://libmemcached.org/libMemcached.html) version 1.0.18 or
 higher is recommended for best performance and compatibility with memcached
 servers.
 
