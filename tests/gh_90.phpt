@@ -12,7 +12,7 @@ $memcached = memc_get_instance (array (
 // Create a key for use as a lock.  If this key already exists, wait till it doesn't exist.
 {
     $key = 'LockKey';
-    $lockToken = mt_rand(0, pow(2, 32)); //Random value betwen 0 and 2^32 for ownership verification
+    $lockToken = mt_rand(0, mt_getrandmax()); //Random value for ownership verification
 
     while (true)
     {
