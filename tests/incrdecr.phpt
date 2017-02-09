@@ -42,10 +42,10 @@ echo $php_errormsg, "\n";
 var_dump($m->get('foo'));
 
 echo "Enormous offset\n";
-$m->increment('foo', 4294967296);
+$m->increment('foo', 0x7f000000);
 var_dump($m->get('foo'));
 
-$m->decrement('foo', 4294967296);
+$m->decrement('foo', 0x7f000000);
 var_dump($m->get('foo'));
 
 --EXPECT--
@@ -68,5 +68,5 @@ int(1)
 Memcached::decrement(): offset cannot be a negative value
 int(1)
 Enormous offset
-int(4294967297)
+int(2130706433)
 int(1)
