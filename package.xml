@@ -74,6 +74,7 @@ Fixes
    <file role='src' name='fastlz/fastlz.c'/>
    <file role='src' name='fastlz/fastlz.h'/>
    <dir name="tests">
+    <file role='test' name='skipif.inc'/>
     <file role='test' name='001.phpt'/>
     <file role='test' name='version.phpt'/>
     <file role='test' name='bug_16084.phpt'/>
@@ -143,9 +144,11 @@ Fixes
     <file role='test' name='setmulti.phpt'/>
     <file role='test' name='cachecallback.phpt'/>
     <file role='test' name='incrdecr.phpt'/>
+    <file role='test' name='incrdecr_64.phpt'/>
     <file role='test' name='incrdecr_initial.phpt'/>
     <file role='test' name='incrdecr_invalid_key.phpt'/>
     <file role='test' name='incrdecr_bykey.phpt'/>
+    <file role='test' name='incrdecr_bykey_64.phpt'/>
     <file role='test' name='invalid_options.phpt'/>
     <file role='test' name='keys.phpt'/>
     <file role='test' name='testdata.res'/>
