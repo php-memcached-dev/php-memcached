@@ -1081,7 +1081,7 @@ zend_bool s_memc_write_zval (php_memc_object_t *intern, php_memc_write_op op, ze
 			break;
 
 			case MEMC_OP_TOUCH:
-				status = memcached_touch_by_key(intern->memc, ZSTR_VAL(server_key), ZSTR_LEN(server_key), ZSTR_VAL(key), ZSTR_LEN(key), expiration);
+				status = php_memcached_touch_by_key(intern->memc, ZSTR_VAL(server_key), ZSTR_LEN(server_key), ZSTR_VAL(key), ZSTR_LEN(key), expiration);
 			break;
 			
 			case MEMC_OP_ADD:
@@ -1113,7 +1113,7 @@ retry:
 			break;
 
 			case MEMC_OP_TOUCH:
-				status = memcached_touch(intern->memc, ZSTR_VAL(key), ZSTR_LEN(key), expiration);
+				status = php_memcached_touch(intern->memc, ZSTR_VAL(key), ZSTR_LEN(key), expiration);
 			break;
 			
 			case MEMC_OP_ADD:

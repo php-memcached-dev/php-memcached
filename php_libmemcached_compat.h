@@ -22,6 +22,9 @@
 
 memcached_return php_memcached_exist (memcached_st *memc, zend_string *key);
 
+memcached_return php_memcached_touch(memcached_st *memc, const char *key, size_t key_len, time_t expiration);
+memcached_return php_memcached_touch_by_key(memcached_st *memc, const char *server_key, size_t server_key_len, const char *key, size_t key_len, time_t expiration);
+
 #if defined(LIBMEMCACHED_VERSION_HEX) && LIBMEMCACHED_VERSION_HEX >= 0x01000017
 typedef const memcached_instance_st * php_memcached_instance_st;
 #else
