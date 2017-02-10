@@ -157,6 +157,7 @@ Fixes
     <file role='test' name='gh_155.phpt'/>
     <file role='test' name='get_flags.phpt'/>
     <file role='test' name='session_lock.phpt'/>
+    <file role='test' name='session_lazy_warning.phpt'/>
     <file role='test' name='session_regenerate.phpt'/>
     <file role='test' name='stats.phpt'/>
     <file role='test' name='default_behavior.phpt'/>

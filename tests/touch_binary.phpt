@@ -4,7 +4,10 @@ Touch in binary mode
 <?php
 $min_version = "1.4.8"; //TOUCH is added since 1.4.8
 include dirname(__FILE__) . "/skipif.inc";
-if (Memcached::LIBMEMCACHED_VERSION_HEX < 0x01000016) die ('skip too old libmemcached');
+// The touch command in binary mode will work in libmemcached 1.0.16, but runs out the timeout clock
+// See https://github.com/php-memcached-dev/php-memcached/issues/310 for further explanation
+// The problem is fixed fully in libmemcached 1.0.18, so we'll focus tests on that version
+if (Memcached::LIBMEMCACHED_VERSION_HEX < 0x01000018) die ('skip too old libmemcached');
 ?>
 --FILE--
 <?php
