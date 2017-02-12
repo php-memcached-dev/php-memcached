@@ -8,7 +8,7 @@ if (Memcached::LIBMEMCACHED_VERSION_HEX >= 0x01000018) die ('skip too old libmem
 ?>
 --INI--
 session.save_handler = memcached
-memcached.sess_binary = On
+memcached.sess_binary_protocol = On
 --FILE--
 <?php
 include dirname (__FILE__) . '/config.inc';

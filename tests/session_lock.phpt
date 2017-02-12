@@ -13,7 +13,7 @@ memcached.sess_lock_wait_min = 500
 memcached.sess_lock_wait_max = 1000
 memcached.sess_lock_retries  = 3
 memcached.sess_prefix        = "memc.test."
-memcached.sess_binary        = Off
+memcached.sess_binary_protocol = Off
 
 session.save_handler = memcached
 
