@@ -41,6 +41,6 @@ array(1) {
   ["foo"]=>
   int(1)
 }
-Warning: Memcached::touch(): memcached binary protocol touch command is broken in libmemcached < 1.0.18, please use ascii protocol or upgrade libmemcached in %s on line %d
+Warning: session_write_close(): memcached binary protocol touch command is broken in libmemcached < 1.0.18, please use ascii protocol or upgrade libmemcached in %s on line %d
 array(0) {
 }
