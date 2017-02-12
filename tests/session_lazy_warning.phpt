@@ -35,7 +35,7 @@ var_dump($_SESSION);
 session_write_close();
 
 
---EXPECT--
+--EXPECTF--
 NULL
 array(1) {
   ["foo"]=>
