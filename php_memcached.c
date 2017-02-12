@@ -1959,15 +1959,6 @@ static void php_memc_store_impl(INTERNAL_FUNCTION_PARAMETERS, int op, zend_bool 
 		}
 	}
 
-
-	if (op == MEMC_OP_TOUCH) {
-#if defined(LIBMEMCACHED_VERSION_HEX) && LIBMEMCACHED_VERSION_HEX < 0x01000016
-		if (memcached_behavior_get(intern->memc, MEMCACHED_BEHAVIOR_BINARY_PROTOCOL)) {
-			php_error_docref(NULL, E_WARNING, "using touch command with binary protocol is not recommended with libmemcached versions below 1.0.16");
-		}
-#endif
-	}
-
 	if (!s_memc_write_zval (intern, op, server_key, key, value, expiration)) {
 		RETURN_FALSE;
 	}

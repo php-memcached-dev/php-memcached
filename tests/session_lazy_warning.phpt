@@ -42,6 +42,6 @@ array(1) {
   int(1)
 }
 
-Warning: session_write_close(): memcached binary protocol touch command is broken in libmemcached < 1.0.18, please use ascii protocol or upgrade libmemcached in %s on line %d
+Warning: session_write_close(): using touch command with binary protocol is not recommended with libmemcached versions below 1.0.18, please use ascii protocol or upgrade libmemcached in %s on line %d
 array(0) {
 }
