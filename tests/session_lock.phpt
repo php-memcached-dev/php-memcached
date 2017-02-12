@@ -13,6 +13,9 @@ memcached.sess_lock_wait_min = 500
 memcached.sess_lock_wait_max = 1000
 memcached.sess_lock_retries  = 3
 memcached.sess_prefix        = "memc.test."
+
+# Turn off binary protocol while the test matrix has older versions of
+# libmemcached for which the extension warns of a broken touch command.
 memcached.sess_binary_protocol = Off
 
 session.save_handler = memcached
