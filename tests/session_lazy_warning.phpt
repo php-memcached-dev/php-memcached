@@ -1,13 +1,14 @@
 --TEST--
-Session basic open, write, destroy
+Session lazy binary warning old libmemcached
 --SKIPIF--
-<?php 
-include dirname(__FILE__) . "/skipif.inc"; 
+<?php
+include dirname(__FILE__) . "/skipif.inc";
 if (!Memcached::HAVE_SESSION) print "skip";
+if (Memcached::LIBMEMCACHED_VERSION_HEX >= 0x01000018) die ('skip too old libmemcached');
 ?>
 --INI--
 session.save_handler = memcached
-memcached.sess_binary_protocol = Off
+memcached.sess_binary_protocol = On
 --FILE--
 <?php
 include dirname (__FILE__) . '/config.inc';
@@ -15,7 +16,7 @@ ini_set ('session.save_path', MEMC_SERVER_HOST . ':' . MEMC_SERVER_PORT);
 
 ob_start();
 
-session_start();
+session_start(['lazy_write'=>TRUE]);
 $_SESSION['foo'] = 1;
 session_write_close();
 
@@ -34,11 +35,13 @@ var_dump($_SESSION);
 session_write_close();
 
 
---EXPECT--
+--EXPECTF--
 NULL
 array(1) {
   ["foo"]=>
   int(1)
 }
+
+Warning: session_write_close(): using touch command with binary protocol is not recommended with libmemcached versions below 1.0.18, please use ascii protocol or upgrade libmemcached in %s on line %d
 array(0) {
 }

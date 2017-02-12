@@ -7,6 +7,7 @@ if (!Memcached::HAVE_SESSION) print "skip";
 ?>
 --INI--
 session.save_handler = memcached
+memcached.sess_binary_protocol = Off
 --FILE--
 <?php
 include dirname (__FILE__) . '/config.inc';

@@ -1081,7 +1081,7 @@ zend_bool s_memc_write_zval (php_memc_object_t *intern, php_memc_write_op op, ze
 			break;
 
 			case MEMC_OP_TOUCH:
-				status = memcached_touch_by_key(intern->memc, ZSTR_VAL(server_key), ZSTR_LEN(server_key), ZSTR_VAL(key), ZSTR_LEN(key), expiration);
+				status = php_memcached_touch_by_key(intern->memc, ZSTR_VAL(server_key), ZSTR_LEN(server_key), ZSTR_VAL(key), ZSTR_LEN(key), expiration);
 			break;
 			
 			case MEMC_OP_ADD:
@@ -1113,7 +1113,7 @@ retry:
 			break;
 
 			case MEMC_OP_TOUCH:
-				status = memcached_touch(intern->memc, ZSTR_VAL(key), ZSTR_LEN(key), expiration);
+				status = php_memcached_touch(intern->memc, ZSTR_VAL(key), ZSTR_LEN(key), expiration);
 			break;
 			
 			case MEMC_OP_ADD:
@@ -1957,15 +1957,6 @@ static void php_memc_store_impl(INTERNAL_FUNCTION_PARAMETERS, int op, zend_bool 
 			php_error_docref(NULL, E_WARNING, "cannot append/prepend with compression turned on");
 			RETURN_NULL();
 		}
-	}
-
-
-	if (op == MEMC_OP_TOUCH) {
-#if defined(LIBMEMCACHED_VERSION_HEX) && LIBMEMCACHED_VERSION_HEX < 0x01000016
-		if (memcached_behavior_get(intern->memc, MEMCACHED_BEHAVIOR_BINARY_PROTOCOL)) {
-			php_error_docref(NULL, E_WARNING, "using touch command with binary protocol is not recommended with libmemcached versions below 1.0.16");
-		}
-#endif
 	}
 
 	if (!s_memc_write_zval (intern, op, server_key, key, value, expiration)) {

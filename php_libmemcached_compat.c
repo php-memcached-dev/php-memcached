@@ -35,3 +35,24 @@ memcached_return php_memcached_exist (memcached_st *memc, zend_string *key)
 	return rc;
 #endif
 }
+
+memcached_return php_memcached_touch(memcached_st *memc, const char *key, size_t key_len, time_t expiration)
+{
+#if defined(LIBMEMCACHED_VERSION_HEX) && LIBMEMCACHED_VERSION_HEX < 0x01000018
+	if (memcached_behavior_get(memc, MEMCACHED_BEHAVIOR_BINARY_PROTOCOL)) {
+		php_error_docref(NULL, E_WARNING, "using touch command with binary protocol is not recommended with libmemcached versions below 1.0.18, please use ascii protocol or upgrade libmemcached");
+	}
+#endif
+	return memcached_touch(memc, key, key_len, expiration);
+}
+
+memcached_return php_memcached_touch_by_key(memcached_st *memc, const char *server_key, size_t server_key_len, const char *key, size_t key_len, time_t expiration)
+{
+#if defined(LIBMEMCACHED_VERSION_HEX) && LIBMEMCACHED_VERSION_HEX < 0x01000018
+	if (memcached_behavior_get(memc, MEMCACHED_BEHAVIOR_BINARY_PROTOCOL)) {
+		php_error_docref(NULL, E_WARNING, "using touch command with binary protocol is not recommended with libmemcached versions below 1.0.18, please use ascii protocol or upgrade libmemcached");
+	}
+#endif
+	return memcached_touch_by_key(memc, server_key, server_key_len, key, key_len, expiration);
+}
+

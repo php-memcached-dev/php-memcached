@@ -542,7 +542,7 @@ PS_UPDATE_TIMESTAMP_FUNC(memcached)
 	memcached_st *memc = PS_GET_MOD_DATA();
 	time_t expiration = s_session_expiration(maxlifetime);
 
-	if (memcached_touch(memc, key->val, key->len, expiration) == MEMCACHED_FAILURE) {
+	if (php_memcached_touch(memc, key->val, key->len, expiration) == MEMCACHED_FAILURE) {
 		return FAILURE;
 	}
 	return SUCCESS;
