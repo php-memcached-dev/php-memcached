@@ -52,7 +52,6 @@ memcached_return php_memcached_touch_by_key(memcached_st *memc, const char *serv
 	if (memcached_behavior_get(memc, MEMCACHED_BEHAVIOR_BINARY_PROTOCOL)) {
 		php_error_docref(NULL, E_WARNING, "using touch command with binary protocol is not recommended with libmemcached versions below 1.0.18, please use ascii protocol or upgrade libmemcached");
 	}
-	}
 #endif
 	return memcached_touch_by_key(memc, server_key, server_key_len, key, key_len, expiration);
 }
