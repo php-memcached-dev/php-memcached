@@ -1,7 +1,14 @@
 memcached extension changelog
 
+Version 3.0.2 (2017-02-12)
+--------------------------
+
+	* Update warning for touch command in binary protocol mode with libmemcached < 1.0.18 (#322)
+	* Add tests for 64-bit increment/decrement/incrementByKey/decrementByKey (#321)
+	* Fix tests for 32-bit increment/decrement/incrementByKey/decrementByKey (#319)
+
 Version 3.0.1 (2017-02-07)
--------------
+--------------------------
 
 	* Add API entries for flushBuffers() and getAllKeys() (#316)
 	* Ignore specific errors from memcached_dump for getAllKeys() with newer memcached servers (#315)
