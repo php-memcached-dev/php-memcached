@@ -43,7 +43,7 @@ and the oldest actively tested version is 1.0.2. It is highly recommended to use
 libmemcached.
 
 Fixes
- * Update warning for touch command in binary protocol mode with libmemcached < 1.0.18 (#322)
+ * Update warning for touch command in binary protocol mode with libmemcached below 1.0.18 (#322)
  * Add tests for 64-bit increment/decrement/incrementByKey/decrementByKey (#321)
  * Fix tests for 32-bit increment/decrement/incrementByKey/decrementByKey (#319)
 
