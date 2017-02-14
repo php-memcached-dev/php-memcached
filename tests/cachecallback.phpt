@@ -65,11 +65,10 @@ $m->delete($second_key);
 $m->delete($third_key);
 
 var_dump (
-$m->get ($first_key, function (Memcached $memc, $key, &$value) {
-					$value = [
-						"value" => "first_ext",
-						"cas"   => 12345,
-						"expiration" => 10 ];
+$m->get ($first_key, function (Memcached $memc, $key, &$value, &$expiration) {
+					$value = [ "value" => "first_ext" ];
+						// "cas"   => 12345 ];
+					$expiration = 10;
 					return true;
 				}, Memcached::GET_EXTENDED)
 );
@@ -82,11 +81,11 @@ $m->get ($first_key, function (Memcached $memc, $key, &$value) {
 					 }, Memcached::GET_EXTENDED);
 
 var_dump (
-$m->get ($second_key, function (Memcached $memc, $key, &$value) {
+$m->get ($second_key, function (Memcached $memc, $key, &$value, &$expiration) {
 					$value = [
 						"value" => "second_ext",
-						"cas"   => 12345,
-						"expiration" => 10 ];
+						"cas"   => 12345 ];
+					$expiration = 10;
 					return false;
 				}, Memcached::GET_EXTENDED)
 );
@@ -95,11 +94,11 @@ var_dump ($m->get ($second_key));
 var_dump ($m->get ($second_key, null, Memcached::GET_EXTENDED));
 
 try {
-	$m->get ($third_key, function (Memcached $memc, $key, &$value) {
+	$m->get ($third_key, function (Memcached $memc, $key, &$value, &$expiration) {
 						$value = [
 							"value" => "third_ext",
-							"cas"   => "12345",
-							"expiration" => "10" ];
+							"cas"   => "12345" ];
+						$expiration = 10;
 						throw new Exception ('this is a test');
 						return true;
 					 }, Memcached::GET_EXTENDED);
