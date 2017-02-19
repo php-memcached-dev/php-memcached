@@ -351,6 +351,7 @@ PS_OPEN_FUNC(memcached)
 				else {
 					efree(plist_key);
 					PS_SET_MOD_DATA(memc);
+					memcached_server_list_free(servers);
 					return SUCCESS;
 				}
 			}
