@@ -18,19 +18,20 @@
 #include "php_memcached_private.h"
 #include "php_libmemcached_compat.h"
 
-memcached_return php_memcached_exist (memcached_st *memc, zend_string *key)
+memcached_return php_memcached_exist(memcached_st *memc, zend_string *key)
 {
 #ifdef HAVE_MEMCACHED_EXIST
-	return memcached_exist (memc, key->val, key->len);
+	return memcached_exist(memc, key->val, key->len);
 #else
 	memcached_return rc = MEMCACHED_SUCCESS;
 	uint32_t flags = 0;
 	size_t value_length = 0;
 	char *value = NULL;
 
-	value = memcached_get (memc, key->val, key->len, &value_length, &flags, &rc);
+	value = memcached_get(memc, key->val, key->len, &value_length, &flags, &rc);
 	if (value) {
-		free (value);
+		zend_bool *is_persistent = memcached_get_user_data(memc);
+		pefree(value, *is_persistent);
 	}
 	return rc;
 #endif
