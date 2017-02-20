@@ -3,7 +3,8 @@ Session persistent
 --SKIPIF--
 <?php 
 include dirname(__FILE__) . "/skipif.inc"; 
-if (!Memcached::HAVE_SESSION) print "skip";
+if (!Memcached::HAVE_SESSION) die ('skip session support disabled');
+if (Memcached::LIBMEMCACHED_VERSION_HEX < 0x01000018) die ('skip too old libmemcached');
 ?>
 --INI--
 session.save_handler=memcached
