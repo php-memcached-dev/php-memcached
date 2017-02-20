@@ -27,9 +27,9 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <email>aaron@serendipity.cx</email>
   <active>yes</active>
  </lead>
- <date>2017-02-12</date>
+ <date>2017-02-19</date>
  <version>
-  <release>3.0.2</release>
+  <release>3.0.3</release>
   <api>3.0.0</api>
  </version>
  <stability>
@@ -43,10 +43,8 @@ and the oldest actively tested version is 1.0.2. It is highly recommended to use
 libmemcached.
 
 Fixes
- * Update warning for touch command in binary protocol mode with libmemcached below 1.0.18 (#322)
- * Add tests for 64-bit increment/decrement/incrementByKey/decrementByKey (#321)
- * Fix tests for 32-bit increment/decrement/incrementByKey/decrementByKey (#319)
-
+ * Fix crash when checking session data with older versions of libmemcached (#328)
+ * Fix crash due to zend_mm_corrupted when fetching session data (#327)
  </notes>
  <contents>
   <dir name="/">
@@ -191,6 +189,27 @@ Fixes
   <configureoption name="with-libmemcached-dir" default="no" prompt="libmemcached directory"/>
  </extsrcrelease>
  <changelog>
+    <release>
+      <stability>
+        <release>stable</release>
+        <api>stable</api>
+      </stability>
+      <version>
+        <release>3.0.2</release>
+        <api>3.0.0</api>
+      </version>
+      <date>2016-02-12</date>
+      <notes>
+PHP7 release of memcached extension. Note that support for libmemcached 0.x series has been discontinued
+and the oldest actively tested version is 1.0.2. It is highly recommended to use version 1.0.18 of
+libmemcached.
+
+Fixes
+ * Update warning for touch command in binary protocol mode with libmemcached below 1.0.18 (#322)
+ * Add tests for 64-bit increment/decrement/incrementByKey/decrementByKey (#321)
+ * Fix tests for 32-bit increment/decrement/incrementByKey/decrementByKey (#319)
+      </notes>
+    </release>
     <release>
       <stability>
         <release>stable</release>

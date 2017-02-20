@@ -1,5 +1,11 @@
 memcached extension changelog
 
+Version 3.0.3 (2017-02-19)
+--------------------------
+
+	* Fix crash when checking session data with older versions of libmemcached (#328)
+	* Fix crash due to zend_mm_corrupted when fetching session data (#327)
+
 Version 3.0.2 (2017-02-12)
 --------------------------
 
