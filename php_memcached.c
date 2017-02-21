@@ -3912,10 +3912,12 @@ ZEND_BEGIN_ARG_INFO(arginfo_getOption, 0)
 	ZEND_ARG_INFO(0, option)
 ZEND_END_ARG_INFO()
 
+#ifdef HAVE_MEMCACHED_SASL
 ZEND_BEGIN_ARG_INFO(arginfo_setSaslAuthData, 0)
 	ZEND_ARG_INFO(0, username)
 	ZEND_ARG_INFO(0, password)
 ZEND_END_ARG_INFO()
+#endif
 
 ZEND_BEGIN_ARG_INFO(arginfo_setOption, 0)
 	ZEND_ARG_INFO(0, option)
