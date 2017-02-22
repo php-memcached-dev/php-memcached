@@ -194,7 +194,8 @@ static inline php_memc_object_t *php_memc_fetch_object(zend_object *obj) {
 		php_error_docref(NULL, E_WARNING, "Memcached constructor was not called");    \
 		return;                                                                       \
 	}                                                                                 \
-	memc_user_data = (php_memc_user_data_t *) memcached_get_user_data(intern->memc);
+	memc_user_data = (php_memc_user_data_t *) memcached_get_user_data(intern->memc);  \
+	(void)memc_user_data; /* avoid unused variable warning */
 
 static
 zend_bool s_memc_valid_key_binary(const char *key)
@@ -898,7 +899,7 @@ zend_bool s_serialize_value (php_memc_serializer_type serializer, zval *value, s
 				php_error_docref(NULL, E_WARNING, "could not serialize value with igbinary");
 				return 0;
 			}
-			smart_str_appendl (buf, buffer, buffer_len);
+			smart_str_appendl (buf, (char *)buffer, buffer_len);
 			efree(buffer);
 			MEMC_VAL_SET_TYPE(*flags, MEMC_VAL_IS_IGBINARY);
 		}
@@ -1058,7 +1059,7 @@ zend_bool s_memc_write_zval (php_memc_object_t *intern, php_memc_write_op op, ze
 {
 	uint32_t flags = 0;
 	zend_string *payload = NULL;
-	memcached_return status;
+	memcached_return status = 0;
 	php_memc_user_data_t *memc_user_data = memcached_get_user_data(intern->memc);
 	zend_long retries = memc_user_data->store_retry_count;
 
@@ -3911,10 +3912,12 @@ ZEND_BEGIN_ARG_INFO(arginfo_getOption, 0)
 	ZEND_ARG_INFO(0, option)
 ZEND_END_ARG_INFO()
 
+#ifdef HAVE_MEMCACHED_SASL
 ZEND_BEGIN_ARG_INFO(arginfo_setSaslAuthData, 0)
 	ZEND_ARG_INFO(0, username)
 	ZEND_ARG_INFO(0, password)
 ZEND_END_ARG_INFO()
+#endif
 
 ZEND_BEGIN_ARG_INFO(arginfo_setOption, 0)
 	ZEND_ARG_INFO(0, option)
