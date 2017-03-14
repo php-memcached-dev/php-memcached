@@ -10,8 +10,8 @@ class Memcached {
 	 */
 
 	const OPT_HASH;
-	
-	const OPT_HASH_DEFAULT;
+
+	const HASH_DEFAULT;
 
 	const HASH_MD5;
 
@@ -37,9 +37,13 @@ class Memcached {
 	
 	const DISTRIBUTION_VIRTUAL_BUCKET;
 
-	const LIBKETAMA_COMPATIBLE;
+	const OPT_LIBKETAMA_COMPATIBLE;
 
-	const OPT_BUFFER_REQUESTS;
+	const OPT_LIBKETAMA_HASH;
+
+	const OPT_TCP_KEEPALIVE;
+
+	const OPT_BUFFER_WRITES;
 
 	const OPT_BINARY_PROTOCOL;
 
@@ -81,11 +85,20 @@ class Memcached {
 
 
 	/**
-	 * Class parameters
+	 * Supported serializers
 	 */
 	const HAVE_JSON;
 
 	const HAVE_IGBINARY;
+
+	const HAVE_MSGPACK;
+
+	/**
+	 * Feature support
+	 */
+	const HAVE_SESSION;
+
+	const HAVE_SASL;
 
 	/**
 	 * Class options.
@@ -107,6 +120,8 @@ class Memcached {
 
 	const SERIALIZER_JSON_ARRAY;
 
+	const SERIALIZER_MSGPACK;
+
 	/**
 	 * Compression types
 	 */
@@ -115,9 +130,13 @@ class Memcached {
 	const COMPRESSION_TYPE_ZLIB;
 
 	/**
-	 * Flags
+	 * Flags for get and getMulti operations.
 	 */
+	// Whether to preserve key order in the result
 	const GET_PRESERVE_ORDER;
+
+	// Whether to fetch CAS token as well (use "gets").
+	const GET_EXTENDED;
 
 	/**
 	 * Return values
