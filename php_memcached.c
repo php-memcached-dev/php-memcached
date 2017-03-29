@@ -770,7 +770,6 @@ zend_bool s_invoke_cache_callback(zval *zobject, zend_fcall_info *fci, zend_fcal
 		zval *val = Z_REFVAL(params[2]);
 		expiration = zval_get_long(Z_REFVAL(params[3]));
 
-printf("before with_cas\n");
 		if (with_cas) {
 			zval *rv = NULL;
 			zval *zv_cas = NULL;
@@ -779,19 +778,16 @@ printf("before with_cas\n");
 				rv = zend_hash_str_find(Z_ARRVAL_P(val), "value", sizeof("value") - 1);
 				zv_cas = zend_hash_str_find(Z_ARRVAL_P(val), "cas", sizeof("cas") - 1);
 			}
-printf("after array\n");
 			if (zv_cas) {
 				cas = s_zval_to_uint64(zv_cas);
 				status = s_memc_write_zval (intern, MEMC_OP_CAS, NULL, key, rv, &flags, expiration, cas);
 			} else {
 				status = s_memc_write_zval (intern, MEMC_OP_SET, NULL, key, rv, &flags, expiration, 0);
 			}
-printf("after write_zval\n");
-			array_init(value);
-			s_create_result_array(key, rv, zv_cas, flags, value);
-			// ZVAL_COPY(value, rv); // FIXME: this needs to be in extended result format
+			// array_init(value);
+			// s_create_result_array(key, rv, zv_cas, flags, value);
+			ZVAL_COPY(value, rv); // FIXME: this needs to be in extended result format
 		} else {
-printf("else case\n");
 			status = s_memc_write_zval (intern, MEMC_OP_SET, NULL, key, val, &flags, expiration, 0);
 			ZVAL_COPY(value, val);
 		}
@@ -799,6 +795,22 @@ printf("else case\n");
 	else {
 		s_memc_set_status(intern, MEMCACHED_NOTFOUND, 0);
 	}
+
+/*
+			res_key     = memcached_result_key_value(&result);
+			res_key_len = memcached_result_key_length(&result);
+			cas         = memcached_result_cas(&result);
+			flags       = memcached_result_flags(&result);
+
+			s_uint64_to_zval(&zcas, cas);
+
+			key = zend_string_init (res_key, res_key_len, 0);
+			retval = result_apply_fn(intern, key, &val, &zcas, flags, context);
+
+			zend_string_release(key);
+			zval_ptr_dtor(&val);
+			zval_ptr_dtor(&zcas);
+*/
 
 	zval_ptr_dtor(&params[0]);
 	zval_ptr_dtor(&params[1]);
@@ -1043,11 +1055,9 @@ zend_string *s_zval_to_payload(php_memc_object_t *intern, zval *value, uint32_t 
 		(void)s_compress_value (memc_user_data->compression_type, &payload, flags);
 	}
 
-printf("before setting *flags\n");
 	if (memc_user_data->set_udf_flags >= 0) {
 		MEMC_VAL_SET_USER_FLAGS(*flags, ((uint32_t) memc_user_data->set_udf_flags));
 	}
-printf("after setting *flags\n");
 
 	return payload;
 }
@@ -1071,9 +1081,7 @@ zend_bool s_memc_write_zval (php_memc_object_t *intern, php_memc_write_op op, ze
 	zend_long retries = memc_user_data->store_retry_count;
 
 	if (value) {
-printf("before flags\n");
 		payload = s_zval_to_payload(intern, value, flags);
-printf("after flags\n");
 	}
 
 	// Only touch has no payload
