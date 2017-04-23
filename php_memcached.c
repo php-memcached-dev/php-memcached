@@ -3876,6 +3876,10 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_addServer, 0, 0, 2)
 	ZEND_ARG_INFO(0, weight)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_getStats, 0, 0, 0)
+	ZEND_ARG_INFO(0, type)
+ZEND_END_ARG_INFO()
+
 ZEND_BEGIN_ARG_INFO(arginfo_addServers, 0)
 	ZEND_ARG_ARRAY_INFO(0, servers, 0)
 ZEND_END_ARG_INFO()
@@ -3932,10 +3936,6 @@ ZEND_BEGIN_ARG_INFO(arginfo_setBucket, 3)
 	ZEND_ARG_INFO(0, host_map)
 	ZEND_ARG_INFO(0, forward_map)
 	ZEND_ARG_INFO(0, replicas)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO(arginfo_getStats, 0)
-	ZEND_ARG_INFO(0, args)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO(arginfo_getVersion, 0)
