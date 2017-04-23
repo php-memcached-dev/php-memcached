@@ -16,7 +16,7 @@ class Memcached {
 	const HASH_MD5;
 
 	const HASH_CRC;
-	
+
 	const HASH_FNV1_64;
 
 	const HASH_FNV1A_64;
@@ -34,7 +34,7 @@ class Memcached {
 	const DISTRIBUTION_MODULA;
 
 	const DISTRIBUTION_CONSISTENT;
-	
+
 	const DISTRIBUTION_VIRTUAL_BUCKET;
 
 	const OPT_LIBKETAMA_COMPATIBLE;
@@ -61,9 +61,9 @@ class Memcached {
 
 	const OPT_DEAD_TIMEOUT;
 
-	const OPT_SND_TIMEOUT;
+	const OPT_SEND_TIMEOUT;
 
-	const OPT_RCV_TIMEOUT;
+	const OPT_RECV_TIMEOUT;
 
 	const OPT_POLL_TIMEOUT;
 
@@ -75,14 +75,17 @@ class Memcached {
 
 	const OPT_AUTO_EJECT_HOSTS;
 
-	const OPT_NUMBER_OF_REPLICAS;
-
 	const OPT_NOREPLY;
 
 	const OPT_VERIFY_KEY;
-	
+
+	const OPT_USE_UDP;
+
+	const OPT_NUMBER_OF_REPLICAS;
+
 	const OPT_RANDOMIZE_REPLICA_READS;
 
+	const OPT_REMOVE_FAILED_SERVERS;
 
 	/**
 	 * Supported serializers
@@ -125,9 +128,9 @@ class Memcached {
 	/**
 	 * Compression types
 	 */
-	const COMPRESSION_TYPE_FASTLZ;
+	const COMPRESSION_FASTLZ;
 
-	const COMPRESSION_TYPE_ZLIB;
+	const COMPRESSION_ZLIB;
 
 	/**
 	 * Flags for get and getMulti operations.
@@ -205,9 +208,57 @@ class Memcached {
 
 	const RES_CONNECTION_SOCKET_CREATE_FAILURE;
 
+	const RES_E2BIG;
+
+	const RES_KEY_TOO_BIG;
+
+	const RES_SERVER_TEMPORARILY_DISABLED;
+
+	const RES_SERVER_MEMORY_ALLOCATION_FAILURE;
+
+	const RES_AUTH_PROBLEM;
+
+	const RES_AUTH_FAILURE;
+
+	const RES_AUTH_CONTINUE;
+
+    /** Server callbacks, if compiled with --memcached-protocol */
+	const ON_CONNECT;
+	const ON_ADD;
+	const ON_APPEND;
+	const ON_DECREMENT;
+	const ON_DELETE;
+	const ON_FLUSH;
+	const ON_GET;
+	const ON_INCREMENT;
+	const ON_NOOP;
+	const ON_PREPEND;
+	const ON_QUIT;
+	const ON_REPLACE;
+	const ON_SET;
+	const ON_STAT;
+	const ON_VERSION;
+    /** Constants used when compiled with --memcached-protocol */
+	const RESPONSE_SUCCESS;
+	const RESPONSE_KEY_ENOENT;
+	const RESPONSE_KEY_EEXISTS;
+	const RESPONSE_E2BIG;
+	const RESPONSE_EINVAL;
+	const RESPONSE_NOT_STORED;
+	const RESPONSE_DELTA_BADVAL;
+	const RESPONSE_NOT_MY_VBUCKET;
+	const RESPONSE_AUTH_ERROR;
+	const RESPONSE_AUTH_CONTINUE;
+	const RESPONSE_UNKNOWN_COMMAND;
+	const RESPONSE_ENOMEM;
+	const RESPONSE_NOT_SUPPORTED;
+	const RESPONSE_EINTERNAL;
+	const RESPONSE_EBUSY;
+	const RESPONSE_ETMPFAIL;
+
 
 	public function __construct( $persistent_id = '', $on_new_object_cb = null ) {}
-	
+
 	public function get( $key, callable $cache_cb = null, $flags = 0) {}
 
 	public function getByKey( $server_key, $key, callable $cache_cb = null, $flags = 0 ) {}
@@ -221,7 +272,7 @@ class Memcached {
 	public function getDelayedByKey( $server_key, array $keys, $with_cas = null, $value_cb = null ) {}
 
 	public function fetch( ) {}
-	
+
 	public function fetchAll( ) {}
 
 	public function set( $key, $value, $expiration = 0, $udf_flags = 0 ) {}
@@ -269,7 +320,7 @@ class Memcached {
 	public function decrement( $key, $offset = 1, $initial_value = 0, $expiry = 0) {}
 
 	public function getOption( $option ) {}
-	
+
 	public function setOption( $option, $value ) {}
 
 	public function setOptions( array $options ) {}
@@ -299,7 +350,7 @@ class Memcached {
 	public function getStats( $type = null ) {}
 
 	public function getAllKeys( ) {}
-	
+
 	public function getVersion( ) {}
 
 	public function getResultCode( ) {}
