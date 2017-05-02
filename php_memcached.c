@@ -3383,7 +3383,7 @@ zend_string *s_decompress_value (const char *payload, size_t payload_len, uint32
 	is_zlib   = MEMC_VAL_HAS_FLAG(flags, MEMC_VAL_COMPRESSION_ZLIB);
 
 	if (!is_fastlz && !is_zlib) {
-		php_error_docref(NULL, E_WARNING, "could not decompress value: unrecognised encryption type");
+		php_error_docref(NULL, E_WARNING, "could not decompress value: unrecognised compression type");
 		return NULL;
 	}
 
