@@ -1019,7 +1019,6 @@ zend_string *s_zval_to_payload(php_memc_object_t *intern, zval *value, uint32_t 
 		}
 			break;
 	}
-	zend_string_forget_hash_val(payload);
 
 	/* turn off compression for values below the threshold */
 	if (ZSTR_LEN(payload) == 0 || ZSTR_LEN(payload) < MEMC_G(compression_threshold)) {
