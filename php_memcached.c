@@ -329,8 +329,8 @@ PHP_INI_BEGIN()
 
 #ifdef HAVE_MEMCACHED_SESSION
 	MEMC_SESSION_INI_ENTRY("locking",                "1",          OnUpdateBool,           lock_enabled)
-	MEMC_SESSION_INI_ENTRY("lock_wait_min",          "1000",       OnUpdateLongGEZero,     lock_wait_min)
-	MEMC_SESSION_INI_ENTRY("lock_wait_max",          "2000",       OnUpdateLongGEZero,     lock_wait_max)
+	MEMC_SESSION_INI_ENTRY("lock_wait_min",          "150",        OnUpdateLongGEZero,     lock_wait_min)
+	MEMC_SESSION_INI_ENTRY("lock_wait_max",          "150",        OnUpdateLongGEZero,     lock_wait_max)
 	MEMC_SESSION_INI_ENTRY("lock_retries",           "5",          OnUpdateLong,           lock_retries)
 	MEMC_SESSION_INI_ENTRY("lock_expire",            "0",          OnUpdateLongGEZero,     lock_expiration)
 #if defined(LIBMEMCACHED_VERSION_HEX) && LIBMEMCACHED_VERSION_HEX < 0x01000018
@@ -4069,9 +4069,9 @@ PHP_GINIT_FUNCTION(php_memcached)
 #ifdef HAVE_MEMCACHED_SESSION
 
 	php_memcached_globals->session.lock_enabled = 0;
-	php_memcached_globals->session.lock_wait_max = 2000;
-	php_memcached_globals->session.lock_wait_min = 1000;
-	php_memcached_globals->session.lock_retries = 5;
+	php_memcached_globals->session.lock_wait_max = 150;
+	php_memcached_globals->session.lock_wait_min = 150;
+	php_memcached_globals->session.lock_retries = 200;
 	php_memcached_globals->session.lock_expiration = 30;
 	php_memcached_globals->session.binary_protocol_enabled = 1;
 	php_memcached_globals->session.consistent_hash_enabled = 1;
