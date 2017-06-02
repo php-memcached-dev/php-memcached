@@ -30,6 +30,10 @@ var_dump($m->setOptions(array(
 	-1 => 123
 )));
 
+var_dump($m->setOptions(array(
+	Memcached::OPT_PREFIX_KEY => false
+)));
+
 --EXPECTF--
 bool(true)
 bool(true)
@@ -39,6 +43,9 @@ bool(true)
 test invalid options
 
 Warning: Memcached::setOptions(): invalid configuration option in %s on line %d
+bool(false)
+
+Warning: Memcached::setOptions(): error setting memcached option: %s in %s on line %d
 bool(false)
 
 Warning: Memcached::setOptions(): error setting memcached option: %s in %s on line %d
