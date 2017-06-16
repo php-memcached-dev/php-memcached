@@ -293,15 +293,6 @@ static PHP_INI_MH(OnUpdateSerializer)
 }
 
 static
-PHP_INI_MH(OnUpdateDeprecatedLockValue)
-{
-	if (ZSTR_LEN(new_value) > 0 && strcmp(ZSTR_VAL(new_value), "not set")) {
-		php_error_docref(NULL, E_DEPRECATED, "memcached.sess_lock_wait and memcached.sess_lock_max_wait are deprecated. Please update your configuration to use memcached.sess_lock_wait_min, memcached.sess_lock_wait_max and memcached.sess_lock_retries");
-	}
-	return FAILURE;
-}
-
-static
 PHP_INI_MH(OnUpdateSessionPrefixString)
 {
 	if (new_value && ZSTR_LEN(new_value) > 0) {
@@ -329,9 +320,8 @@ PHP_INI_BEGIN()
 
 #ifdef HAVE_MEMCACHED_SESSION
 	MEMC_SESSION_INI_ENTRY("locking",                "1",          OnUpdateBool,           lock_enabled)
-	MEMC_SESSION_INI_ENTRY("lock_wait_min",          "1000",       OnUpdateLongGEZero,     lock_wait_min)
-	MEMC_SESSION_INI_ENTRY("lock_wait_max",          "2000",       OnUpdateLongGEZero,     lock_wait_max)
-	MEMC_SESSION_INI_ENTRY("lock_retries",           "5",          OnUpdateLong,           lock_retries)
+	MEMC_SESSION_INI_ENTRY("lock_wait",            "150",          OnUpdateLongGEZero,     lock_wait)
+	MEMC_SESSION_INI_ENTRY("lock_retries",          "-1",          OnUpdateLong,           lock_retries)
 	MEMC_SESSION_INI_ENTRY("lock_expire",            "0",          OnUpdateLongGEZero,     lock_expiration)
 #if defined(LIBMEMCACHED_VERSION_HEX) && LIBMEMCACHED_VERSION_HEX < 0x01000018
 	MEMC_SESSION_INI_ENTRY("binary_protocol",        "0",          OnUpdateBool,           binary_protocol_enabled)
@@ -348,11 +338,6 @@ PHP_INI_BEGIN()
 	MEMC_SESSION_INI_ENTRY("sasl_password",          "",           OnUpdateString,         sasl_password)
 	MEMC_SESSION_INI_ENTRY("prefix",                 "memc.sess.", OnUpdateSessionPrefixString,         prefix)
 	MEMC_SESSION_INI_ENTRY("persistent",             "0",          OnUpdateBool,           persistent_enabled)
-	
-	/* Deprecated */
-	STD_PHP_INI_ENTRY("memcached.sess_lock_wait", "not set", PHP_INI_ALL, OnUpdateDeprecatedLockValue, no_effect, zend_php_memcached_globals, php_memcached_globals)
-	STD_PHP_INI_ENTRY("memcached.sess_lock_max_wait", "not set", PHP_INI_ALL, OnUpdateDeprecatedLockValue, no_effect, zend_php_memcached_globals, php_memcached_globals)
-	
 #endif
 
 	MEMC_INI_ENTRY("compression_type",      "fastlz",                OnUpdateCompressionType, compression_name)
@@ -4069,9 +4054,8 @@ PHP_GINIT_FUNCTION(php_memcached)
 #ifdef HAVE_MEMCACHED_SESSION
 
 	php_memcached_globals->session.lock_enabled = 0;
-	php_memcached_globals->session.lock_wait_max = 2000;
-	php_memcached_globals->session.lock_wait_min = 1000;
-	php_memcached_globals->session.lock_retries = 5;
+	php_memcached_globals->session.lock_wait = 150;
+	php_memcached_globals->session.lock_retries = -1;
 	php_memcached_globals->session.lock_expiration = 30;
 	php_memcached_globals->session.binary_protocol_enabled = 1;
 	php_memcached_globals->session.consistent_hash_enabled = 1;

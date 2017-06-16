@@ -38,14 +38,6 @@ typedef struct  {
 	zend_string *lock_key;
 } php_memcached_user_data;
 
-#ifndef MIN
-# define MIN(a,b) (((a)<(b))?(a):(b))
-#endif
-
-#ifndef MAX
-# define MAX(a,b) (((a)>(b))?(a):(b))
-#endif
-
 #ifdef ZTS
 #define MEMC_SESS_INI(v) TSRMG(php_memcached_globals_id, zend_php_memcached_globals *, session.v)
 #else
@@ -143,8 +135,12 @@ zend_bool s_lock_session(memcached_st *memc, zend_string *sid)
 	lock_key_len = spprintf(&lock_key, 0, "lock.%s", sid->val);
 	expiration   = s_lock_expiration();
 
-	wait_time = MEMC_SESS_INI(lock_wait_min);
+	wait_time = MEMC_SESS_INI(lock_wait);
 	retries   = MEMC_SESS_INI(lock_retries);
+
+	if (retries < 0) {
+	    retries = zend_ini_long(ZEND_STRS("max_execution_time"), 0) / 1000 * wait_time;
+	}
 
 	do {
 		rc = memcached_add(memc, lock_key, lock_key_len, "1", sizeof ("1") - 1, expiration, 0);
@@ -160,7 +156,6 @@ zend_bool s_lock_session(memcached_st *memc, zend_string *sid)
 			case MEMCACHED_DATA_EXISTS:
 				if (retries > 0) {
 					usleep(wait_time * 1000);
-					wait_time = MIN(MEMC_SESS_INI(lock_wait_max), wait_time * 2);
 				}
 			break;
 

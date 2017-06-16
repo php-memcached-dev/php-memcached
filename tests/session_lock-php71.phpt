@@ -9,8 +9,7 @@ if (PHP_VERSION_ID < 70100) print "skip";
 ?>
 --INI--
 memcached.sess_locking       = true
-memcached.sess_lock_wait_min = 500
-memcached.sess_lock_wait_max = 1000
+memcached.sess_lock_wait     = 500
 memcached.sess_lock_retries  = 3
 memcached.sess_prefix        = "memc.test."
 
@@ -50,7 +49,7 @@ $time_start = microtime(true);
 session_start();
 $time = microtime(true) - $time_start;
 
-if (round ($time, 1) != 2.5) {
+if (round ($time, 1) != 1.5) {
 	echo "Waited longer than expected: $time" . PHP_EOL;
 }
 echo "OK";

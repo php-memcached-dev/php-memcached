@@ -142,8 +142,7 @@ ZEND_BEGIN_MODULE_GLOBALS(php_memcached)
 	/* Session related variables */
 	struct {
 		zend_bool lock_enabled;
-		zend_long lock_wait_max;
-		zend_long lock_wait_min;
+		zend_long lock_wait;
 		zend_long lock_retries;
 		zend_long lock_expiration;
 
