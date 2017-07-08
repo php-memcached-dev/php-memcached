@@ -6,7 +6,7 @@ Memcached construct with bad arguments
 <?php 
 
 $m = new Memcached((object)array());
-echo $php_errormsg, "\n";
+echo error_get_last()["message"], "\n";
 var_dump($m);
 
 class extended extends Memcached {

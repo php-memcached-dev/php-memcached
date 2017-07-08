@@ -10,7 +10,7 @@ error_reporting(0);
 
 $m->delete('foo');
 var_dump($m->replaceByKey('kef', 'foo', 'bar', 60));
-echo $php_errormsg, "\n";
+echo error_get_last()["message"], "\n";
 echo $m->getResultMessage(), "\n";
 var_dump($m->getByKey('kef', 'foo'));
 

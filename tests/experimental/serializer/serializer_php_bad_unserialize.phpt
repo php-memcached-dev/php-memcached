@@ -40,7 +40,7 @@ var_dump($m->set('foo', new Foo(), 10));
 try {
 	var_dump($m->get('foo'));
 } catch (Exception $e) {
-	echo $php_errormsg, "\n";
+	echo error_get_last()["message"], "\n";
 	echo $e->getMessage(), "\n";
 }
 

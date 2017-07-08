@@ -36,7 +36,7 @@ try {
 		}
 	}
 
-	echo $php_errormsg, "\n";
+	echo error_get_last()["message"], "\n";
 	echo $e->getMessage(), "\n";
 }
 var_dump($m->getByKey('kef', 'foo'));

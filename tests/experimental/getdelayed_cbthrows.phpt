@@ -24,7 +24,7 @@ error_reporting(0);
 try {
 	$m->getDelayedByKey('kef', array_keys($data), false, 'myfunc');
 } catch (Exception $e) {
-	echo $php_errormsg, "\n";
+	echo error_get_last()["message"], "\n";
 	echo $e->getMessage(), "\n";
 }
 

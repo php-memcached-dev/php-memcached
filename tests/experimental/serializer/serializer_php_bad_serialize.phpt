@@ -44,7 +44,7 @@ error_reporting(0);
 try {
 	var_dump($m->set('foo', new Foo(), 10));
 } catch (Exception $e) {
-	echo $php_errormsg, "\n";
+	echo error_get_last()["message"], "\n";
 	echo $e->getMessage(), "\n";
 }
 try {

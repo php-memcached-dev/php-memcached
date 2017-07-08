@@ -45,7 +45,7 @@ error_reporting(0);
 try {
 	var_dump($m->getDelayed(array('foo'), false, 'mycb'));
 } catch (Exception $e) {
-	echo $php_errormsg, "\n";
+	echo error_get_last()["message"], "\n";
 	echo $e->getMessage(), "\n";
 }
 
