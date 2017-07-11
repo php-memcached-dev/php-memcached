@@ -198,24 +198,30 @@ static inline php_memc_object_t *php_memc_fetch_object(zend_object *obj) {
 	(void)memc_user_data; /* avoid unused variable warning */
 
 static
-zend_bool s_memc_valid_key_binary(const char *key)
+zend_bool s_memc_valid_key_binary(zend_string *key)
 {
-	return strchr(key, '\n') == NULL;
+	return memchr(ZSTR_VAL(key), '\n', ZSTR_LEN(key)) == NULL;
 }
 
 static
-zend_bool s_memc_valid_key_ascii(const char *key)
+zend_bool s_memc_valid_key_ascii(zend_string *key)
 {
-	while (*key && !iscntrl(*key) && !isspace(*key)) ++key;
-	return *key == '\0';
+	const char *str = ZSTR_VAL(key);
+	size_t i, len = ZSTR_LEN(key);
+
+	for (i = 0; i < len; i++) {
+		if (iscntrl(str[i]) || isspace(str[i]))
+			return 0;
+	}
+	return 1;
 }
 
 #define MEMC_CHECK_KEY(intern, key)                                               \
 	if (UNEXPECTED(ZSTR_LEN(key) == 0 ||                                          \
 		ZSTR_LEN(key) > MEMC_OBJECT_KEY_MAX_LENGTH ||                             \
 		(memcached_behavior_get(intern->memc, MEMCACHED_BEHAVIOR_BINARY_PROTOCOL) \
-				? !s_memc_valid_key_binary(ZSTR_VAL(key))                         \
-				: !s_memc_valid_key_ascii(ZSTR_VAL(key))                          \
+				? !s_memc_valid_key_binary(key)                                   \
+				: !s_memc_valid_key_ascii(key)                                    \
 		))) {                                                                     \
 		intern->rescode = MEMCACHED_BAD_KEY_PROVIDED;                             \
 		RETURN_FALSE;                                                             \
@@ -309,7 +315,7 @@ PHP_INI_MH(OnUpdateSessionPrefixString)
 			php_error_docref(NULL, E_WARNING, "memcached.sess_prefix too long (max: %d)", MEMCACHED_MAX_KEY - 1);
 			return FAILURE;
 		}
-		if (!s_memc_valid_key_ascii(ZSTR_VAL(new_value))) {
+		if (!s_memc_valid_key_ascii(new_value)) {
 			php_error_docref(NULL, E_WARNING, "memcached.sess_prefix cannot contain whitespace or control characters");
 			return FAILURE;
 		}
