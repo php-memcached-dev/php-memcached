@@ -113,6 +113,7 @@ Fixes
     <file role='test' name='session_badconf_locktime.phpt'/>
     <file role='test' name='session_badconf_prefix.phpt'/>
     <file role='test' name='session_badconf_servers.phpt'/>
+    <file role='test' name='session_badconf_servers-php72.phpt'/>
     <file role='test' name='session_basic.phpt'/>
     <file role='test' name='session_basic2.phpt'/>
     <file role='test' name='session_basic3.phpt'/>
