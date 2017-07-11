@@ -4,7 +4,7 @@ Session bad configurations, invalid save path (server list)
 <?php
 include dirname(__FILE__) . "/skipif.inc";
 if (!Memcached::HAVE_SESSION) print "skip";
-if (PHP_VERSION_ID > 70100) print "skip";
+if (PHP_VERSION_ID < 70200) print "skip";
 ?>
 --INI--
 session.save_handler = memcached
@@ -27,3 +27,4 @@ session_write_close();
 
 --EXPECT--
 session_start(): failed to parse session.save_path
+session_start(): Failed to initialize storage module: memcached (path: )
