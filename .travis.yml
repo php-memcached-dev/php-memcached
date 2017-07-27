@@ -3,7 +3,7 @@ dist: trusty
 
 language: php
 php:
-    - 7.2.0alpha2
+    - 7.2
     - 7.1
     - 7.0
 
