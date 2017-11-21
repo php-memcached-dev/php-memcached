@@ -22,9 +22,6 @@
 
 extern ZEND_DECLARE_MODULE_GLOBALS(php_memcached)
 
-#define MEMC_SESS_DEFAULT_LOCK_WAIT 150000
-#define MEMC_SESS_LOCK_EXPIRATION 30
-
 #define REALTIME_MAXDELTA 60*60*24*30
 
 ps_module ps_mod_memcached = {
