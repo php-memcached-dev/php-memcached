@@ -1,5 +1,9 @@
 memcached extension changelog
 
+Version 4.0.0 (????-??-??)
+
+	* Remove exponential backoff in retry and revert to old behavior (#355)
+
 Version 3.0.3 (2017-02-19)
 --------------------------
 
