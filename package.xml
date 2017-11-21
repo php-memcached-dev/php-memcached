@@ -27,9 +27,9 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <email>aaron@serendipity.cx</email>
   <active>yes</active>
  </lead>
- <date>2017-02-19</date>
+ <date>2017-11-20</date>
  <version>
-  <release>3.0.3</release>
+  <release>3.0.4</release>
   <api>3.0.0</api>
  </version>
  <stability>
@@ -38,13 +38,19 @@ http://pear.php.net/dtd/package-2.0.xsd">
  </stability>
  <license uri="http://www.php.net/license">PHP</license>
  <notes>
-PHP7 release of memcached extension. Note that support for libmemcached 0.x series has been discontinued
-and the oldest actively tested version is 1.0.2. It is highly recommended to use version 1.0.18 of
+PHP 7.0 - 7.1 - 7.2 release of memcached extension. Note that support for
+libmemcached 0.x series has been discontinued and the oldest actively tested
+version is 1.0.2. It is highly recommended to use version 1.0.18 of
 libmemcached.
 
 Fixes
- * Fix crash when checking session data with older versions of libmemcached (#328)
- * Fix crash due to zend_mm_corrupted when fetching session data (#327)
+ * Fix corrupted interned strings (#338)
+ * Fix unit tests for compatibility with PHP 7.2 (#358, #359)
+ * Fix \x0a in key name locks up connection and triggers a fatal timeout error (#339)
+ * Fix missing optional parameter getStats($type) (#337)
+ * Fix typo in skip message (#331)
+ * Fix build warnings (329)
+ * Document GET_EXTENDED flag, add/rename other missing/misnamed constants (#335)
  </notes>
  <contents>
   <dir name="/">
@@ -191,6 +197,26 @@ Fixes
   <configureoption name="with-libmemcached-dir" default="no" prompt="libmemcached directory"/>
  </extsrcrelease>
  <changelog>
+    <release>
+      <stability>
+        <release>stable</release>
+        <api>stable</api>
+      </stability>
+      <version>
+        <release>3.0.3</release>
+        <api>3.0.0</api>
+      </version>
+      <date>2017-02-19</date>
+      <notes>
+PHP7 release of memcached extension. Note that support for libmemcached 0.x series has been discontinued
+and the oldest actively tested version is 1.0.2. It is highly recommended to use version 1.0.18 of
+libmemcached.
+
+Fixes
+ * Fix crash when checking session data with older versions of libmemcached (#328)
+ * Fix crash due to zend_mm_corrupted when fetching session data (#327)
+      </notes>
+    </release>
     <release>
       <stability>
         <release>stable</release>

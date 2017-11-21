@@ -1,5 +1,16 @@
 memcached extension changelog
 
+Version 3.0.4 (2017-11-20)
+--------------------------
+
+	* Fix corrupted interned strings (#338)
+	* Fix unit tests for compatibility with PHP 7.2 (#358, #359)
+	* Fix \x0a in key name locks up connection and triggers a fatal timeout error (#339)
+	* Fix missing optional parameter getStats($type) (#337)
+	* Fix typo in skip message (#331)
+	* Fix build warnings (329)
+	* Document GET_EXTENDED flag, add/rename other missing/misnamed constants (#335)
+
 Version 3.0.3 (2017-02-19)
 --------------------------
 
