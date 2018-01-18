@@ -186,12 +186,15 @@ void s_unlock_session(memcached_st *memc)
 static
 zend_bool s_configure_from_ini_values(memcached_st *memc, zend_bool silent)
 {
-	memcached_return rc;
-
 #define check_set_behavior(behavior, value) \
-	if ((rc = memcached_behavior_set(memc, (behavior), (value))) != MEMCACHED_SUCCESS) { \
-		if (!silent) { php_error_docref(NULL, E_WARNING, "failed to initialise session memcached configuration: %s", memcached_strerror(memc, rc)); } \
-		return 0; \
+	if ((value) != memcached_behavior_get(memc, (behavior))) { \
+		memcached_return rc; \
+		if ((rc = memcached_behavior_set(memc, (behavior), (value))) != MEMCACHED_SUCCESS) { \
+			if (!silent) { \
+				php_error_docref(NULL, E_WARNING, "failed to initialise session memcached configuration: %s", memcached_strerror(memc, rc)); \
+			} \
+			return 0; \
+		} \
 	}
 
 	if (MEMC_SESS_INI(binary_protocol_enabled)) {
@@ -243,7 +246,7 @@ zend_bool s_configure_from_ini_values(memcached_st *memc, zend_bool silent)
 		user_data->has_sasl_data = 1;
 	}
 
-#undef safe_set_behavior
+#undef check_set_behavior
 
 	return 1;
 }
