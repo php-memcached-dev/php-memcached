@@ -184,7 +184,7 @@ if test "$PHP_MEMCACHED" != "no"; then
     else
       AC_MSG_RESULT([$msgpack_inc_path])
     fi
-  fi 
+  fi
 
   AC_MSG_CHECKING([for memcached session support])
   if test "$PHP_MEMCACHED_SESSION" != "no"; then
@@ -255,42 +255,45 @@ if test "$PHP_MEMCACHED" != "no"; then
     PHP_EVAL_LIBLINE($PHP_LIBMEMCACHED_LIBS, MEMCACHED_SHARED_LIBADD)
     PHP_EVAL_INCLINE($PHP_LIBMEMCACHED_INCLUDES)
 
-    #
-    # Added -lpthread here because AC_TRY_LINK tests on CentOS 6 seem to fail with undefined reference to pthread_once
-    #
+    dnl # Added -lpthread here because AC_TRY_LINK tests on CentOS 6 seem to fail with undefined reference to pthread_once
     ORIG_CFLAGS="$CFLAGS"
     CFLAGS="$CFLAGS $INCLUDES"
 
+    dnl # Always check if libmemcached was built with SASL support,
+    dnl # because it will require sasl.h even if not used here.
+    AC_CACHE_CHECK([for libmemcached sasl.h requirement], ac_cv_memc_sasl_support, [
+      AC_TRY_COMPILE(
+        [ #include <libmemcached/memcached.h> ],
+        [
+        #if LIBMEMCACHED_WITH_SASL_SUPPORT
+          /* yes */
+        #else
+        #  error "no sasl support"
+        #endif
+        ],
+        [ ac_cv_memc_sasl_support="yes" ],
+        [ ac_cv_memc_sasl_support="no" ]
+      )
+    ])
+
+    if test "$ac_cv_memc_sasl_support" = "yes"; then
+      AC_CHECK_HEADERS([sasl/sasl.h], [ac_cv_have_memc_sasl_h="yes"], [ac_cv_have_memc_sasl_h="no"])
+    fi
+
+    dnl # If libmemcached requires sasl.h but we can't find sasl.h, that's a hard error
+    dnl # regardless of the option --enable-memcached-sasl or --disable-memcached-sasl
     AC_MSG_CHECKING([whether to enable sasl support])
+    if test "$ac_cv_memc_sasl_support" = "yes" && test "$ac_cv_have_memc_sasl_h" = "no"; then
+      AC_MSG_ERROR([no, libmemcached built with sasl required, but sasl.h not found.])
+    fi
+
     if test "$PHP_MEMCACHED_SASL" != "no"; then
       AC_MSG_RESULT(yes)
-      AC_CHECK_HEADERS([sasl/sasl.h], [ac_cv_have_memc_sasl_h="yes"], [ac_cv_have_memc_sasl_h="no"])
-
-      if test "$ac_cv_have_memc_sasl_h" = "yes"; then
-
-        AC_CACHE_CHECK([whether libmemcached supports sasl], ac_cv_memc_sasl_support, [
-          AC_TRY_COMPILE(
-            [ #include <libmemcached/memcached.h> ],
-            [ 
-            #if LIBMEMCACHED_WITH_SASL_SUPPORT
-              /* yes */
-            #else
-            #  error "no sasl support"
-            #endif
-            ],
-            [ ac_cv_memc_sasl_support="yes" ],
-            [ ac_cv_memc_sasl_support="no" ]
-          )
-        ])
-
-        if test "$ac_cv_memc_sasl_support" = "yes"; then
-          PHP_CHECK_LIBRARY(sasl2, sasl_client_init, [PHP_ADD_LIBRARY(sasl2, 1, MEMCACHED_SHARED_LIBADD)])
-          AC_DEFINE(HAVE_MEMCACHED_SASL, 1, [Have SASL support])
-        else
-          AC_MSG_ERROR([no, libmemcached sasl support is not enabled. Run configure with --disable-memcached-sasl to disable this check])
-        fi
+      if test "$ac_cv_memc_sasl_support" = "yes" && test "$ac_cv_have_memc_sasl_h" = "yes"; then
+        PHP_CHECK_LIBRARY(sasl2, sasl_client_init, [PHP_ADD_LIBRARY(sasl2, 1, MEMCACHED_SHARED_LIBADD)])
+        AC_DEFINE(HAVE_MEMCACHED_SASL, 1, [Have SASL support])
       else
-        AC_MSG_ERROR([no, sasl.h is not available. Run configure with --disable-memcached-sasl to disable this check])
+        AC_MSG_ERROR([no, libmemcached built with sasl disabled. Run configure with --disable-memcached-sasl or update libmemcached with sasl support])
       fi
     else
       AC_MSG_RESULT([no])
@@ -298,7 +301,7 @@ if test "$PHP_MEMCACHED" != "no"; then
 
     ORIG_CFLAGS="$CFLAGS"
     ORIG_LIBS="$LIBS"
-  
+
     CFLAGS="$CFLAGS $PHP_LIBMEMCACHED_INCLUDES"
     LIBS="$LIBS $PHP_LIBMEMCACHED_LIBS"
 
