@@ -3265,6 +3265,32 @@ static PHP_METHOD(Memcached, setSaslAuthData)
 /* }}} */
 #endif /* HAVE_MEMCACHED_SASL */
 
+#ifdef HAVE_MEMCACHED_SET_ENCODING_KEY
+/* {{{ Memcached::setEncodingKey(string key)
+   Sets AES encryption key (libmemcached 1.0.6 and higher) */
+static PHP_METHOD(Memcached, setEncodingKey)
+{
+	MEMC_METHOD_INIT_VARS;
+	memcached_return status;
+	zend_string *key;
+
+	/* "S" */
+	ZEND_PARSE_PARAMETERS_START(1, 1)
+	        Z_PARAM_STR(key)
+	ZEND_PARSE_PARAMETERS_END();
+
+	MEMC_METHOD_FETCH_OBJECT;
+
+	status = memcached_set_encoding_key(intern->memc, ZSTR_VAL(key), ZSTR_LEN(key));
+
+	if (s_memc_status_handle_result_code(intern, status) == FAILURE) {
+		RETURN_FALSE;
+	}
+	RETURN_TRUE;
+}
+/* }}} */
+#endif /* HAVE_MEMCACHED_SET_ENCODING_KEY */
+
 /* {{{ Memcached::getResultCode()
    Returns the result code from the last operation */
 static PHP_METHOD(Memcached, getResultCode)
@@ -4034,6 +4060,12 @@ ZEND_BEGIN_ARG_INFO(arginfo_setSaslAuthData, 0)
 ZEND_END_ARG_INFO()
 #endif
 
+#ifdef HAVE_MEMCACHED_SET_ENCODING_KEY
+ZEND_BEGIN_ARG_INFO(arginfo_setEncodingKey, 0)
+	ZEND_ARG_INFO(0, key)
+ZEND_END_ARG_INFO()
+#endif
+
 ZEND_BEGIN_ARG_INFO(arginfo_setOption, 0)
 	ZEND_ARG_INFO(0, option)
 	ZEND_ARG_INFO(0, value)
@@ -4133,6 +4165,9 @@ static zend_function_entry memcached_class_methods[] = {
 	MEMC_ME(setBucket,          arginfo_setBucket)
 #ifdef HAVE_MEMCACHED_SASL
 	MEMC_ME(setSaslAuthData,    arginfo_setSaslAuthData)
+#endif
+#ifdef HAVE_MEMCACHED_SET_ENCODING_KEY
+	MEMC_ME(setEncodingKey,     arginfo_setEncodingKey)
 #endif
 	MEMC_ME(isPersistent,       arginfo_isPersistent)
 	MEMC_ME(isPristine,         arginfo_isPristine)
@@ -4280,6 +4315,15 @@ static void php_memc_register_constants(INIT_FUNC_ARGS)
 	REGISTER_MEMC_CLASS_CONST_BOOL(HAVE_MSGPACK, 1);
 #else
 	REGISTER_MEMC_CLASS_CONST_BOOL(HAVE_MSGPACK, 0);
+#endif
+
+	/*
+	 * Indicate whether set_encoding_key is available
+	 */
+#ifdef HAVE_MEMCACHED_SET_ENCODING_KEY
+	REGISTER_MEMC_CLASS_CONST_BOOL(HAVE_ENCODING, 1);
+#else
+	REGISTER_MEMC_CLASS_CONST_BOOL(HAVE_ENCODING, 0);
 #endif
 
 #ifdef HAVE_MEMCACHED_SESSION

@@ -317,8 +317,27 @@ if test "$PHP_MEMCACHED" != "no"; then
     CFLAGS="$ORIG_CFLAGS"
     LIBS="$ORIG_LIBS"
 
+    CFLAGS="$CFLAGS $PHP_LIBMEMCACHED_INCLUDES"
+    LIBS="$LIBS $PHP_LIBMEMCACHED_LIBS"
+
     if test "$ac_cv_have_memcached_exist" = "yes"; then
       AC_DEFINE(HAVE_MEMCACHED_EXIST, [1], [Whether memcached_exist is defined])
+    fi
+
+    AC_CACHE_CHECK([whether memcached_set_encoding_key is defined], ac_cv_have_memcached_set_encoding_key, [
+      AC_TRY_LINK(
+        [ #include <libmemcached/memcached.h> ],
+        [ memcached_set_encoding_key (NULL, NULL, 0); ],
+        [ ac_cv_have_memcached_set_encoding_key="yes" ],
+        [ ac_cv_have_memcached_set_encoding_key="no" ]
+      )
+    ])
+
+    CFLAGS="$ORIG_CFLAGS"
+    LIBS="$ORIG_LIBS"
+
+    if test "$ac_cv_have_memcached_set_encoding_key" = "yes"; then
+      AC_DEFINE(HAVE_MEMCACHED_SET_ENCODING_KEY, [1], [Whether memcached_set_encoding_key is defined])
     fi
 
     PHP_MEMCACHED_FILES="php_memcached.c php_libmemcached_compat.c  g_fmt.c"
