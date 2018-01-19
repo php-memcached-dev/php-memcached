@@ -228,7 +228,6 @@ zend_bool s_memc_valid_key_ascii(zend_string *key)
 	}
 
 #ifdef HAVE_MEMCACHED_PROTOCOL
-
 typedef struct {
 	php_memc_proto_handler_t *handler;
 	zend_object zo;
@@ -1235,34 +1234,25 @@ static PHP_METHOD(Memcached, __construct)
 	memcached_set_user_data(intern->memc, memc_user_data);
 
 	/* Set default behaviors */
-	{
-#ifdef mikko_0
-		fprintf (stderr, "consistent_hash_enabled=%d binary_protocol_enabled=%d connect_timeout=%ld\n",
-			MEMC_G(default_behavior.consistent_hash_enabled), MEMC_G(default_behavior.binary_protocol_enabled), MEMC_G(default_behavior.connect_timeout));
-#endif
+	if (MEMC_G(default_behavior.consistent_hash_enabled)) {
 
-		memcached_return rc;
-
-		if (MEMC_G(default_behavior.consistent_hash_enabled)) {
-
-			rc = memcached_behavior_set(intern->memc, MEMCACHED_BEHAVIOR_DISTRIBUTION, MEMCACHED_DISTRIBUTION_CONSISTENT);
-			if (rc != MEMCACHED_SUCCESS) {
-				php_error_docref(NULL, E_WARNING, "Failed to turn on consistent hash: %s", memcached_strerror(intern->memc, rc));
-			}
+		memcached_return rc = memcached_behavior_set(intern->memc, MEMCACHED_BEHAVIOR_DISTRIBUTION, MEMCACHED_DISTRIBUTION_CONSISTENT);
+		if (rc != MEMCACHED_SUCCESS) {
+			php_error_docref(NULL, E_WARNING, "Failed to turn on consistent hash: %s", memcached_strerror(intern->memc, rc));
 		}
+	}
 
-		if (MEMC_G(default_behavior.binary_protocol_enabled)) {
-			rc = memcached_behavior_set(intern->memc, MEMCACHED_BEHAVIOR_BINARY_PROTOCOL, 1);
-			if (rc != MEMCACHED_SUCCESS) {
-				php_error_docref(NULL, E_WARNING, "Failed to turn on binary protocol: %s", memcached_strerror(intern->memc, rc));
-			}
+	if (MEMC_G(default_behavior.binary_protocol_enabled)) {
+		memcached_return rc = memcached_behavior_set(intern->memc, MEMCACHED_BEHAVIOR_BINARY_PROTOCOL, 1);
+		if (rc != MEMCACHED_SUCCESS) {
+			php_error_docref(NULL, E_WARNING, "Failed to turn on binary protocol: %s", memcached_strerror(intern->memc, rc));
 		}
+	}
 
-		if (MEMC_G(default_behavior.connect_timeout)) {
-			rc = memcached_behavior_set(intern->memc, MEMCACHED_BEHAVIOR_CONNECT_TIMEOUT, MEMC_G(default_behavior.connect_timeout));
-			if (rc != MEMCACHED_SUCCESS) {
-				php_error_docref(NULL, E_WARNING, "Failed to set connect timeout: %s", memcached_strerror(intern->memc, rc));
-			}
+	if (MEMC_G(default_behavior.connect_timeout)) {
+		memcached_return rc = memcached_behavior_set(intern->memc, MEMCACHED_BEHAVIOR_CONNECT_TIMEOUT, MEMC_G(default_behavior.connect_timeout));
+		if (rc != MEMCACHED_SUCCESS) {
+			php_error_docref(NULL, E_WARNING, "Failed to set connect timeout: %s", memcached_strerror(intern->memc, rc));
 		}
 	}
 
