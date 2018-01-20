@@ -19,24 +19,9 @@ var_dump ($m->get ($key));
 
 echo "OK" . PHP_EOL;
 
-# Change the encryption key. The old value will be inaccessible.
+# libmemcached < 1.0.18 goes into a bad state when the encoding key is changed,
+# so php-memcached warns and returns false when trying to change the key.
 var_dump ($m->setEncodingKey("World"));
-var_dump ($m->get ($key));
-
-echo "OK" . PHP_EOL;
-
-# Restore the original key to retrieve old values again.
-var_dump ($m->setEncodingKey("Hello"));
-var_dump ($m->get ($key));
-
-echo "OK" . PHP_EOL;
-
-# Once the encoding key has changes we are no longer able to
-# write new values in libmemcached < 1.0.18.
-var_dump ($m->setEncodingKey("World"));
-var_dump ($m->get ($key));
-var_dump ($m->set ($key, 'set using encoding'));
-var_dump ($m->get ($key));
 
 echo "OK" . PHP_EOL;
 
@@ -46,14 +31,5 @@ bool(true)
 bool(true)
 string(18) "set using encoding"
 OK
-bool(true)
 bool(false)
-OK
-bool(true)
-string(18) "set using encoding"
-OK
-bool(true)
-bool(false)
-bool(true)
-string(18) "set using encoding"
 OK

@@ -142,6 +142,7 @@ typedef struct {
 
 	zend_bool is_persistent;
 	zend_bool compression_enabled;
+	zend_bool encoding_enabled;
 
 	zend_long serializer;
 	zend_long compression_type;
@@ -1227,6 +1228,7 @@ static PHP_METHOD(Memcached, __construct)
 	memc_user_data->serializer        = MEMC_G(serializer_type);
 	memc_user_data->compression_type  = MEMC_G(compression_type);
 	memc_user_data->compression_enabled = 1;
+	memc_user_data->encoding_enabled  = 0;
 	memc_user_data->store_retry_count = MEMC_G(store_retry_count);
 	memc_user_data->set_udf_flags     = -1;
 	memc_user_data->is_persistent     = is_persistent;
@@ -3281,11 +3283,21 @@ static PHP_METHOD(Memcached, setEncodingKey)
 
 	MEMC_METHOD_FETCH_OBJECT;
 
+	// libmemcached < 1.0.18 cannot handle a change of encoding key. Warn about this and return false.
+#if defined(LIBMEMCACHED_VERSION_HEX) && LIBMEMCACHED_VERSION_HEX < 0x01000018
+	if (memc_user_data->encoding_enabled) {
+		php_error_docref(NULL, E_WARNING, "libmemcached versions less than 1.0.18 cannot change encoding key");
+		RETURN_FALSE;
+	}
+#endif
+
 	status = memcached_set_encoding_key(intern->memc, ZSTR_VAL(key), ZSTR_LEN(key));
 
 	if (s_memc_status_handle_result_code(intern, status) == FAILURE) {
 		RETURN_FALSE;
 	}
+
+	memc_user_data->encoding_enabled = 1;
 	RETURN_TRUE;
 }
 /* }}} */
