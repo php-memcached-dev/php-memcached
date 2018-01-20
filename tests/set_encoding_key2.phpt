@@ -5,7 +5,7 @@ Test libmemcached encryption
 include dirname (__FILE__) . '/config.inc';
 if (!extension_loaded("memcached")) die ("skip");
 if (!Memcached::HAVE_ENCODING) die ("skip no set_encoding_key support enabled");
-// if (Memcached::LIBMEMCACHED_VERSION_HEX >= 0x01000018) die ("skip test for libmemcached 1.0.18 and higher");
+// if (Memcached::LIBMEMCACHED_VERSION_HEX >= 0x01000018) die ("skip test for libmemcached lower than 1.0.18");
 ?>
 --FILE--
 <?php
@@ -31,10 +31,7 @@ var_dump ($m->get ($key));
 
 echo "OK" . PHP_EOL;
 
-# With a new encoding key we can still write new values,
-# this works as expected with libmemcached 1.0.18 and higher.
-var_dump ($m->setEncodingKey("World"));
-var_dump ($m->get ($key));
+# New values cannot be written after the key has changed in libmemcached < 1.0.18.
 var_dump ($m->set ($key, 'set using encoding'));
 var_dump ($m->get ($key));
 
@@ -49,6 +46,6 @@ OK
 bool(true)
 bool(false)
 OK
-bool(true)
-string(18) "set using encoding"
+bool(false)
+bool(false)
 OK
