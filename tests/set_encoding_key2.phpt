@@ -26,10 +26,12 @@ var_dump ($m->setEncodingKey("World"));
 echo "OK" . PHP_EOL;
 
 ?>
---EXPECT--
+--EXPECTF--
 bool(true)
 bool(true)
 string(18) "set using encoding"
 OK
+
+Warning: Memcached::setEncodingKey(): libmemcached versions less than 1.0.18 cannot change encoding key in %s on line %d
 bool(false)
 OK
