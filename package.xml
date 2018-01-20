@@ -160,6 +160,7 @@ Fixes
     <file role='test' name='config.inc'/>
     <file role='test' name='sasl_basic.phpt'/>
     <file role='test' name='set_encoding_key.phpt'/>
+    <file role='test' name='set_encoding_key2.phpt'/>
     <file role='test' name='getserverbykey.phpt'/>
     <file role='test' name='gh_155.phpt'/>
     <file role='test' name='get_flags.phpt'/>
