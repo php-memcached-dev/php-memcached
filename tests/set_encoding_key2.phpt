@@ -5,7 +5,7 @@ Test libmemcached encryption
 include dirname (__FILE__) . '/config.inc';
 if (!extension_loaded("memcached")) die ("skip");
 if (!Memcached::HAVE_ENCODING) die ("skip no set_encoding_key support enabled");
-if (Memcached::LIBMEMCACHED_VERSION_HEX < 0x01000018) die ("skip test for libmemcached lower than 1.0.18");
+if (Memcached::LIBMEMCACHED_VERSION_HEX >= 0x01000018) die ("skip test for libmemcached lower than 1.0.18");
 ?>
 --FILE--
 <?php
