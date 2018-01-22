@@ -346,7 +346,7 @@ PHP_INI_BEGIN()
 #endif
 	MEMC_SESSION_INI_ENTRY("consistent_hash",        "1",          OnUpdateBool,           consistent_hash_enabled)
 	MEMC_SESSION_INI_ENTRY("number_of_replicas",     "0",          OnUpdateLongGEZero,     number_of_replicas)
-	MEMC_SESSION_INI_ENTRY("randomize_replica_read", "0",          OnUpdateLongGEZero,     randomize_replica_read_enabled)
+	MEMC_SESSION_INI_ENTRY("randomize_replica_read", "0",          OnUpdateBool,           randomize_replica_read_enabled)
 	MEMC_SESSION_INI_ENTRY("remove_failed_servers",  "0",          OnUpdateBool,           remove_failed_servers_enabled)
 	MEMC_SESSION_INI_ENTRY("server_failure_limit",   "0",          OnUpdateLongGEZero,     server_failure_limit)
 	MEMC_SESSION_INI_ENTRY("connect_timeout",        "0",          OnUpdateLongGEZero,     connect_timeout)
