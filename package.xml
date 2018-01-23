@@ -168,6 +168,7 @@ Fixes
     <file role='test' name='session_lazy_warning.phpt'/>
     <file role='test' name='session_regenerate.phpt'/>
     <file role='test' name='stats.phpt'/>
+    <file role='test' name='stats_hang.phpt'/>
     <file role='test' name='default_behavior.phpt'/>
     <file role='test' name='reset_keyprefix.phpt'/>
     <file role='test' name='session_lock-php71.phpt'/>

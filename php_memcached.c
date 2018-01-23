@@ -2757,6 +2757,7 @@ PHP_METHOD(Memcached, getStats)
 	memcached_return status;
 	char *args = NULL;
 	zend_string *args_string = NULL;
+	uint64_t orig_no_block, orig_protocol;
 	MEMC_METHOD_INIT_VARS;
 
 	/* "|S!" */
@@ -2770,8 +2771,19 @@ PHP_METHOD(Memcached, getStats)
 	if (args_string)
 		args = ZSTR_VAL(args_string);
 
+	/* stats hangs in nonblocking mode, turn off during the call. Only change the
+	 * value if needed, because libmemcached reconnects for this behavior_set. */
+	orig_no_block = memcached_behavior_get(intern->memc, MEMCACHED_BEHAVIOR_NO_BLOCK);
+	orig_protocol = memcached_behavior_get(intern->memc, MEMCACHED_BEHAVIOR_BINARY_PROTOCOL);
+	if (orig_no_block && orig_protocol)
+		memcached_behavior_set(intern->memc, MEMCACHED_BEHAVIOR_NO_BLOCK, 0);
+
 	array_init(return_value);
 	status = memcached_stat_execute(intern->memc, args, s_stat_execute_cb, return_value);
+
+	if (orig_no_block && orig_protocol)
+		memcached_behavior_set(intern->memc, MEMCACHED_BEHAVIOR_NO_BLOCK, orig_no_block);
+
 	if (s_memc_status_handle_result_code(intern, status) == FAILURE) {
 		zval_ptr_dtor(return_value);
 		RETURN_FALSE;
