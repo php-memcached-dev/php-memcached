@@ -326,34 +326,40 @@ PHP_INI_MH(OnUpdateSessionPrefixString)
 #define MEMC_INI_ENTRY(key, default_value, update_fn, gkey) \
 	STD_PHP_INI_ENTRY("memcached."key, default_value, PHP_INI_ALL, update_fn, memc.gkey, zend_php_memcached_globals, php_memcached_globals)
 
+#define MEMC_INI_BOOL(key, default_value, update_fn, gkey) \
+	STD_PHP_INI_BOOLEAN("memcached."key, default_value, PHP_INI_ALL, update_fn, memc.gkey, zend_php_memcached_globals, php_memcached_globals)
+
 #define MEMC_SESSION_INI_ENTRY(key, default_value, update_fn, gkey) \
 	STD_PHP_INI_ENTRY("memcached.sess_"key, default_value, PHP_INI_ALL, update_fn, session.gkey, zend_php_memcached_globals, php_memcached_globals)
+
+#define MEMC_SESSION_INI_BOOL(key, default_value, update_fn, gkey) \
+	STD_PHP_INI_BOOLEAN("memcached.sess_"key, default_value, PHP_INI_ALL, update_fn, session.gkey, zend_php_memcached_globals, php_memcached_globals)
 
 
 /* {{{ INI entries */
 PHP_INI_BEGIN()
 
 #ifdef HAVE_MEMCACHED_SESSION
-	MEMC_SESSION_INI_ENTRY("locking",                "1",          OnUpdateBool,           lock_enabled)
+	MEMC_SESSION_INI_BOOL ("locking",                "1",          OnUpdateBool,           lock_enabled)
 	MEMC_SESSION_INI_ENTRY("lock_wait_min",          "1000",       OnUpdateLongGEZero,     lock_wait_min)
 	MEMC_SESSION_INI_ENTRY("lock_wait_max",          "2000",       OnUpdateLongGEZero,     lock_wait_max)
 	MEMC_SESSION_INI_ENTRY("lock_retries",           "5",          OnUpdateLong,           lock_retries)
 	MEMC_SESSION_INI_ENTRY("lock_expire",            "0",          OnUpdateLongGEZero,     lock_expiration)
 #if defined(LIBMEMCACHED_VERSION_HEX) && LIBMEMCACHED_VERSION_HEX < 0x01000018
-	MEMC_SESSION_INI_ENTRY("binary_protocol",        "0",          OnUpdateBool,           binary_protocol_enabled)
+	MEMC_SESSION_INI_BOOL ("binary_protocol",        "0",          OnUpdateBool,           binary_protocol_enabled)
 #else
-	MEMC_SESSION_INI_ENTRY("binary_protocol",        "1",          OnUpdateBool,           binary_protocol_enabled)
+	MEMC_SESSION_INI_BOOL ("binary_protocol",        "1",          OnUpdateBool,           binary_protocol_enabled)
 #endif
-	MEMC_SESSION_INI_ENTRY("consistent_hash",        "1",          OnUpdateBool,           consistent_hash_enabled)
+	MEMC_SESSION_INI_BOOL ("consistent_hash",        "1",          OnUpdateBool,           consistent_hash_enabled)
 	MEMC_SESSION_INI_ENTRY("number_of_replicas",     "0",          OnUpdateLongGEZero,     number_of_replicas)
-	MEMC_SESSION_INI_ENTRY("randomize_replica_read", "0",          OnUpdateBool,           randomize_replica_read_enabled)
-	MEMC_SESSION_INI_ENTRY("remove_failed_servers",  "0",          OnUpdateBool,           remove_failed_servers_enabled)
+	MEMC_SESSION_INI_BOOL ("randomize_replica_read", "0",          OnUpdateBool,           randomize_replica_read_enabled)
+	MEMC_SESSION_INI_BOOL ("remove_failed_servers",  "0",          OnUpdateBool,           remove_failed_servers_enabled)
 	MEMC_SESSION_INI_ENTRY("server_failure_limit",   "0",          OnUpdateLongGEZero,     server_failure_limit)
 	MEMC_SESSION_INI_ENTRY("connect_timeout",        "0",          OnUpdateLongGEZero,     connect_timeout)
 	MEMC_SESSION_INI_ENTRY("sasl_username",          "",           OnUpdateString,         sasl_username)
 	MEMC_SESSION_INI_ENTRY("sasl_password",          "",           OnUpdateString,         sasl_password)
+	MEMC_SESSION_INI_BOOL ("persistent",             "0",          OnUpdateBool,           persistent_enabled)
 	MEMC_SESSION_INI_ENTRY("prefix",                 "memc.sess.key.", OnUpdateSessionPrefixString,         prefix)
-	MEMC_SESSION_INI_ENTRY("persistent",             "0",          OnUpdateBool,           persistent_enabled)
 	
 	/* Deprecated */
 	STD_PHP_INI_ENTRY("memcached.sess_lock_wait", "not set", PHP_INI_ALL, OnUpdateDeprecatedLockValue, no_effect, zend_php_memcached_globals, php_memcached_globals)
@@ -367,14 +373,16 @@ PHP_INI_BEGIN()
 	MEMC_INI_ENTRY("serializer",            SERIALIZER_DEFAULT_NAME, OnUpdateSerializer,      serializer_name)
 	MEMC_INI_ENTRY("store_retry_count",     "2",                     OnUpdateLong,            store_retry_count)
 
-	MEMC_INI_ENTRY("default_consistent_hash",       "0", OnUpdateBool,       default_behavior.consistent_hash_enabled)
-	MEMC_INI_ENTRY("default_binary_protocol",       "0", OnUpdateBool,       default_behavior.binary_protocol_enabled)
+	MEMC_INI_BOOL ("default_consistent_hash",       "0", OnUpdateBool,       default_behavior.consistent_hash_enabled)
+	MEMC_INI_BOOL ("default_binary_protocol",       "0", OnUpdateBool,       default_behavior.binary_protocol_enabled)
 	MEMC_INI_ENTRY("default_connect_timeout",       "0", OnUpdateLongGEZero, default_behavior.connect_timeout)
 
 PHP_INI_END()
 /* }}} */
 
+#undef MEMC_INI_BOOL
 #undef MEMC_INI_ENTRY
+#undef MEMC_SESSION_INI_BOOL
 #undef MEMC_SESSION_INI_ENTRY
 
 /****************************************
