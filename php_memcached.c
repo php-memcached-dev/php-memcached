@@ -323,6 +323,22 @@ PHP_INI_MH(OnUpdateSessionPrefixString)
 	return OnUpdateString(entry, new_value, mh_arg1, mh_arg2, mh_arg3, stage);
 }
 
+static
+PHP_INI_MH(OnUpdateConsistentHash)
+{
+	if (!new_value) {
+		MEMC_SESS_INI(consistent_hash_type) = MEMCACHED_BEHAVIOR_KETAMA;
+	} else if (!strcmp(ZSTR_VAL(new_value), "ketama")) {
+		MEMC_SESS_INI(consistent_hash_type) = MEMCACHED_BEHAVIOR_KETAMA;
+	} else if (!strcmp(ZSTR_VAL(new_value), "ketama_weighted")) {
+		MEMC_SESS_INI(consistent_hash_type) = MEMCACHED_BEHAVIOR_KETAMA_WEIGHTED;
+	} else {
+		php_error_docref(NULL, E_WARNING, "memcached.sess_consistent_hash_type must be ketama or ketama_weighted");
+		return FAILURE;
+	}
+	return OnUpdateString(entry, new_value, mh_arg1, mh_arg2, mh_arg3, stage);
+}
+
 #define MEMC_INI_ENTRY(key, default_value, update_fn, gkey) \
 	STD_PHP_INI_ENTRY("memcached."key, default_value, PHP_INI_ALL, update_fn, memc.gkey, zend_php_memcached_globals, php_memcached_globals)
 
@@ -357,6 +373,7 @@ PHP_INI_BEGIN()
 	MEMC_SESSION_INI_BOOL ("binary_protocol",        "1",          OnUpdateBool,           binary_protocol_enabled)
 #endif
 	MEMC_SESSION_INI_BOOL ("consistent_hash",        "1",          OnUpdateBool,           consistent_hash_enabled)
+	MEMC_SESSION_INI_ENTRY("consistent_hash_type",   "ketama",     OnUpdateConsistentHash, consistent_hash_name)
 	MEMC_SESSION_INI_ENTRY("number_of_replicas",     "0",          OnUpdateLongGEZero,     number_of_replicas)
 	MEMC_SESSION_INI_BOOL ("randomize_replica_read", "0",          OnUpdateBool,           randomize_replica_read_enabled)
 	MEMC_SESSION_INI_BOOL ("remove_failed_servers",  "0",          OnUpdateBool,           remove_failed_servers_enabled)
@@ -1254,7 +1271,6 @@ static PHP_METHOD(Memcached, __construct)
 
 	/* Set default behaviors */
 	if (MEMC_G(default_behavior.consistent_hash_enabled)) {
-
 		memcached_return rc = memcached_behavior_set(intern->memc, MEMCACHED_BEHAVIOR_DISTRIBUTION, MEMCACHED_DISTRIBUTION_CONSISTENT);
 		if (rc != MEMCACHED_SUCCESS) {
 			php_error_docref(NULL, E_WARNING, "Failed to turn on consistent hash: %s", memcached_strerror(intern->memc, rc));
@@ -4263,6 +4279,8 @@ PHP_GINIT_FUNCTION(php_memcached)
 	php_memcached_globals->session.lock_expiration = 30;
 	php_memcached_globals->session.binary_protocol_enabled = 1;
 	php_memcached_globals->session.consistent_hash_enabled = 1;
+	php_memcached_globals->session.consistent_hash_type = MEMCACHED_BEHAVIOR_KETAMA;
+	php_memcached_globals->session.consistent_hash_name = NULL;
 	php_memcached_globals->session.number_of_replicas = 0;
 	php_memcached_globals->session.server_failure_limit = 1;
 	php_memcached_globals->session.randomize_replica_read_enabled = 1;

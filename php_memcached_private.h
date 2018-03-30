@@ -156,6 +156,8 @@ ZEND_BEGIN_MODULE_GLOBALS(php_memcached)
 
 		zend_bool binary_protocol_enabled;
 		zend_bool consistent_hash_enabled;
+		char     *consistent_hash_name;
+		int       consistent_hash_type;
 
 		zend_long server_failure_limit;
 		zend_long number_of_replicas;
@@ -206,6 +208,19 @@ ZEND_BEGIN_MODULE_GLOBALS(php_memcached)
 #endif
 
 ZEND_END_MODULE_GLOBALS(php_memcached)
+
+/* Globals accessor macros */
+#ifdef ZTS
+#  define MEMC_G(v) TSRMG(php_memcached_globals_id, zend_php_memcached_globals *, memc.v)
+#  define MEMC_SERVER_G(v) TSRMG(php_memcached_globals_id, zend_php_memcached_globals *, server.v)
+#  define MEMC_SESS_INI(v) TSRMG(php_memcached_globals_id, zend_php_memcached_globals *, session.v)
+#else
+#  define MEMC_G(v) (php_memcached_globals.memc.v)
+#  define MEMC_SERVER_G(v) (php_memcached_globals.server.v)
+#  define MEMC_SESS_INI(v) (php_memcached_globals.session.v)
+#endif
+
+#define MEMC_SESS_STR_INI(vv) ((MEMC_SESS_INI(vv) && *MEMC_SESS_INI(vv)) ? MEMC_SESS_INI(vv) : NULL)
 
 PHP_RINIT_FUNCTION(memcached);
 PHP_RSHUTDOWN_FUNCTION(memcached);
