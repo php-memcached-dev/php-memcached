@@ -197,7 +197,15 @@ Fixes
  </dependencies>
  <providesextension>memcached</providesextension>
  <extsrcrelease>
-  <configureoption name="with-libmemcached-dir" default="no" prompt="libmemcached directory"/>
+  <configureoption name="with-libmemcached-dir"     prompt="libmemcached directory"     default="no"/>
+  <configureoption name="with-zlib-dir"             prompt="zlib directory"             default="no"/>
+  <configureoption name="with-system-fastlz"        prompt="use system fastlz"          default="no"/>
+  <configureoption name="enable-memcached-igbinary" prompt="enable igbinary serializer" default="no"/>
+  <configureoption name="enable-memcached-msgpack"  prompt="enable msgpack serializer"  default="no"/>
+  <configureoption name="enable-memcached-json"     prompt="enable json serializer"     default="no"/>
+  <configureoption name="enable-memcached-protocol" prompt="enable server protocol"     default="no"/>
+  <configureoption name="disable-memcached-sasl"    prompt="disable sasl"               default="no"/>
+  <configureoption name="disable-memcached-session" prompt="disable sessions"           default="no"/>
  </extsrcrelease>
  <changelog>
     <release>
