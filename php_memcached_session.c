@@ -376,7 +376,7 @@ PS_OPEN_FUNC(memcached)
 		le.type = s_memc_sess_list_entry();
 		le.ptr  = memc;
 
-		GC_REFCOUNT(&le) = 1;
+		GC_SET_REFCOUNT(&le, 1);
 
 		/* plist_key is not a persistent allocated key, thus we use str_update here */
 		if (zend_hash_str_update_mem(&EG(persistent_list), plist_key, plist_key_len, &le, sizeof(le)) == NULL) {
