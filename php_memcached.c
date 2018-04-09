@@ -1526,7 +1526,7 @@ zend_bool s_get_multi_apply_fn(php_memc_object_t *intern, zend_string *key, zval
 		add_assoc_zval(&node, "cas",   cas);
 		add_assoc_long(&node, "flags", (zend_long) MEMC_VAL_GET_USER_FLAGS(flags));
 
-		zend_symtable_update(Z_ARRVAL_P(context->return_value), key, &node); 
+		zend_symtable_update(Z_ARRVAL_P(context->return_value), key, &node);
 	}
 	else {
 		zend_symtable_update(Z_ARRVAL_P(context->return_value), key, value);
@@ -3213,7 +3213,7 @@ PHP_METHOD(Memcached, setBucket)
 	rc = memcached_bucket_set (intern->memc, server_map, forward_map, (uint32_t) server_map_len, replicas);
 
 	if (s_memc_status_handle_result_code(intern, rc) == FAILURE) {
-		retval = 0;;
+		retval = 0;
 	}
 
 	efree(server_map);
