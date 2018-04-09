@@ -19,6 +19,7 @@
 #include "php_memcached_session.h"
 
 #include "Zend/zend_smart_str_public.h"
+#include "ext/standard/php_mt_rand.h"
 
 extern ZEND_DECLARE_MODULE_GLOBALS(php_memcached)
 
@@ -126,14 +127,22 @@ zend_bool s_lock_session(memcached_st *memc, zend_string *sid)
 	char *lock_key;
 	size_t lock_key_len;
 	time_t expiration;
-	zend_long wait_time, retries;
+	zend_long wait_time, wait_max, retries, perturb;
 	php_memcached_user_data *user_data = memcached_get_user_data(memc);
 
 	lock_key_len = spprintf(&lock_key, 0, "lock.%s", sid->val);
 	expiration   = s_lock_expiration();
 
+	/* Implementation for a random exponential backoff:
+	 * On the first retry, wait wait_min ms. On subsequent retries, wait
+	 * for 20% longer than the previous retry, plus a random perturbation
+	 * that is 10% of the difference between the minimum and maximum wait
+	 * times. Never wait longer than the maximum wait time.
+	 */
 	wait_time = MEMC_SESS_INI(lock_wait_min);
+	wait_max  = MEMC_SESS_INI(lock_wait_max);
 	retries   = MEMC_SESS_INI(lock_retries);
+	perturb   = php_mt_rand_range(0, MAX(wait_max, wait_time) - MIN(wait_max, wait_time)) / 10;
 
 	do {
 		rc = memcached_add(memc, lock_key, lock_key_len, "1", sizeof ("1") - 1, expiration, 0);
@@ -149,7 +158,7 @@ zend_bool s_lock_session(memcached_st *memc, zend_string *sid)
 			case MEMCACHED_DATA_EXISTS:
 				if (retries > 0) {
 					usleep(wait_time * 1000);
-					wait_time = MIN(MEMC_SESS_INI(lock_wait_max), wait_time * 2);
+					wait_time = MIN(wait_max, wait_time * 1.2 + perturb);
 				}
 			break;
 
