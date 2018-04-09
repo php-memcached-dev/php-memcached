@@ -117,6 +117,7 @@ Fixes
     <file role='test' name='rescode.phpt'/>
     <file role='test' name='session_badconf_emptyprefix.phpt'/>
     <file role='test' name='session_badconf_locktime.phpt'/>
+    <file role='test' name='session_badconf_persistent.phpt'/>
     <file role='test' name='session_badconf_prefix.phpt'/>
     <file role='test' name='session_badconf_servers.phpt'/>
     <file role='test' name='session_badconf_servers-php72.phpt'/>

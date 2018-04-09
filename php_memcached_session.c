@@ -319,6 +319,13 @@ PS_OPEN_FUNC(memcached)
 
 	memcached_server_list_st servers;
 
+	// Fail on incompatible PERSISTENT identifier (removed in php-memcached 3.0)
+	if (strstr(save_path, "PERSISTENT=")) {
+		php_error_docref(NULL, E_WARNING, "failed to parse session.save_path: PERSISTENT is replaced by memcached.sess_persistent = On");
+		PS_SET_MOD_DATA(NULL);
+		return FAILURE;
+	}
+
 	// First parse servers
 	servers = memcached_servers_parse(save_path);
 
