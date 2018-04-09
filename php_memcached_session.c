@@ -43,14 +43,6 @@ typedef struct  {
 # define MAX(a,b) (((a)>(b))?(a):(b))
 #endif
 
-#ifdef ZTS
-#define MEMC_SESS_INI(v) TSRMG(php_memcached_globals_id, zend_php_memcached_globals *, session.v)
-#else
-#define MEMC_SESS_INI(v) (php_memcached_globals.session.v)
-#endif
-
-#define MEMC_SESS_STR_INI(vv) ((MEMC_SESS_INI(vv) && *MEMC_SESS_INI(vv)) ? MEMC_SESS_INI(vv) : NULL)
-
 static
 	int le_memc_sess;
 
@@ -187,9 +179,11 @@ static
 zend_bool s_configure_from_ini_values(memcached_st *memc, zend_bool silent)
 {
 #define check_set_behavior(behavior, value) \
-	if ((value) != memcached_behavior_get(memc, (behavior))) { \
+	int b = (behavior); \
+	uint64_t v = (value); \
+	if (v != memcached_behavior_get(memc, b)) { \
 		memcached_return rc; \
-		if ((rc = memcached_behavior_set(memc, (behavior), (value))) != MEMCACHED_SUCCESS) { \
+		if ((rc = memcached_behavior_set(memc, b, v)) != MEMCACHED_SUCCESS) { \
 			if (!silent) { \
 				php_error_docref(NULL, E_WARNING, "failed to initialise session memcached configuration: %s", memcached_strerror(memc, rc)); \
 			} \
@@ -202,7 +196,7 @@ zend_bool s_configure_from_ini_values(memcached_st *memc, zend_bool silent)
 	}
 
 	if (MEMC_SESS_INI(consistent_hash_enabled)) {
-		check_set_behavior(MEMCACHED_BEHAVIOR_KETAMA, 1);
+		check_set_behavior(MEMC_SESS_INI(consistent_hash_type), 1);
 	}
 
 	if (MEMC_SESS_INI(server_failure_limit)) {
