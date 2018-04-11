@@ -460,6 +460,9 @@ static
 	zend_bool s_memcached_result_to_zval(memcached_st *memc, memcached_result_st *result, zval *return_value);
 
 static
+	zend_bool s_payload_to_zval(memcached_st *memc, const char *payload, size_t payload_len, uint32_t flags, zval *return_value);
+
+static
 	zend_string *s_zval_to_payload(php_memc_object_t *intern, zval *value, uint32_t *flags);
 
 static
@@ -1441,6 +1444,9 @@ void php_memc_get_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 	zend_long get_flags = 0;
 	zend_string *key;
 	zend_string *server_key = NULL;
+	char *value = NULL;
+	uint32_t flags = 0;
+	size_t length = 0;
 	zend_bool mget_status;
 	memcached_return status = MEMCACHED_SUCCESS;
 	zend_fcall_info fci = empty_fcall_info;
@@ -1471,12 +1477,31 @@ void php_memc_get_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 	MEMC_CHECK_KEY(intern, key);
 
 	context.extended = (get_flags & MEMC_GET_EXTENDED);
-
 	context.return_value = return_value;
 
-	s_key_to_keys(&keys, key);
-	mget_status = php_memc_mget_apply(intern, server_key, &keys, s_get_apply_fn, context.extended, &context);
-	s_clear_keys(&keys);
+	// UDP and EXTENDED are not compatible
+	if (context.extended && memcached_behavior_get(intern->memc, MEMCACHED_BEHAVIOR_USE_UDP)) {
+		php_error_docref(NULL, E_WARNING, "Cannot use GET_EXTENDED in UDP mode");
+		RETURN_FROM_GET;
+	}
+
+	if (context.extended) {
+		mget_status = php_memc_mget_apply(intern, server_key, &keys, s_get_apply_fn, context.extended, &context);
+	} else {
+		printf("Using simple get\n");
+		if (server_key) {
+			value = memcached_get_by_key(intern->memc, ZSTR_VAL(server_key), ZSTR_LEN(server_key), ZSTR_VAL(key), ZSTR_LEN(key), &length, &flags, &status);
+		} else {
+			value = memcached_get(intern->memc, ZSTR_VAL(key), ZSTR_LEN(key), &length, &flags, &status);
+		}
+
+		mget_status = s_memc_status_handle_result_code(intern, status);
+
+		if (value) {
+			mget_status |= s_payload_to_zval(intern->memc, value, length, flags, return_value);
+			free(value);
+		}
+	}
 
 	if (!mget_status) {
 		if (s_memc_status_has_result_code(intern, MEMCACHED_NOTFOUND) && fci.size > 0) {
@@ -3681,15 +3706,22 @@ zend_bool s_unserialize_value (memcached_st *memc, int val_type, zend_string *pa
 static
 zend_bool s_memcached_result_to_zval(memcached_st *memc, memcached_result_st *result, zval *return_value)
 {
-	zend_string *data;
 	const char *payload;
 	size_t payload_len;
 	uint32_t flags;
-	zend_bool retval = 1;
 
 	payload     = memcached_result_value(result);
 	payload_len = memcached_result_length(result);
 	flags       = memcached_result_flags(result);
+
+	return s_payload_to_zval(memc, payload, payload_len, flags, return_value);
+}
+
+static
+zend_bool s_payload_to_zval(memcached_st *memc, const char *payload, size_t payload_len, uint32_t flags, zval *return_value)
+{
+	zend_string *data;
+	zend_bool retval = 1;
 
 	if (!payload && payload_len > 0) {
 		php_error_docref(NULL, E_WARNING, "Could not handle non-existing value of length %zu", payload_len);
