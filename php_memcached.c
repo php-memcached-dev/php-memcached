@@ -14,8 +14,6 @@
   +----------------------------------------------------------------------+
 */
 
-/* $ Id: $ */
-
 /* TODO
  * - set LIBKETAMA_COMPATIBLE as the default?
  * - fix unserialize(serialize($memc))

@@ -1,5 +1,3 @@
-dnl
-dnl $ Id: $
 dnl vim:se ts=2 sw=2 et:
 
 PHP_ARG_ENABLE(memcached, whether to enable memcached support,
