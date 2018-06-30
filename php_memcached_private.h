@@ -14,8 +14,6 @@
   +----------------------------------------------------------------------+
 */
 
-/* $ Id: $ */
-
 #ifndef PHP_MEMCACHED_PRIVATE_H
 #define PHP_MEMCACHED_PRIVATE_H
 
