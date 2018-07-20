@@ -96,6 +96,8 @@ class Memcached {
 
 	const HAVE_MSGPACK;
 
+	const HAVE_ENCODING;
+
 	/**
 	 * Feature support
 	 */
@@ -362,6 +364,8 @@ class Memcached {
 	public function isPristine( ) {}
 
 	public function setSaslAuthData( $username, $password ) {}
+
+	public function setEncodingKey( $key ) {}
 
 }
 

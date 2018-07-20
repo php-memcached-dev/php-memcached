@@ -14,8 +14,6 @@
   +----------------------------------------------------------------------+
 */
 
-/* $ Id: $ */
-
 #ifndef PHP_MEMCACHED_H
 #define PHP_MEMCACHED_H
 
@@ -27,7 +25,7 @@
 # include "config.h"
 #endif
 
-#define PHP_MEMCACHED_VERSION "3.0.3"
+#define PHP_MEMCACHED_VERSION "3.1.0-dev"
 
 #if defined(PHP_WIN32) && defined(MEMCACHED_EXPORTS)
 #define PHP_MEMCACHED_API __declspec(dllexport)
@@ -41,14 +39,6 @@ PHP_MEMCACHED_API zend_class_entry *php_memc_get_exception_base(int root);
 
 extern zend_module_entry memcached_module_entry;
 #define phpext_memcached_ptr &memcached_module_entry
-
-#ifdef ZTS
-#define MEMC_G(v) TSRMG(php_memcached_globals_id, zend_php_memcached_globals *, memc.v)
-#define MEMC_SERVER_G(v) TSRMG(php_memcached_globals_id, zend_php_memcached_globals *, server.v)
-#else
-#define MEMC_G(v) (php_memcached_globals.memc.v)
-#define MEMC_SERVER_G(v) (php_memcached_globals.server.v)
-#endif
 
 #endif /* PHP_MEMCACHED_H */
 

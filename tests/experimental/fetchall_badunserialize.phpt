@@ -42,7 +42,7 @@ var_dump($m->getDelayed(array('foo'), false));
 try {
 	var_dump($m->fetchAll());
 } catch (Exception $e) {
-	echo $php_errormsg, "\n";
+	echo error_get_last()["message"], "\n";
 	echo $e->getMessage(), "\n";
 }
 

@@ -31,14 +31,14 @@ var_dump($m->get('foo'));
 error_reporting(0);
 
 echo "Negative offset\n";
-$php_errormsg = '';
+error_clear_last();
 $m->increment('foo', -1);
-echo $php_errormsg, "\n";
+echo error_get_last()["message"], "\n";
 var_dump($m->get('foo'));
 
-$php_errormsg = '';
+error_clear_last();
 $m->decrement('foo', -1);
-echo $php_errormsg, "\n";
+echo error_get_last()["message"], "\n";
 var_dump($m->get('foo'));
 
 echo "Enormous offset\n";

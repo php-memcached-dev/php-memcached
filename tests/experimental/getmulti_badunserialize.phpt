@@ -32,7 +32,7 @@ error_reporting(0);
 try {
 	var_dump($m->getMulti(array('bar', 'foo')));
 } catch (Exception $e) {
-	echo $php_errormsg, "\n";
+	echo error_get_last()["message"], "\n";
 	echo $e->getMessage(), "\n";
 }
 

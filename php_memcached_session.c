@@ -22,9 +22,6 @@
 
 extern ZEND_DECLARE_MODULE_GLOBALS(php_memcached)
 
-#define MEMC_SESS_DEFAULT_LOCK_WAIT 150000
-#define MEMC_SESS_LOCK_EXPIRATION 30
-
 #define REALTIME_MAXDELTA 60*60*24*30
 
 ps_module ps_mod_memcached = {
@@ -45,14 +42,6 @@ typedef struct  {
 #ifndef MAX
 # define MAX(a,b) (((a)>(b))?(a):(b))
 #endif
-
-#ifdef ZTS
-#define MEMC_SESS_INI(v) TSRMG(php_memcached_globals_id, zend_php_memcached_globals *, session.v)
-#else
-#define MEMC_SESS_INI(v) (php_memcached_globals.session.v)
-#endif
-
-#define MEMC_SESS_STR_INI(vv) ((MEMC_SESS_INI(vv) && *MEMC_SESS_INI(vv)) ? MEMC_SESS_INI(vv) : NULL)
 
 static
 	int le_memc_sess;
@@ -189,12 +178,17 @@ void s_unlock_session(memcached_st *memc)
 static
 zend_bool s_configure_from_ini_values(memcached_st *memc, zend_bool silent)
 {
-	memcached_return rc;
-
 #define check_set_behavior(behavior, value) \
-	if ((rc = memcached_behavior_set(memc, (behavior), (value))) != MEMCACHED_SUCCESS) { \
-		if (!silent) { php_error_docref(NULL, E_WARNING, "failed to initialise session memcached configuration: %s", memcached_strerror(memc, rc)); } \
-		return 0; \
+	int b = (behavior); \
+	uint64_t v = (value); \
+	if (v != memcached_behavior_get(memc, b)) { \
+		memcached_return rc; \
+		if ((rc = memcached_behavior_set(memc, b, v)) != MEMCACHED_SUCCESS) { \
+			if (!silent) { \
+				php_error_docref(NULL, E_WARNING, "failed to initialise session memcached configuration: %s", memcached_strerror(memc, rc)); \
+			} \
+			return 0; \
+		} \
 	}
 
 	if (MEMC_SESS_INI(binary_protocol_enabled)) {
@@ -202,7 +196,7 @@ zend_bool s_configure_from_ini_values(memcached_st *memc, zend_bool silent)
 	}
 
 	if (MEMC_SESS_INI(consistent_hash_enabled)) {
-		check_set_behavior(MEMCACHED_BEHAVIOR_KETAMA, 1);
+		check_set_behavior(MEMC_SESS_INI(consistent_hash_type), 1);
 	}
 
 	if (MEMC_SESS_INI(server_failure_limit)) {
@@ -246,7 +240,7 @@ zend_bool s_configure_from_ini_values(memcached_st *memc, zend_bool silent)
 		user_data->has_sasl_data = 1;
 	}
 
-#undef safe_set_behavior
+#undef check_set_behavior
 
 	return 1;
 }
@@ -376,7 +370,7 @@ PS_OPEN_FUNC(memcached)
 		le.type = s_memc_sess_list_entry();
 		le.ptr  = memc;
 
-		GC_REFCOUNT(&le) = 1;
+		GC_SET_REFCOUNT(&le, 1);
 
 		/* plist_key is not a persistent allocated key, thus we use str_update here */
 		if (zend_hash_str_update_mem(&EG(persistent_list), plist_key, plist_key_len, &le, sizeof(le)) == NULL) {

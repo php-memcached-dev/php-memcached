@@ -27,9 +27,9 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <email>aaron@serendipity.cx</email>
   <active>yes</active>
  </lead>
- <date>2017-02-19</date>
+ <date>2017-11-20</date>
  <version>
-  <release>3.0.3</release>
+  <release>3.0.4</release>
   <api>3.0.0</api>
  </version>
  <stability>
@@ -38,13 +38,19 @@ http://pear.php.net/dtd/package-2.0.xsd">
  </stability>
  <license uri="http://www.php.net/license">PHP</license>
  <notes>
-PHP7 release of memcached extension. Note that support for libmemcached 0.x series has been discontinued
-and the oldest actively tested version is 1.0.2. It is highly recommended to use version 1.0.18 of
+PHP 7.0 - 7.1 - 7.2 release of memcached extension. Note that support for
+libmemcached 0.x series has been discontinued and the oldest actively tested
+version is 1.0.2. It is highly recommended to use version 1.0.18 of
 libmemcached.
 
 Fixes
- * Fix crash when checking session data with older versions of libmemcached (#328)
- * Fix crash due to zend_mm_corrupted when fetching session data (#327)
+ * Fix corrupted interned strings (#338)
+ * Fix unit tests for compatibility with PHP 7.2 (#358, #359)
+ * Fix \x0a in key name locks up connection and triggers a fatal timeout error (#339)
+ * Fix missing optional parameter getStats($type) (#337)
+ * Fix typo in skip message (#331)
+ * Fix build warnings (#329)
+ * Document GET_EXTENDED flag, add/rename other missing/misnamed constants (#335)
  </notes>
  <contents>
   <dir name="/">
@@ -113,6 +119,7 @@ Fixes
     <file role='test' name='session_badconf_locktime.phpt'/>
     <file role='test' name='session_badconf_prefix.phpt'/>
     <file role='test' name='session_badconf_servers.phpt'/>
+    <file role='test' name='session_badconf_servers-php72.phpt'/>
     <file role='test' name='session_basic.phpt'/>
     <file role='test' name='session_basic2.phpt'/>
     <file role='test' name='session_basic3.phpt'/>
@@ -147,10 +154,13 @@ Fixes
     <file role='test' name='incrdecr_invalid_key.phpt'/>
     <file role='test' name='incrdecr_bykey.phpt'/>
     <file role='test' name='invalid_options.phpt'/>
-    <file role='test' name='keys.phpt'/>
+    <file role='test' name='keys_ascii.phpt'/>
+    <file role='test' name='keys_binary.phpt'/>
     <file role='test' name='testdata.res'/>
     <file role='test' name='config.inc'/>
     <file role='test' name='sasl_basic.phpt'/>
+    <file role='test' name='set_encoding_key.phpt'/>
+    <file role='test' name='set_encoding_key2.phpt'/>
     <file role='test' name='getserverbykey.phpt'/>
     <file role='test' name='gh_155.phpt'/>
     <file role='test' name='get_flags.phpt'/>
@@ -158,6 +168,7 @@ Fixes
     <file role='test' name='session_lazy_warning.phpt'/>
     <file role='test' name='session_regenerate.phpt'/>
     <file role='test' name='stats.phpt'/>
+    <file role='test' name='stats_hang.phpt'/>
     <file role='test' name='default_behavior.phpt'/>
     <file role='test' name='reset_keyprefix.phpt'/>
     <file role='test' name='session_lock-php71.phpt'/>
@@ -186,9 +197,37 @@ Fixes
  </dependencies>
  <providesextension>memcached</providesextension>
  <extsrcrelease>
-  <configureoption name="with-libmemcached-dir" default="no" prompt="libmemcached directory"/>
+  <configureoption name="with-libmemcached-dir"     prompt="libmemcached directory"     default="no"/>
+  <configureoption name="with-zlib-dir"             prompt="zlib directory"             default="no"/>
+  <configureoption name="with-system-fastlz"        prompt="use system fastlz"          default="no"/>
+  <configureoption name="enable-memcached-igbinary" prompt="enable igbinary serializer" default="no"/>
+  <configureoption name="enable-memcached-msgpack"  prompt="enable msgpack serializer"  default="no"/>
+  <configureoption name="enable-memcached-json"     prompt="enable json serializer"     default="no"/>
+  <configureoption name="enable-memcached-protocol" prompt="enable server protocol"     default="no"/>
+  <configureoption name="disable-memcached-sasl"    prompt="disable sasl"               default="no"/>
+  <configureoption name="disable-memcached-session" prompt="disable sessions"           default="no"/>
  </extsrcrelease>
  <changelog>
+    <release>
+      <stability>
+        <release>stable</release>
+        <api>stable</api>
+      </stability>
+      <version>
+        <release>3.0.3</release>
+        <api>3.0.0</api>
+      </version>
+      <date>2017-02-19</date>
+      <notes>
+PHP7 release of memcached extension. Note that support for libmemcached 0.x series has been discontinued
+and the oldest actively tested version is 1.0.2. It is highly recommended to use version 1.0.18 of
+libmemcached.
+
+Fixes
+ * Fix crash when checking session data with older versions of libmemcached (#328)
+ * Fix crash due to zend_mm_corrupted when fetching session data (#327)
+      </notes>
+    </release>
     <release>
       <stability>
         <release>stable</release>

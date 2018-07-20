@@ -11,7 +11,7 @@ error_reporting(0);
 $m->delete('foo');
 $m->setOption(Memcached::OPT_COMPRESSION, true);
 var_dump($m->append('foo', 'a'));
-echo $php_errormsg, "\n";
+echo error_get_last()["message"], "\n";
 
 $m->setOption(Memcached::OPT_COMPRESSION, false);
 $m->delete('foo');
