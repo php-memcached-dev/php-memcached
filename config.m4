@@ -253,7 +253,6 @@ if test "$PHP_MEMCACHED" != "no"; then
     PHP_EVAL_LIBLINE($PHP_LIBMEMCACHED_LIBS, MEMCACHED_SHARED_LIBADD)
     PHP_EVAL_INCLINE($PHP_LIBMEMCACHED_INCLUDES)
 
-    dnl # Added -lpthread here because AC_TRY_LINK tests on CentOS 6 seem to fail with undefined reference to pthread_once
     ORIG_CFLAGS="$CFLAGS"
     CFLAGS="$CFLAGS $INCLUDES"
 
