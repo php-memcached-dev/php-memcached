@@ -193,6 +193,8 @@ zend_bool s_configure_from_ini_values(memcached_st *memc, zend_bool silent)
 
 	if (MEMC_SESS_INI(binary_protocol_enabled)) {
 		check_set_behavior(MEMCACHED_BEHAVIOR_BINARY_PROTOCOL, 1);
+		/* Also enable TCP_NODELAY when binary protocol is enabled */
+		check_set_behavior(MEMCACHED_BEHAVIOR_TCP_NODELAY, 1);
 	}
 
 	if (MEMC_SESS_INI(consistent_hash_enabled)) {

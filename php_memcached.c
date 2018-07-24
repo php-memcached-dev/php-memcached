@@ -1288,6 +1288,11 @@ static PHP_METHOD(Memcached, __construct)
 		if (rc != MEMCACHED_SUCCESS) {
 			php_error_docref(NULL, E_WARNING, "Failed to turn on binary protocol: %s", memcached_strerror(intern->memc, rc));
 		}
+		/* Also enable TCP_NODELAY when binary protocol is enabled */
+		rc = memcached_behavior_set(intern->memc, MEMCACHED_BEHAVIOR_TCP_NODELAY, 1);
+		if (rc != MEMCACHED_SUCCESS) {
+			php_error_docref(NULL, E_WARNING, "Failed to set TCP_NODELAY: %s", memcached_strerror(intern->memc, rc));
+		}
 	}
 
 	if (MEMC_G(default_behavior.connect_timeout)) {
