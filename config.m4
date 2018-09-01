@@ -259,17 +259,15 @@ if test "$PHP_MEMCACHED" != "no"; then
     dnl # Always check if libmemcached was built with SASL support,
     dnl # because it will require sasl.h even if not used here.
     AC_CACHE_CHECK([for libmemcached sasl.h requirement], ac_cv_memc_sasl_support, [
-      AC_TRY_COMPILE(
-        [ #include <libmemcached/memcached.h> ],
-        [
+      AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <libmemcached/memcached.h>]], [[
         #if LIBMEMCACHED_WITH_SASL_SUPPORT
           /* yes */
         #else
         #  error "no sasl support"
         #endif
-        ],
-        [ ac_cv_memc_sasl_support="yes" ],
-        [ ac_cv_memc_sasl_support="no" ]
+        ]])],
+        [ac_cv_memc_sasl_support="yes"],
+        [ac_cv_memc_sasl_support="no"]
       )
     ])
 
@@ -303,12 +301,11 @@ if test "$PHP_MEMCACHED" != "no"; then
     LIBS="$LIBS $PHP_LIBMEMCACHED_LIBS"
 
     AC_CACHE_CHECK([whether memcached_exist is defined], ac_cv_have_memcached_exist, [
-      AC_TRY_LINK(
-        [ #include <libmemcached/memcached.h> ],
-        [ memcached_exist (NULL, NULL, 0); ],
-        [ ac_cv_have_memcached_exist="yes" ],
-        [ ac_cv_have_memcached_exist="no" ]
-      )
+      AC_LINK_IFELSE(
+        [AC_LANG_PROGRAM([[#include <libmemcached/memcached.h>]],
+          [[memcached_exist (NULL, NULL, 0);]])],
+          [ac_cv_have_memcached_exist="yes"],
+          [ac_cv_have_memcached_exist="no"])
     ])
 
     CFLAGS="$ORIG_CFLAGS"
@@ -322,12 +319,11 @@ if test "$PHP_MEMCACHED" != "no"; then
     fi
 
     AC_CACHE_CHECK([whether memcached_set_encoding_key is defined], ac_cv_have_memcached_set_encoding_key, [
-      AC_TRY_LINK(
-        [ #include <libmemcached/memcached.h> ],
-        [ memcached_set_encoding_key (NULL, NULL, 0); ],
-        [ ac_cv_have_memcached_set_encoding_key="yes" ],
-        [ ac_cv_have_memcached_set_encoding_key="no" ]
-      )
+      AC_LINK_IFELSE(
+        [AC_LANG_PROGRAM([[#include <libmemcached/memcached.h>]],
+          [[memcached_set_encoding_key (NULL, NULL, 0);]])],
+        [ac_cv_have_memcached_set_encoding_key="yes"],
+        [ac_cv_have_memcached_set_encoding_key="no"])
     ])
 
     CFLAGS="$ORIG_CFLAGS"
@@ -359,13 +355,12 @@ if test "$PHP_MEMCACHED" != "no"; then
       AC_MSG_RESULT([enabled])
 
       AC_CACHE_CHECK([whether libmemcachedprotocol is usable], ac_cv_have_libmemcachedprotocol, [
-        AC_TRY_COMPILE(
-          [ #include <libmemcachedprotocol-0.0/handler.h> ],
-          [ memcached_binary_protocol_callback_st s_test_impl;
+        AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <libmemcachedprotocol-0.0/handler.h>]],
+          [[memcached_binary_protocol_callback_st s_test_impl;
             s_test_impl.interface.v1.delete_object = 0;
-          ],
-          [ ac_cv_have_libmemcachedprotocol="yes" ],
-          [ ac_cv_have_libmemcachedprotocol="no" ]
+          ]])],
+          [ac_cv_have_libmemcachedprotocol="yes"],
+          [ac_cv_have_libmemcachedprotocol="no"]
         )
       ])
 
