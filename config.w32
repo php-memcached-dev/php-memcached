@@ -1,6 +1,10 @@
 // vim:ft=javascript
 
-ARG_WITH('memcached', 'libmemcached extension', 'no');
+ARG_ENABLE('memcached', 'libmemcached extension', 'no');
+
+ARG_ENABLE('memcached-session', 'whether to enable memcached session handler support', 'no');
+ARG_ENABLE('memcached-igbinary', 'whether to enable memcached igbinary serializer support', 'no');
+ARG_ENABLE('memcached-json', 'whether to enable memcached json serializer support', 'no');
 
 if (PHP_MEMCACHED == "yes") {
 
@@ -11,7 +15,29 @@ if (PHP_MEMCACHED == "yes") {
   if (!CHECK_HEADER_ADD_INCLUDE("libmemcached/memcached.h", "CFLAGS_MEMCACHED")) {
 	ERROR("memcached: header 'libmemcached/memcached.h' not found");
   }
-  EXTENSION("memcached", "memcached.c");
+
+  if (PHP_MEMCACHED_JSON != "no"){
+	AC_DEFINE("HAVE_JSON_API",1);
+  }
+  
+  var memcached_extra_src = "";
+  
+  if (PHP_MEMCACHED_SESSION != "no"){
+	AC_DEFINE("HAVE_MEMCACHED_SESSION",1);
+	ADD_EXTENSION_DEP("memcached", "session", true)
+	memcached_extra_src += " php_memcached_session.c";
+  }
+  
+  if (PHP_MEMCACHED_IGBINARY != "no"){
+	AC_DEFINE("HAVE_MEMCACHED_IGBINARY",1);
+	ADD_EXTENSION_DEP("memcached", "igbinary", true);
+	if (!CHECK_HEADER_ADD_INCLUDE("igbinary.h", "CFLAGS_MEMCACHED")) {
+		ERROR("memcached: header 'igbinary.h' not found");
+	  }
+  }
+  
+  EXTENSION("memcached", "php_memcached.c php_libmemcached_compat.c g_fmt.c"+memcached_extra_src);
+  ADD_SOURCES(configure_module_dirname+"\\fastlz", "fastlz.c", "memcached");
   AC_DEFINE("HAVE_MEMCACHED", 1, "memcached support");
   AC_DEFINE("MEMCACHED_EXPORTS", 1)
 }
