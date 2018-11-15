@@ -19,7 +19,12 @@
 
 #include "php.h"
 #include "Zend/zend_smart_str.h"
+
+#ifdef PHP_WIN32
+#include "main/config.w32.h"
+#else
 #include "main/php_config.h"
+#endif
 
 #ifdef HAVE_CONFIG_H
 # include "config.h"

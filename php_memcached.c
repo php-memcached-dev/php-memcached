@@ -42,7 +42,13 @@
 #endif
 
 #ifdef HAVE_MEMCACHED_IGBINARY
+#ifdef PHP_WIN32
+//Windows extensions are generally built together,
+//so it wont be in the installed location
+#include "igbinary.h"
+#else
 # include "ext/igbinary/igbinary.h"
+#endif
 #endif
 
 #ifdef HAVE_MEMCACHED_MSGPACK
@@ -1428,7 +1434,7 @@ zend_bool s_get_apply_fn(php_memc_object_t *intern, zend_string *key, zval *valu
 static
 void php_memc_get_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 {
-	php_memc_get_ctx_t context = {};
+	php_memc_get_ctx_t context = {0};
 	php_memc_keys_t keys = {0};
 	zend_long get_flags = 0;
 	zend_string *key;
