@@ -29,7 +29,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
  </lead>
  <date>2018-12-21</date>
  <version>
-  <release>3.1.0</release>
+  <release>3.1.1</release>
   <api>3.0.0</api>
  </version>
  <stability>
@@ -43,30 +43,8 @@ libmemcached 0.x series has been discontinued and the oldest actively tested
 version is 1.0.8. It is highly recommended to use version 1.0.18 of
 libmemcached.
 
-New
-  * Support for PHP 7.3 (#385, #390)
-  * Add INI setting to choose session consistent hash (ketama or ketama_weighted) (#344, #392)
-  * Add support for libmemcached encryption (#345, #381)
-  * Add error reporting to session code (#165)
-  * Expose build configuration via PECL (#383)
-
 Fixes
-  * Fix hanging getStats() when binary protocol and non-blocking are both enabled (#348)
-  * Fix session persistence by checking memcached behavior values before setting (#379)
-  * Fix memcached.sess_persistent not working with memcached.sess_binary_protocol = On (#375)
-  * Configure warns if libmemcached needs sasl.h (#341, #380)
-  * Resolve various INI deviations in 3.0.3 (#351)
-  * Turn off sess_binary_protocol by default with older libmemcached (#330)
-
-Changes
-  * Impove Windows builds (#411)
-  * Support Homebrew ZLIB path (#410)
-  * Remove forgotten unused comment about -lpthread (#406)
-  * Git ignore configure.ac (#405)
-  * Replace obsolete macros AC_TRY_FOO with AC_FOO_IFELSE (#403)
-  * Remove unused defines (#354)
-  * Change session_lock and sess_prefix default ini values (#340, #350)
-  * Use new fast_zpp parameter parsing API (#302, #311)
+  * Fix --disable-memcached-sasl and --disable-memcached-session replaced by --enable variants (#416)
  </notes>
  <contents>
   <dir name="/">
@@ -225,6 +203,48 @@ Changes
   <configureoption name="enable-memcached-session"  prompt="enable sessions"            default="yes"/>
  </extsrcrelease>
  <changelog>
+    <release>
+      <stability>
+        <release>stable</release>
+        <api>stable</api>
+      </stability>
+      <version>
+        <release>3.1.0</release>
+        <api>3.0.0</api>
+      </version>
+      <date>2018-12-21</date>
+      <notes>
+PHP 7.0 - 7.1 - 7.2 - 7.3 release of memcached extension. Note that support for
+libmemcached 0.x series has been discontinued and the oldest actively tested
+version is 1.0.8. It is highly recommended to use version 1.0.18 of
+libmemcached.
+
+New
+  * Support for PHP 7.3 (#385, #390)
+  * Add INI setting to choose session consistent hash (ketama or ketama_weighted) (#344, #392)
+  * Add support for libmemcached encryption (#345, #381)
+  * Add error reporting to session code (#165)
+  * Expose build configuration via PECL (#383)
+
+Fixes
+  * Fix hanging getStats() when binary protocol and non-blocking are both enabled (#348)
+  * Fix session persistence by checking memcached behavior values before setting (#379)
+  * Fix memcached.sess_persistent not working with memcached.sess_binary_protocol = On (#375)
+  * Configure warns if libmemcached needs sasl.h (#341, #380)
+  * Resolve various INI deviations in 3.0.3 (#351)
+  * Turn off sess_binary_protocol by default with older libmemcached (#330)
+
+Changes
+  * Impove Windows builds (#411)
+  * Support Homebrew ZLIB path (#410)
+  * Remove forgotten unused comment about -lpthread (#406)
+  * Git ignore configure.ac (#405)
+  * Replace obsolete macros AC_TRY_FOO with AC_FOO_IFELSE (#403)
+  * Remove unused defines (#354)
+  * Change session_lock and sess_prefix default ini values (#340, #350)
+  * Use new fast_zpp parameter parsing API (#302, #311)
+      </notes>
+    </release>
     <release>
       <stability>
         <release>stable</release>

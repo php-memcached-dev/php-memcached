@@ -1,5 +1,10 @@
 memcached extension changelog
 
+Version 3.1.1 (2017-12-21)
+--------------------------
+
+	* Fix --disable-memcached-sasl and --disable-memcached-session replaced by --enable variants (#416)
+
 Version 3.1.0 (2017-12-21)
 --------------------------
 
