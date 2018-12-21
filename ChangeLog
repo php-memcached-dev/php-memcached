@@ -1,5 +1,33 @@
 memcached extension changelog
 
+Version 3.1.0 (2017-12-21)
+--------------------------
+
+	New
+	* Support for PHP 7.3 (#385, #390)
+	* Add INI setting to choose session consistent hash (ketama or ketama_weighted) (#344, #392)
+	* Add support for libmemcached encryption (#345, #381)
+	* Add error reporting to session code (#165)
+	* Expose build configuration via PECL (#383)
+
+	Fixes
+	* Fix hanging getStats() when binary protocol and non-blocking are both enabled (#348)
+	* Fix session persistence by checking memcached behavior values before setting (#379)
+	* Fix memcached.sess_persistent not working with memcached.sess_binary_protocol = On (#375)
+	* Configure warns if libmemcached needs sasl.h (#341, #380)
+	* Resolve various INI deviations in 3.0.3 (#351)
+	* Turn off sess_binary_protocol by default with older libmemcached (#330)
+
+	Changes
+	* Impove Windows builds (#411)
+	* Support Homebrew ZLIB path (#410)
+	* Remove forgotten unused comment about -lpthread (#406)
+	* Git ignore configure.ac (#405)
+	* Replace obsolete macros AC_TRY_FOO with AC_FOO_IFELSE (#403)
+	* Remove unused defines (#354)
+	* Change session_lock and sess_prefix default ini values (#340, #350)
+	* Use new fast_zpp parameter parsing API (#302, #311)
+
 Version 3.0.4 (2017-11-20)
 --------------------------
 
