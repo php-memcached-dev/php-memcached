@@ -1,40 +1,40 @@
 dnl vim:se ts=2 sw=2 et:
 
 PHP_ARG_ENABLE(memcached, whether to enable memcached support,
-[  --enable-memcached               Enable memcached support])
+[  --enable-memcached              Enable memcached support])
 
 PHP_ARG_WITH(libmemcached-dir,  for libmemcached,
-[  --with-libmemcached-dir[=DIR]   Set the path to libmemcached install prefix.], yes)
+[  --with-libmemcached-dir=DIR     Set the path to libmemcached install prefix.], yes)
 
 PHP_ARG_ENABLE(memcached-session, whether to enable memcached session handler support,
-[  --disable-memcached-session      Disable memcached session handler support], yes, no)
+[  --enable-memcached-session      Enable memcached session handler support], yes, no)
 
 PHP_ARG_ENABLE(memcached-igbinary, whether to enable memcached igbinary serializer support,
-[  --enable-memcached-igbinary      Enable memcached igbinary serializer support], no, no)
+[  --enable-memcached-igbinary     Enable memcached igbinary serializer support], no, no)
 
 PHP_ARG_ENABLE(memcached-json, whether to enable memcached json serializer support,
-[  --enable-memcached-json          Enable memcached json serializer support], no, no)
+[  --enable-memcached-json         Enable memcached json serializer support], no, no)
 
 PHP_ARG_ENABLE(memcached-msgpack, whether to enable memcached msgpack serializer support,
-[  --enable-memcached-msgpack          Enable memcached msgpack serializer support], no, no)
+[  --enable-memcached-msgpack      Enable memcached msgpack serializer support], no, no)
 
 PHP_ARG_ENABLE(memcached-sasl, whether to enable memcached sasl support,
-[  --disable-memcached-sasl          Disable memcached sasl support], yes, no)
+[  --enable-memcached-sasl         Enable memcached sasl support], yes, no)
 
 PHP_ARG_ENABLE(memcached-protocol, whether to enable memcached protocol support,
-[  --enable-memcached-protocol          Enable memcached protocol support], no, no)
+[  --enable-memcached-protocol     Enable memcached protocol support], no, no)
 
 PHP_ARG_WITH(system-fastlz, whether to use system FastLZ library,
-[  --with-system-fastlz                 Use system FastLZ library], no, no)
+[  --with-system-fastlz            Use system FastLZ library], no, no)
 
 if test -z "$PHP_ZLIB_DIR"; then
 PHP_ARG_WITH(zlib-dir, for ZLIB,
-[  --with-zlib-dir[=DIR]   Set the path to ZLIB install prefix.], no)
+[  --with-zlib-dir=DIR             Set the path to ZLIB install prefix.], no)
 fi
 
 if test -z "$PHP_DEBUG"; then
   AC_ARG_ENABLE(debug,
-  [  --enable-debug          compile with debugging symbols],[
+  [  --enable-debug          Compile with debugging symbols],[
     PHP_DEBUG=$enableval
   ],[    PHP_DEBUG=no
   ])
