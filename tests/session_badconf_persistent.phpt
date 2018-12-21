@@ -16,10 +16,10 @@ ob_start();
 session_start();
 session_write_close();
 
-echo "OK";
+// In PHP < 7.2 this is a Fatal Error so the OK is not printed
+// echo "OK";
 
 --EXPECTF--
 Warning: session_start(): failed to parse session.save_path: PERSISTENT is replaced by memcached.sess_persistent = On in %s on line %d
 
-Warning: session_start(): Failed to initialize storage module: memcached (path: PERSISTENT=1 %s) in %s on line %d
-OK
+%s: session_start(): Failed to initialize storage module: memcached (path: PERSISTENT=1 %s) in %s on line %d
