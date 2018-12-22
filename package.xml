@@ -198,7 +198,7 @@ Fixes
   <configureoption name="enable-memcached-igbinary" prompt="enable igbinary serializer" default="no"/>
   <configureoption name="enable-memcached-msgpack"  prompt="enable msgpack serializer"  default="no"/>
   <configureoption name="enable-memcached-json"     prompt="enable json serializer"     default="no"/>
-  <configureoption name="enable-memcached-protocol" prompt="enable server protocol"     default="yes"/>
+  <configureoption name="enable-memcached-protocol" prompt="enable server protocol"     default="no"/>
   <configureoption name="enable-memcached-sasl"     prompt="enable sasl"                default="yes"/>
   <configureoption name="enable-memcached-session"  prompt="enable sessions"            default="yes"/>
  </extsrcrelease>
