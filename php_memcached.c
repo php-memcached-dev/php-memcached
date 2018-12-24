@@ -302,6 +302,7 @@ static PHP_INI_MH(OnUpdateSerializer)
 	return OnUpdateString(entry, new_value, mh_arg1, mh_arg2, mh_arg3, stage);
 }
 
+#ifdef HAVE_MEMCACHED_SESSION
 static
 PHP_INI_MH(OnUpdateDeprecatedLockValue)
 {
@@ -342,6 +343,7 @@ PHP_INI_MH(OnUpdateConsistentHash)
 	}
 	return OnUpdateString(entry, new_value, mh_arg1, mh_arg2, mh_arg3, stage);
 }
+#endif // HAVE_MEMCACHED_SESSION
 
 #define MEMC_INI_ENTRY(key, default_value, update_fn, gkey) \
 	STD_PHP_INI_ENTRY("memcached."key, default_value, PHP_INI_ALL, update_fn, memc.gkey, zend_php_memcached_globals, php_memcached_globals)
