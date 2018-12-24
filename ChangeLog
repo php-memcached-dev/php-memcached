@@ -1,11 +1,21 @@
 memcached extension changelog
 
-Version 3.1.1 (2017-12-21)
+Version 3.1.3 (2018-12-24)
+--------------------------
+
+	* Fix --disable-memcached-session by ifdef-ing session INI handler callbacks (#396, #420)
+
+Version 3.1.2 (2018-12-22)
+--------------------------
+
+	* Fix --enable-memcached-protocol was set to yes by default, reverted to no (#418)
+
+Version 3.1.1 (2018-12-21)
 --------------------------
 
 	* Fix --disable-memcached-sasl and --disable-memcached-session replaced by --enable variants (#416)
 
-Version 3.1.0 (2017-12-21)
+Version 3.1.0 (2018-12-21)
 --------------------------
 
 	New
