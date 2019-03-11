@@ -3745,6 +3745,7 @@ zend_bool s_memcached_result_to_zval(memcached_st *memc, memcached_result_st *re
 
 		default:
 			php_error_docref(NULL, E_WARNING, "unknown payload type");
+			retval = 0;
 			break;
 	}
 	zend_string_release(data);
