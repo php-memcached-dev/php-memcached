@@ -3,6 +3,7 @@ dist: xenial
 language: php
 php:
     - master
+    - 7.4snapshot
     - 7.3
     - 7.2
     - 7.1
