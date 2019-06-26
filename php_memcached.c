@@ -250,10 +250,7 @@ static zend_class_entry *memcached_server_ce = NULL;
 static zend_class_entry *memcached_ce = NULL;
 static zend_class_entry *memcached_exception_ce = NULL;
 static zend_object_handlers memcached_object_handlers;
-
-#ifdef HAVE_SPL
 static zend_class_entry *spl_ce_RuntimeException = NULL;
-#endif
 
 ZEND_DECLARE_MODULE_GLOBALS(php_memcached)
 
@@ -3769,7 +3766,6 @@ zend_class_entry *php_memc_get_exception(void)
 PHP_MEMCACHED_API
 zend_class_entry *php_memc_get_exception_base(int root)
 {
-#ifdef HAVE_SPL
 	if (!root) {
 		if (!spl_ce_RuntimeException) {
 			zend_class_entry *pce;
@@ -3786,7 +3782,6 @@ zend_class_entry *php_memc_get_exception_base(int root)
 			return spl_ce_RuntimeException;
 		}
 	}
-#endif
 	return zend_exception_get_default();
 }
 
@@ -4267,9 +4262,7 @@ static const zend_module_dep memcached_deps[] = {
 #ifdef HAVE_MEMCACHED_MSGPACK
 	ZEND_MOD_REQUIRED("msgpack")
 #endif
-#ifdef HAVE_SPL
 	ZEND_MOD_REQUIRED("spl")
-#endif
 	{NULL, NULL, NULL}
 };
 #endif
