@@ -46,7 +46,7 @@ libmemcached.
 Fixes
   * Test on PHP 7.4 as well as 8.0 (#440)
   * Fix segfault for unknown memcached flags (#431)
-  * Update documented defaults for sess_lock_retries( #432)
+  * Update documented defaults for sess_lock_retries (#432)
   * Remove stray instances of the TSRMLS_CC macro for PHP 8 compatibility (#444)
  </notes>
  <contents>
