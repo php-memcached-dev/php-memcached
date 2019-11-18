@@ -3234,7 +3234,7 @@ static PHP_METHOD(Memcached, setOptions)
 	zval *options;
 	zend_bool ok = 1;
 	zend_string *key;
-	ulong key_index;
+	zend_ulong key_index;
 	zval *value;
 
 	MEMC_METHOD_INIT_VARS;
