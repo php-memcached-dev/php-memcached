@@ -27,9 +27,9 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <email>aaron@serendipity.cx</email>
   <active>yes</active>
  </lead>
- <date>2019-10-06</date>
+ <date>2019-12-03</date>
  <version>
-  <release>3.1.4</release>
+  <release>3.1.5</release>
   <api>3.0.0</api>
  </version>
  <stability>
@@ -44,10 +44,7 @@ version is 1.0.8. It is highly recommended to use version 1.0.18 of
 libmemcached.
 
 Fixes
-  * Test on PHP 7.4 as well as 8.0 (#440)
-  * Fix segfault for unknown memcached flags (#431)
-  * Update documented defaults for sess_lock_retries (#432)
-  * Remove stray instances of the TSRMLS_CC macro for PHP 8 compatibility (#444)
+ * Fix build with PHP 7.4 release due to ulong typedef removal (#445)
  </notes>
  <contents>
   <dir name="/">
@@ -206,6 +203,29 @@ Fixes
   <configureoption name="enable-memcached-session"  prompt="enable sessions"            default="yes"/>
  </extsrcrelease>
  <changelog>
+    <release>
+      <stability>
+        <release>stable</release>
+        <api>stable</api>
+      </stability>
+      <version>
+        <release>3.1.4</release>
+        <api>3.0.0</api>
+      </version>
+      <date>2019-10-06</date>
+      <notes>
+PHP 7.0 - 7.1 - 7.2 - 7.3 - 7.4 release of memcached extension. Note that support for
+libmemcached 0.x series has been discontinued and the oldest actively tested
+version is 1.0.8. It is highly recommended to use version 1.0.18 of
+libmemcached.
+
+Fixes
+  * Test on PHP 7.4 as well as 8.0 (#440)
+  * Fix segfault for unknown memcached flags (#431)
+  * Update documented defaults for sess_lock_retries (#432)
+  * Remove stray instances of the TSRMLS_CC macro for PHP 8 compatibility (#444)
+      </notes>
+    </release>
     <release>
       <stability>
         <release>stable</release>

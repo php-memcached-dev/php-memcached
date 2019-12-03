@@ -1,5 +1,10 @@
 memcached extension changelog
 
+Version 3.1.5 (2019-12-03)
+--------------------------
+
+	* Fix build with PHP 7.4 release due to ulong typedef removal (#445)
+
 Version 3.1.4 (2019-10-06)
 --------------------------
 
