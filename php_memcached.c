@@ -401,7 +401,7 @@ PHP_INI_BEGIN()
 	MEMC_INI_ENTRY("compression_factor",    "1.3",                   OnUpdateReal,            compression_factor)
 	MEMC_INI_ENTRY("compression_threshold", "2000",                  OnUpdateLong,            compression_threshold)
 	MEMC_INI_ENTRY("serializer",            SERIALIZER_DEFAULT_NAME, OnUpdateSerializer,      serializer_name)
-	MEMC_INI_ENTRY("store_retry_count",     "2",                     OnUpdateLong,            store_retry_count)
+	MEMC_INI_ENTRY("store_retry_count",     "0",                     OnUpdateLong,            store_retry_count)
 
 	MEMC_INI_BOOL ("default_consistent_hash",       "0", OnUpdateBool,       default_behavior.consistent_hash_enabled)
 	MEMC_INI_BOOL ("default_binary_protocol",       "0", OnUpdateBool,       default_behavior.binary_protocol_enabled)
