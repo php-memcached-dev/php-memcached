@@ -63,7 +63,9 @@ long s_invoke_php_callback (php_memc_server_cb_t *cb, zval *params, ssize_t para
 	cb->fci.retval = retval;
 	cb->fci.params = params;
 	cb->fci.param_count = param_count;
+#if PHP_VERSION_ID < 80000
 	cb->fci.no_separation = 1;
+#endif
 
 	if (zend_call_function(&(cb->fci), &(cb->fci_cache)) == FAILURE) {
 		char *buf = php_memc_printable_func(&(cb->fci), &(cb->fci_cache));
