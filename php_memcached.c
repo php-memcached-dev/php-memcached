@@ -1853,7 +1853,7 @@ static void php_memc_setMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 {
 	zval *entries;
 	zend_string *server_key = NULL;
-	zend_long expiration = 0, ignored;
+	zend_long expiration = 0;
 	zval *value;
 	zend_string *skey;
 	zend_ulong num_key;
@@ -1867,7 +1867,6 @@ static void php_memc_setMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 		        Z_PARAM_ARRAY(entries)
 		        Z_PARAM_OPTIONAL
 		        Z_PARAM_LONG(expiration)
-		        Z_PARAM_LONG(ignored)
 		ZEND_PARSE_PARAMETERS_END();
 	} else {
 		/* "a|ll" */
@@ -1875,7 +1874,6 @@ static void php_memc_setMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 		        Z_PARAM_ARRAY(entries)
 		        Z_PARAM_OPTIONAL
 		        Z_PARAM_LONG(expiration)
-		        Z_PARAM_LONG(ignored)
 		ZEND_PARSE_PARAMETERS_END();
 	}
 
@@ -2071,7 +2069,6 @@ static void php_memc_cas_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 	zend_string *server_key = NULL;
 	zval *value;
 	zend_long expiration = 0;
-	zend_long ignored;
 	zend_string *payload;
 	uint32_t flags = 0;
 	memcached_return status;
@@ -2086,7 +2083,6 @@ static void php_memc_cas_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 		        Z_PARAM_ZVAL(value)
 		        Z_PARAM_OPTIONAL
 		        Z_PARAM_LONG(expiration)
-		        Z_PARAM_LONG(ignored)
 		ZEND_PARSE_PARAMETERS_END();
 	} else {
 		/* "zSz|ll" */
@@ -2096,7 +2092,6 @@ static void php_memc_cas_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 		        Z_PARAM_ZVAL(value)
 		        Z_PARAM_OPTIONAL
 		        Z_PARAM_LONG(expiration)
-		        Z_PARAM_LONG(ignored)
 		ZEND_PARSE_PARAMETERS_END();
 	}
 
@@ -3862,395 +3857,10 @@ PHP_METHOD(MemcachedServer, on)
 
 #endif
 
-/* {{{ methods arginfo */
-ZEND_BEGIN_ARG_INFO_EX(arginfo___construct, 0, 0, 0)
-	ZEND_ARG_INFO(0, persistent_id)
-	ZEND_ARG_INFO(0, callback)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO(arginfo_getResultCode, 0)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO(arginfo_getResultMessage, 0)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_get, 0, 0, 1)
-	ZEND_ARG_INFO(0, key)
-	ZEND_ARG_INFO(0, cache_cb)
-	ZEND_ARG_INFO(0, get_flags)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_getByKey, 0, 0, 2)
-	ZEND_ARG_INFO(0, server_key)
-	ZEND_ARG_INFO(0, key)
-	ZEND_ARG_INFO(0, cache_cb)
-	ZEND_ARG_INFO(0, get_flags)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_getMulti, 0, 0, 1)
-	ZEND_ARG_ARRAY_INFO(0, keys, 0)
-	ZEND_ARG_INFO(0, get_flags)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_getMultiByKey, 0, 0, 2)
-	ZEND_ARG_INFO(0, server_key)
-	ZEND_ARG_ARRAY_INFO(0, keys, 0)
-	ZEND_ARG_INFO(0, get_flags)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_getDelayed, 0, 0, 1)
-	ZEND_ARG_ARRAY_INFO(0, keys, 0)
-	ZEND_ARG_INFO(0, with_cas)
-	ZEND_ARG_INFO(0, value_cb)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_getDelayedByKey, 0, 0, 2)
-	ZEND_ARG_INFO(0, server_key)
-	ZEND_ARG_ARRAY_INFO(0, keys, 0)
-	ZEND_ARG_INFO(0, with_cas)
-	ZEND_ARG_INFO(0, value_cb)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO(arginfo_fetch, 0)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO(arginfo_fetchAll, 0)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_set, 0, 0, 2)
-	ZEND_ARG_INFO(0, key)
-	ZEND_ARG_INFO(0, value)
-	ZEND_ARG_INFO(0, expiration)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_setByKey, 0, 0, 3)
-	ZEND_ARG_INFO(0, server_key)
-	ZEND_ARG_INFO(0, key)
-	ZEND_ARG_INFO(0, value)
-	ZEND_ARG_INFO(0, expiration)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_touch, 0, 0, 2)
-	ZEND_ARG_INFO(0, key)
-	ZEND_ARG_INFO(0, expiration)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_touchByKey, 0, 0, 3)
-	ZEND_ARG_INFO(0, server_key)
-	ZEND_ARG_INFO(0, key)
-	ZEND_ARG_INFO(0, expiration)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_setMulti, 0, 0, 1)
-	ZEND_ARG_ARRAY_INFO(0, items, 0)
-	ZEND_ARG_INFO(0, expiration)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_setMultiByKey, 0, 0, 2)
-	ZEND_ARG_INFO(0, server_key)
-	ZEND_ARG_ARRAY_INFO(0, items, 0)
-	ZEND_ARG_INFO(0, expiration)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_add, 0, 0, 2)
-	ZEND_ARG_INFO(0, key)
-	ZEND_ARG_INFO(0, value)
-	ZEND_ARG_INFO(0, expiration)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_addByKey, 0, 0, 3)
-	ZEND_ARG_INFO(0, server_key)
-	ZEND_ARG_INFO(0, key)
-	ZEND_ARG_INFO(0, value)
-	ZEND_ARG_INFO(0, expiration)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_replace, 0, 0, 2)
-	ZEND_ARG_INFO(0, key)
-	ZEND_ARG_INFO(0, value)
-	ZEND_ARG_INFO(0, expiration)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_replaceByKey, 0, 0, 3)
-	ZEND_ARG_INFO(0, server_key)
-	ZEND_ARG_INFO(0, key)
-	ZEND_ARG_INFO(0, value)
-	ZEND_ARG_INFO(0, expiration)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_append, 0, 0, 2)
-	ZEND_ARG_INFO(0, key)
-	ZEND_ARG_INFO(0, value)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_appendByKey, 0, 0, 3)
-	ZEND_ARG_INFO(0, server_key)
-	ZEND_ARG_INFO(0, key)
-	ZEND_ARG_INFO(0, value)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_prepend, 0, 0, 2)
-	ZEND_ARG_INFO(0, key)
-	ZEND_ARG_INFO(0, value)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_prependByKey, 0, 0, 3)
-	ZEND_ARG_INFO(0, server_key)
-	ZEND_ARG_INFO(0, key)
-	ZEND_ARG_INFO(0, value)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_cas, 0, 0, 3)
-	ZEND_ARG_INFO(0, cas_token)
-	ZEND_ARG_INFO(0, key)
-	ZEND_ARG_INFO(0, value)
-	ZEND_ARG_INFO(0, expiration)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_casByKey, 0, 0, 4)
-	ZEND_ARG_INFO(0, cas_token)
-	ZEND_ARG_INFO(0, server_key)
-	ZEND_ARG_INFO(0, key)
-	ZEND_ARG_INFO(0, value)
-	ZEND_ARG_INFO(0, expiration)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_delete, 0, 0, 1)
-	ZEND_ARG_INFO(0, key)
-	ZEND_ARG_INFO(0, time)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_deleteMulti, 0, 0, 1)
-	ZEND_ARG_INFO(0, keys)
-	ZEND_ARG_INFO(0, time)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_deleteByKey, 0, 0, 2)
-	ZEND_ARG_INFO(0, server_key)
-	ZEND_ARG_INFO(0, key)
-	ZEND_ARG_INFO(0, time)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_deleteMultiByKey, 0, 0, 2)
-	ZEND_ARG_INFO(0, server_key)
-	ZEND_ARG_INFO(0, keys)
-	ZEND_ARG_INFO(0, time)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_increment, 0, 0, 1)
-	ZEND_ARG_INFO(0, key)
-	ZEND_ARG_INFO(0, offset)
-	ZEND_ARG_INFO(0, initial_value)
-	ZEND_ARG_INFO(0, expiry)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_decrement, 0, 0, 1)
-	ZEND_ARG_INFO(0, key)
-	ZEND_ARG_INFO(0, offset)
-	ZEND_ARG_INFO(0, initial_value)
-	ZEND_ARG_INFO(0, expiry)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_incrementByKey, 0, 0, 2)
-	ZEND_ARG_INFO(0, server_key)
-	ZEND_ARG_INFO(0, key)
-	ZEND_ARG_INFO(0, offset)
-	ZEND_ARG_INFO(0, initial_value)
-	ZEND_ARG_INFO(0, expiry)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_decrementByKey, 0, 0, 2)
-	ZEND_ARG_INFO(0, server_key)
-	ZEND_ARG_INFO(0, key)
-	ZEND_ARG_INFO(0, offset)
-	ZEND_ARG_INFO(0, initial_value)
-	ZEND_ARG_INFO(0, expiry)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_flush, 0, 0, 0)
-	ZEND_ARG_INFO(0, delay)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_addServer, 0, 0, 2)
-	ZEND_ARG_INFO(0, host)
-	ZEND_ARG_INFO(0, port)
-	ZEND_ARG_INFO(0, weight)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_getStats, 0, 0, 0)
-	ZEND_ARG_INFO(0, type)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO(arginfo_addServers, 0)
-	ZEND_ARG_ARRAY_INFO(0, servers, 0)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO(arginfo_getServerList, 0)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO(arginfo_resetServerList, 0)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO(arginfo_quit, 0)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO(arginfo_flushBuffers, 0)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO(arginfo_getServerByKey, 0)
-	ZEND_ARG_INFO(0, server_key)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO(arginfo_getLastErrorMessage, 0)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO(arginfo_getLastErrorCode, 0)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO(arginfo_getLastErrorErrno, 0)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO(arginfo_getLastDisconnectedServer, 0)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO(arginfo_getOption, 0)
-	ZEND_ARG_INFO(0, option)
-ZEND_END_ARG_INFO()
-
-#ifdef HAVE_MEMCACHED_SASL
-ZEND_BEGIN_ARG_INFO(arginfo_setSaslAuthData, 0)
-	ZEND_ARG_INFO(0, username)
-	ZEND_ARG_INFO(0, password)
-ZEND_END_ARG_INFO()
-#endif
-
-#ifdef HAVE_MEMCACHED_SET_ENCODING_KEY
-ZEND_BEGIN_ARG_INFO(arginfo_setEncodingKey, 0)
-	ZEND_ARG_INFO(0, key)
-ZEND_END_ARG_INFO()
-#endif
-
-ZEND_BEGIN_ARG_INFO(arginfo_setOption, 0)
-	ZEND_ARG_INFO(0, option)
-	ZEND_ARG_INFO(0, value)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO(arginfo_setOptions, 0)
-	ZEND_ARG_INFO(0, options)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO(arginfo_setBucket, 3)
-	ZEND_ARG_INFO(0, host_map)
-	ZEND_ARG_INFO(0, forward_map)
-	ZEND_ARG_INFO(0, replicas)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO(arginfo_getVersion, 0)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO(arginfo_isPersistent, 0)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO(arginfo_isPristine, 0)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO(arginfo_getAllKeys, 0)
-ZEND_END_ARG_INFO()
-/* }}} */
-
-/* {{{ memcached_class_methods */
-#define MEMC_ME(name, args) PHP_ME(Memcached, name, args, ZEND_ACC_PUBLIC)
-static zend_function_entry memcached_class_methods[] = {
-	MEMC_ME(__construct,        arginfo___construct)
-
-	MEMC_ME(getResultCode,      arginfo_getResultCode)
-	MEMC_ME(getResultMessage,   arginfo_getResultMessage)
-
-	MEMC_ME(get,                arginfo_get)
-	MEMC_ME(getByKey,           arginfo_getByKey)
-	MEMC_ME(getMulti,           arginfo_getMulti)
-	MEMC_ME(getMultiByKey,      arginfo_getMultiByKey)
-	MEMC_ME(getDelayed,         arginfo_getDelayed)
-	MEMC_ME(getDelayedByKey,    arginfo_getDelayedByKey)
-	MEMC_ME(fetch,              arginfo_fetch)
-	MEMC_ME(fetchAll,           arginfo_fetchAll)
-
-	MEMC_ME(set,                arginfo_set)
-	MEMC_ME(setByKey,           arginfo_setByKey)
-
-	MEMC_ME(touch,              arginfo_touch)
-	MEMC_ME(touchByKey,         arginfo_touchByKey)
-
-	MEMC_ME(setMulti,           arginfo_setMulti)
-	MEMC_ME(setMultiByKey,      arginfo_setMultiByKey)
-
-	MEMC_ME(cas,                arginfo_cas)
-	MEMC_ME(casByKey,           arginfo_casByKey)
-	MEMC_ME(add,                arginfo_add)
-	MEMC_ME(addByKey,           arginfo_addByKey)
-	MEMC_ME(append,             arginfo_append)
-	MEMC_ME(appendByKey,        arginfo_appendByKey)
-	MEMC_ME(prepend,            arginfo_prepend)
-	MEMC_ME(prependByKey,       arginfo_prependByKey)
-	MEMC_ME(replace,            arginfo_replace)
-	MEMC_ME(replaceByKey,       arginfo_replaceByKey)
-	MEMC_ME(delete,             arginfo_delete)
-	MEMC_ME(deleteMulti,        arginfo_deleteMulti)
-	MEMC_ME(deleteByKey,        arginfo_deleteByKey)
-	MEMC_ME(deleteMultiByKey,   arginfo_deleteMultiByKey)
-
-	MEMC_ME(increment,          arginfo_increment)
-	MEMC_ME(decrement,          arginfo_decrement)
-	MEMC_ME(incrementByKey,     arginfo_incrementByKey)
-	MEMC_ME(decrementByKey,     arginfo_decrementByKey)
-
-	MEMC_ME(addServer,          arginfo_addServer)
-	MEMC_ME(addServers,         arginfo_addServers)
-	MEMC_ME(getServerList,      arginfo_getServerList)
-	MEMC_ME(getServerByKey,     arginfo_getServerByKey)
-	MEMC_ME(resetServerList,    arginfo_resetServerList)
-	MEMC_ME(quit,               arginfo_quit)
-	MEMC_ME(flushBuffers,       arginfo_flushBuffers)
-
-	MEMC_ME(getLastErrorMessage,		arginfo_getLastErrorMessage)
-	MEMC_ME(getLastErrorCode,		arginfo_getLastErrorCode)
-	MEMC_ME(getLastErrorErrno,		arginfo_getLastErrorErrno)
-	MEMC_ME(getLastDisconnectedServer,	arginfo_getLastDisconnectedServer)
-
-	MEMC_ME(getStats,           arginfo_getStats)
-	MEMC_ME(getVersion,         arginfo_getVersion)
-	MEMC_ME(getAllKeys,         arginfo_getAllKeys)
-
-	MEMC_ME(flush,              arginfo_flush)
-
-	MEMC_ME(getOption,          arginfo_getOption)
-	MEMC_ME(setOption,          arginfo_setOption)
-	MEMC_ME(setOptions,         arginfo_setOptions)
-	MEMC_ME(setBucket,          arginfo_setBucket)
-#ifdef HAVE_MEMCACHED_SASL
-	MEMC_ME(setSaslAuthData,    arginfo_setSaslAuthData)
-#endif
-#ifdef HAVE_MEMCACHED_SET_ENCODING_KEY
-	MEMC_ME(setEncodingKey,     arginfo_setEncodingKey)
-#endif
-	MEMC_ME(isPersistent,       arginfo_isPersistent)
-	MEMC_ME(isPristine,         arginfo_isPristine)
-	{ NULL, NULL, NULL }
-};
-#undef MEMC_ME
-/* }}} */
-
-#ifdef HAVE_MEMCACHED_PROTOCOL
-/* {{{ */
-#define MEMC_SE_ME(name, args) PHP_ME(MemcachedServer, name, args, ZEND_ACC_PUBLIC)
-static
-zend_function_entry memcached_server_class_methods[] = {
-	MEMC_SE_ME(run, NULL)
-	MEMC_SE_ME(on, NULL)
-	{ NULL, NULL, NULL }
-};
-#undef MEMC_SE_ME
-/* }}} */
+#if PHP_VERSION_ID < 80000
+#include "php_memcached_legacy_arginfo.h"
+#else
+#include "php_memcached_arginfo.h"
 #endif
 
 /* {{{ memcached_module_entry
@@ -4592,7 +4202,7 @@ PHP_MINIT_FUNCTION(memcached)
 
 	le_memc = zend_register_list_destructors_ex(NULL, php_memc_dtor, "Memcached persistent connection", module_number);
 
-	INIT_CLASS_ENTRY(ce, "Memcached", memcached_class_methods);
+	INIT_CLASS_ENTRY(ce, "Memcached", class_Memcached_methods);
 	memcached_ce = zend_register_internal_class(&ce);
 	memcached_ce->create_object = php_memc_object_new;
 
@@ -4602,7 +4212,7 @@ PHP_MINIT_FUNCTION(memcached)
 	memcached_server_object_handlers.clone_obj = NULL;
 	memcached_server_object_handlers.free_obj = php_memc_server_free_storage;
 
-	INIT_CLASS_ENTRY(ce, "MemcachedServer", memcached_server_class_methods);
+	INIT_CLASS_ENTRY(ce, "MemcachedServer", class_MemcachedServer_methods);
 	memcached_server_ce = zend_register_internal_class(&ce);
 	memcached_server_ce->create_object = php_memc_server_new;
 #endif

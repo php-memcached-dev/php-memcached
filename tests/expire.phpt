@@ -7,6 +7,7 @@ https://code.google.com/p/memcached/issues/detail?id=275
 $min_version = "1.4.8";
 include dirname(__FILE__) . "/skipif.inc";
 if (!method_exists("memcached", "touch")) die ("skip memcached::touch is not available");
+if (getenv("SKIP_SLOW_TESTS")) die('skip slow test');
 ?>
 --FILE--
 <?php

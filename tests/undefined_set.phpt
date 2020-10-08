@@ -24,16 +24,16 @@ $rv = $m->set($key, $value, $no_time);
 var_dump($rv);
 ?>
 --EXPECTF--
-Notice: Undefined variable: no_key in %s
+%s: Undefined variable%sno_key in %s
 bool(false)
 
-Notice: Undefined variable: no_value in %s
+%s: Undefined variable%sno_value in %s
 bool(true)
 
-Notice: Undefined variable: no_key in %s
+%s: Undefined variable%sno_key in %s
 
-Notice: Undefined variable: no_value in %s
+%s: Undefined variable%sno_value in %s
 bool(false)
 
-Notice: Undefined variable: no_time in %s
+%s: Undefined variable%sno_time in %s
 bool(true)

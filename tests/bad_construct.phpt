@@ -1,7 +1,10 @@
 --TEST--
 Memcached construct with bad arguments
 --SKIPIF--
-<?php include "skipif.inc";?>
+<?php
+include "skipif.inc";
+if (PHP_VERSION_ID >= 80000) die("skip PHP 7 only");
+?>
 --FILE--
 <?php 
 
