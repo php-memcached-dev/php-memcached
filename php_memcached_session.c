@@ -178,7 +178,9 @@ void s_unlock_session(memcached_st *memc)
 static
 zend_bool s_configure_from_ini_values(memcached_st *memc, zend_bool silent)
 {
+/* This macro looks like a function but returns errors directly */
 #define check_set_behavior(behavior, value) \
+{ \
 	int b = (behavior); \
 	uint64_t v = (value); \
 	if (v != memcached_behavior_get(memc, b)) { \
@@ -189,7 +191,8 @@ zend_bool s_configure_from_ini_values(memcached_st *memc, zend_bool silent)
 			} \
 			return 0; \
 		} \
-	}
+	} \
+}
 
 	if (MEMC_SESS_INI(binary_protocol_enabled)) {
 		check_set_behavior(MEMCACHED_BEHAVIOR_BINARY_PROTOCOL, 1);
