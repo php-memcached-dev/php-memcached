@@ -59,6 +59,9 @@ Fixes
    <file role='src' name='config.w32'/>
    <file role='src' name='php_memcached.c'/>
    <file role='src' name='php_memcached.h'/>
+   <file role='src' name='php_memcached.stub.php'/>
+   <file role='src' name='php_memcached_arginfo.h'/>
+   <file role='src' name='php_memcached_legacy_arginfo.h'/>
    <file role='src' name='php_memcached_private.h'/>
    <file role='src' name='php_memcached_session.c'/>
    <file role='src' name='php_memcached_session.h'/>
@@ -133,10 +136,13 @@ Fixes
     <file role='test' name='types_php_multi.phpt'/>
     <file role='test' name='undefined_set.phpt'/>
     <file role='test' name='vbucket.phpt'/>
+    <file role='test' name='vbucket_error_7.phpt'/>
+    <file role='test' name='vbucket_error_8.phpt'/>
     <file role='test' name='user-flags.phpt'/>
     <file role='test' name='gh_93.phpt'/>
     <file role='test' name='add.phpt'/>
     <file role='test' name='bad_construct.phpt'/>
+    <file role='test' name='bad_construct_8.phpt'/>
     <file role='test' name='append.phpt'/>
     <file role='test' name='prepend.phpt'/>
     <file role='test' name='replace.phpt'/>
