@@ -3104,6 +3104,11 @@ int php_memc_set_option(php_memc_object_t *intern, long option, zval *value)
 				lval = zval_get_long(value);
 
 				if (flag < MEMCACHED_BEHAVIOR_MAX) {
+					// don't reset the option when the option value wasn't modified,
+					// while the libmemcached may shutdown all connections.
+					if (memcached_behavior_get(intern->memc, flag) == (uint64_t)lval) {
+						return 1;
+					}
 					rc = memcached_behavior_set(intern->memc, flag, (uint64_t)lval);
 				}
 				else {
