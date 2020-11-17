@@ -195,6 +195,7 @@ static inline php_memc_object_t *php_memc_fetch_object(zend_object *obj) {
 	php_memc_object_t*     intern         = NULL;      \
 	php_memc_user_data_t*  memc_user_data = NULL;
 
+#if PHP_VERSION_ID < 80000
 #define MEMC_METHOD_FETCH_OBJECT                                                      \
 	intern = Z_MEMC_OBJ_P(object);                                                    \
 	if (!intern->memc) {                                                              \
@@ -203,6 +204,16 @@ static inline php_memc_object_t *php_memc_fetch_object(zend_object *obj) {
 	}                                                                                 \
 	memc_user_data = (php_memc_user_data_t *) memcached_get_user_data(intern->memc);  \
 	(void)memc_user_data; /* avoid unused variable warning */
+#else
+#define MEMC_METHOD_FETCH_OBJECT                                                      \
+	intern = Z_MEMC_OBJ_P(object);                                                    \
+	if (!intern->memc) {                                                              \
+		zend_throw_error(NULL, "Memcached constructor was not called");               \
+		RETURN_THROWS();                                                                       \
+	}                                                                                 \
+	memc_user_data = (php_memc_user_data_t *) memcached_get_user_data(intern->memc);  \
+	(void)memc_user_data; /* avoid unused variable warning */
+#endif
 
 static
 zend_bool s_memc_valid_key_binary(zend_string *key)

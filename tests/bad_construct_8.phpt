@@ -20,15 +20,17 @@ class extended extends Memcached {
 }
 
 error_reporting(E_ALL);
-$extended = new extended ();
-var_dump ($extended->setOption (Memcached::OPT_BINARY_PROTOCOL, true));
+try {
+	$extended = new extended ();
+	var_dump ($extended->setOption (Memcached::OPT_BINARY_PROTOCOL, true));
+} catch (Error $e) {
+	echo $e->getMessage() . PHP_EOL;
+}
 
 echo "OK" . PHP_EOL;
 
 --EXPECTF--
 Memcached::__construct(): Argument #1 ($persistent_id) must be of type ?string, stdClass given
-
-Warning: Memcached::setOption(): Memcached constructor was not called in %s
-NULL
+Memcached constructor was not called
 OK
 
