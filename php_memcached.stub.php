@@ -35,16 +35,16 @@ class Memcached {
 	public function casByKey(string $cas_token, string $server_key, string $key, mixed $value, int $expiration=0): bool {}
 	public function add(string $key, mixed $value, int $expiration=0): bool {}
 	public function addByKey(string $server_key, string $key, mixed $value, int $expiration=0): bool {}
-	public function append(string $key, string $value): bool {}
-	public function appendByKey(string $server_key, string $key, string $value): bool {}
-	public function prepend(string $key, string $value): bool {}
-	public function prependByKey(string $server_key, string $key, string $value): bool {}
+	public function append(string $key, string $value): ?bool {}
+	public function appendByKey(string $server_key, string $key, string $value): ?bool {}
+	public function prepend(string $key, string $value): ?bool {}
+	public function prependByKey(string $server_key, string $key, string $value): ?bool {}
 	public function replace(string $key, mixed $value, int $expiration=0): bool {}
 	public function replaceByKey(string $server_key, string $key, mixed $value, int $expiration=0): bool {}
 	public function delete(string $key, int $time=0): bool {}
-	public function deleteMulti(array $keys, int $time=0): bool {}
+	public function deleteMulti(array $keys, int $time=0): array {}
 	public function deleteByKey(string $server_key, string $key, int $time=0): bool {}
-	public function deleteMultiByKey(string $server_key, array $keys, int $time=0): bool {}
+	public function deleteMultiByKey(string $server_key, array $keys, int $time=0): array {}
 
 	public function increment(string $key, int $offset=1, int $initial_value=0, int $expiry=0): false|int {}
 	public function decrement(string $key, int $offset=1, int $initial_value=0, int $expiry=0): false|int {}
@@ -73,7 +73,7 @@ class Memcached {
 	public function getOption(int $option): mixed {}
 	public function setOption(int $option, mixed $value): bool {}
 	public function setOptions(array $options): bool {}
-	public function setBucket(array $host_map, array $forward_map, int $replicas): bool {}
+	public function setBucket(array $host_map, ?array $forward_map, int $replicas): bool {}
 #ifdef HAVE_MEMCACHED_SASL
 	public function setSaslAuthData(string $username, string $password): bool {}
 #endif
