@@ -18,7 +18,7 @@ class Memcached {
 	public function getMulti(array $keys, int $get_flags=0): false|array {}
 	public function getMultiByKey(string $server_key, array $keys, int $get_flags=0): false|array {}
 	public function getDelayed(array $keys, bool $with_cas=FALSE, callable $value_cb=NULL): bool {}
-	public function getDelayedByKey(string $server_key, array $keys, bool $with_cas=0, callable $value_cb=NULL): bool {}
+	public function getDelayedByKey(string $server_key, array $keys, bool $with_cas=FALSE, callable $value_cb=NULL): bool {}
 	public function fetch(): false|array {}
 	public function fetchAll(): false|array {}
 
