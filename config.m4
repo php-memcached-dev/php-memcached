@@ -392,6 +392,8 @@ if test "$PHP_MEMCACHED" != "no"; then
 
     CFLAGS="$ORIG_CFLAGS"
 
+    AC_CHECK_HEADERS([arpa/inet.h])
+
     export PKG_CONFIG_PATH="$ORIG_PKG_CONFIG_PATH"
     PHP_SUBST(MEMCACHED_SHARED_LIBADD)
 

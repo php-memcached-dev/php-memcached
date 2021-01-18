@@ -17,6 +17,9 @@
 #include "php_memcached.h"
 #include "php_memcached_private.h"
 #include "php_memcached_server.h"
+#if HAVE_ARPA_INET_H
+#include <arpa/inet.h>
+#endif
 
 #include <event2/listener.h>
 
