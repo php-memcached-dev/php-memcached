@@ -8,17 +8,17 @@
 
 class Memcached {
 
-	public function __construct(string $persistent_id=NULL, callable $callback=NULL, string $connection_str=NULL) {}
+	public function __construct(string $persistent_id=null, callable $callback=null, string $connection_str=null) {}
 
 	public function getResultCode(): int {}
 	public function getResultMessage(): string {}
 
-	public function get(string $key, callable $cache_cb=NULL, int $get_flags=0): mixed {}
-	public function getByKey(string $server_key, string $key, callable $cache_cb=NULL, int $get_flags=0): mixed {}
+	public function get(string $key, callable $cache_cb=null, int $get_flags=0): mixed {}
+	public function getByKey(string $server_key, string $key, callable $cache_cb=null, int $get_flags=0): mixed {}
 	public function getMulti(array $keys, int $get_flags=0): false|array {}
 	public function getMultiByKey(string $server_key, array $keys, int $get_flags=0): false|array {}
-	public function getDelayed(array $keys, bool $with_cas=NULL, callable $value_cb=NULL): bool {}
-	public function getDelayedByKey(string $server_key, array $keys, bool $with_cas=NULL, callable $value_cb=NULL): bool {}
+	public function getDelayed(array $keys, bool $with_cas=false, callable $value_cb=null): bool {}
+	public function getDelayedByKey(string $server_key, array $keys, bool $with_cas=false, callable $value_cb=null): bool {}
 	public function fetch(): false|array {}
 	public function fetchAll(): false|array {}
 
@@ -64,7 +64,7 @@ class Memcached {
 	public function getLastErrorErrno(): int {}
 	public function getLastDisconnectedServer(): false|array {}
 
-	public function getStats(string $type=NULL): false|array {}
+	public function getStats(string $type=null): false|array {}
 	public function getVersion(): false|array {}
 	public function getAllKeys(): false|array {}
 
