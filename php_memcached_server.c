@@ -17,12 +17,15 @@
 #include "php_memcached.h"
 #include "php_memcached_private.h"
 #include "php_memcached_server.h"
+#include "php_network.h"
 
 #include <event2/listener.h>
 
-#undef NDEBUG
-#undef _NDEBUG
 #include <assert.h>
+
+#if HAVE_ARPA_INET_H
+# include <arpa/inet.h>
+#endif
 
 #define MEMC_GET_CB(cb_type) (MEMC_SERVER_G(callbacks)[cb_type])
 #define MEMC_HAS_CB(cb_type) (MEMC_GET_CB(cb_type).fci.size > 0)
@@ -58,9 +61,9 @@ typedef struct {
 static
 long s_invoke_php_callback (php_memc_server_cb_t *cb, zval *params, ssize_t param_count)
 {
-	zval *retval = NULL;
+	zval retval;
 
-	cb->fci.retval = retval;
+	cb->fci.retval = &retval;
 	cb->fci.params = params;
 	cb->fci.param_count = param_count;
 #if PHP_VERSION_ID < 80000
@@ -73,7 +76,7 @@ long s_invoke_php_callback (php_memc_server_cb_t *cb, zval *params, ssize_t para
 		efree (buf);
 	}
 
-	return retval == NULL ? PROTOCOL_BINARY_RESPONSE_UNKNOWN_COMMAND : zval_get_long(retval);
+	return Z_ISUNDEF(retval) ? PROTOCOL_BINARY_RESPONSE_UNKNOWN_COMMAND : zval_get_long(&retval);
 }
 
 // memcached protocol callbacks
@@ -96,6 +99,7 @@ protocol_binary_response_status s_add_handler(const void *cookie, const void *ke
 	ZVAL_LONG(&zflags, flags);
 	ZVAL_LONG(&zexptime, exptime);
 	ZVAL_NULL(&zresult_cas);
+	ZVAL_MAKE_REF(&zresult_cas);
 
 	ZVAL_COPY(&params[0], &zcookie);
 	ZVAL_COPY(&params[1], &zkey);
@@ -142,6 +146,7 @@ protocol_binary_response_status s_append_prepend_handler (php_memc_event_t event
 	ZVAL_STRINGL(&zvalue, data, data_len);
 	ZVAL_DOUBLE(&zcas, cas);
 	ZVAL_NULL(&zresult_cas);
+	ZVAL_MAKE_REF(&zresult_cas);
 
 	ZVAL_COPY(&params[0], &zcookie);
 	ZVAL_COPY(&params[1], &zkey);
@@ -198,11 +203,13 @@ protocol_binary_response_status s_incr_decr_handler (php_memc_event_t event, con
 	MEMC_MAKE_ZVAL_COOKIE(zcookie, cookie);
 
 	ZVAL_STRINGL(&zkey, key, key_len);
-	ZVAL_LONG(&zdelta, (long) delta);
-	ZVAL_LONG(&zinital, (long) initial);
-	ZVAL_LONG(&zexpiration, (long) expiration);
+	ZVAL_LONG(&zdelta, (zend_long) delta);
+	ZVAL_LONG(&zinital, (zend_long) initial);
+	ZVAL_LONG(&zexpiration, (zend_long) expiration);
 	ZVAL_LONG(&zresult, 0);
+	ZVAL_MAKE_REF(&zresult);
 	ZVAL_NULL(&zresult_cas);
+	ZVAL_MAKE_REF(&zresult_cas);
 
 	ZVAL_COPY(&params[0], &zcookie);
 	ZVAL_COPY(&params[1], &zkey);
@@ -322,6 +329,13 @@ protocol_binary_response_status s_get_handler (const void *cookie, const void *k
 	}
 
 	MEMC_MAKE_ZVAL_COOKIE(zcookie, cookie);
+	ZVAL_STRINGL(&zkey, key, key_len);
+	ZVAL_NULL(&zvalue);
+	ZVAL_MAKE_REF(&zvalue);
+	ZVAL_NULL(&zflags);
+	ZVAL_MAKE_REF(&zflags);
+	ZVAL_NULL(&zresult_cas);
+	ZVAL_MAKE_REF(&zresult_cas);
 
 	ZVAL_COPY(&params[0], &zcookie);
 	ZVAL_COPY(&params[1], &zkey);
@@ -436,11 +450,12 @@ protocol_binary_response_status s_set_replace_handler (php_memc_event_t event, c
 	MEMC_MAKE_ZVAL_COOKIE(zcookie, cookie);
 
 	ZVAL_STRINGL(&zkey, key, key_len);
-	ZVAL_STRINGL(&zdata, ((char *) data), (int) data_len);
-	ZVAL_LONG(&zflags, (long) flags);
-	ZVAL_LONG(&zexpiration, (long) expiration);
+	ZVAL_STRINGL(&zdata, data, data_len);
+	ZVAL_LONG(&zflags, (zend_long) flags);
+	ZVAL_LONG(&zexpiration, (zend_long) expiration);
 	ZVAL_DOUBLE(&zcas, (double) cas);
 	ZVAL_NULL(&zresult_cas);
+	ZVAL_MAKE_REF(&zresult_cas);
 
 	ZVAL_COPY(&params[0], &zcookie);
 	ZVAL_COPY(&params[1], &zkey);
@@ -504,6 +519,7 @@ protocol_binary_response_status s_stat_handler (const void *cookie, const void *
 
 	ZVAL_STRINGL(&zkey, key, key_len);
 	ZVAL_NULL(&zbody);
+	ZVAL_MAKE_REF(&zbody);
 
 	ZVAL_COPY(&params[0], &zcookie);
 	ZVAL_COPY(&params[1], &zkey);
@@ -584,17 +600,27 @@ void s_handle_memcached_event (evutil_socket_t fd, short what, void *arg)
 			zval zremoteip, zremoteport;
 			zval params[2];
 			protocol_binary_response_status retval;
+			struct sockaddr_storage ss;
+			socklen_t ss_len = sizeof(ss);
 
-			struct sockaddr_in addr_in;
-			socklen_t addr_in_len = sizeof(addr_in);
+			ZVAL_NULL(&zremoteip);
+			ZVAL_NULL(&zremoteport);
 
-			if (getpeername (fd, (struct sockaddr *) &addr_in, &addr_in_len) == 0) {
-				ZVAL_STRING(&zremoteip, inet_ntoa (addr_in.sin_addr));
-				ZVAL_LONG(&zremoteport, ntohs (addr_in.sin_port));
+			if (getpeername (fd, (struct sockaddr *) &ss, &ss_len) == 0) {
+				char addr_buf[0x100];
+
+				switch (ss.ss_family) {
+				case AF_INET6:
+					ZVAL_STRING(&zremoteip, inet_ntop(ss.ss_family, &((struct sockaddr_in6 *) &ss)->sin6_addr, addr_buf, sizeof(addr_buf)));
+					ZVAL_LONG(&zremoteport, ntohs(((struct sockaddr_in6 *) &ss)->sin6_port));
+					break;
+				case AF_INET:
+					ZVAL_STRING(&zremoteip, inet_ntop(ss.ss_family, &((struct sockaddr_in *) &ss)->sin_addr, addr_buf, sizeof(addr_buf)));
+					ZVAL_LONG(&zremoteport, ntohs(((struct sockaddr_in *) &ss)->sin_port));
+					break;
+				}
 			} else {
 				php_error_docref(NULL, E_WARNING, "getpeername failed: %s", strerror (errno));
-				ZVAL_NULL(&zremoteip);
-				ZVAL_NULL(&zremoteport);
 			}
 
 			ZVAL_COPY(&params[0], &zremoteip);
@@ -714,22 +740,20 @@ php_memc_proto_handler_t *php_memc_proto_handler_new ()
 }
 
 static
-evutil_socket_t s_create_listening_socket (const char *spec)
+evutil_socket_t s_create_listening_socket (const zend_string *spec)
 {
 	evutil_socket_t sock;
 	struct sockaddr_storage addr;
-	int addr_len;
-
+	socklen_t addr_len;
 	int rc;
 
 	addr_len = sizeof (struct sockaddr);
-	rc = evutil_parse_sockaddr_port (spec, (struct sockaddr *) &addr, &addr_len);
-	if (rc != 0) {
-		php_error_docref(NULL, E_WARNING, "Failed to parse bind address");
+	if (SUCCESS != php_network_parse_network_address_with_port(spec->val, spec->len, (struct sockaddr *) &addr, &addr_len)) {
+		php_error_docref(NULL, E_WARNING, "Failed to parse bind address: %s", spec->val);
 		return -1;
 	}
 
-	sock = socket (AF_INET, SOCK_STREAM, 0);
+	sock = socket (addr.ss_family, SOCK_STREAM, 0);
 	if (sock < 0) {
 		php_error_docref(NULL, E_WARNING, "socket failed: %s", strerror (errno));
 		return -1;
@@ -770,7 +794,7 @@ evutil_socket_t s_create_listening_socket (const char *spec)
 zend_bool php_memc_proto_handler_run (php_memc_proto_handler_t *handler, zend_string *address)
 {
 	struct event *accept_event;
-	evutil_socket_t sock = s_create_listening_socket (address->val);
+	evutil_socket_t sock = s_create_listening_socket (address);
 
 	if (sock == -1) {
 		return 0;

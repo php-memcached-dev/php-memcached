@@ -3520,6 +3520,8 @@ static
 void php_memc_server_free_storage(zend_object *object)
 {
 	php_memc_server_t *intern = php_memc_server_fetch_object(object);
+
+	php_memc_proto_handler_destroy(&intern->handler);
 	zend_object_std_dtor(&intern->zo);
 }
 
@@ -3533,6 +3535,7 @@ zend_object *php_memc_server_new(zend_class_entry *ce)
 	object_properties_init(&intern->zo, ce);
 
 	intern->zo.handlers = &memcached_server_object_handlers;
+	intern->handler = php_memc_proto_handler_new();
 
 	return &intern->zo;
 }
