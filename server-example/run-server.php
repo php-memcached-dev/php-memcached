@@ -3,8 +3,8 @@
 $server = new MemcachedServer();
 
 $server->on (Memcached::ON_CONNECT,
-             function ($remote_ip, $remote_port) {
-                 echo "Incoming connection from {$remote_ip}:{$remote_port}" . PHP_EOL;
+             function ($remote_addr) {
+                 echo "Incoming connection from {$remote_addr}" . PHP_EOL;
                  return Memcached::RESPONSE_SUCCESS;
              });
 

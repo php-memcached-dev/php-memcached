@@ -597,41 +597,25 @@ void s_handle_memcached_event (evutil_socket_t fd, short what, void *arg)
 
 	if (!client->on_connect_invoked) {
 		if (MEMC_HAS_CB(MEMC_SERVER_ON_CONNECT)) {
-			zval zremoteip, zremoteport;
-			zval params[2];
+			zend_string *zremoteaddr_str;
+			zval zremoteaddr;
+			zval params[1];
 			protocol_binary_response_status retval;
-			struct sockaddr_storage ss;
-			socklen_t ss_len = sizeof(ss);
 
-			ZVAL_NULL(&zremoteip);
-			ZVAL_NULL(&zremoteport);
+			ZVAL_NULL(&zremoteaddr);
 
-			if (getpeername (fd, (struct sockaddr *) &ss, &ss_len) == 0) {
-				char addr_buf[0x100];
-
-				switch (ss.ss_family) {
-				case AF_INET6:
-					ZVAL_STRING(&zremoteip, inet_ntop(ss.ss_family, &((struct sockaddr_in6 *) &ss)->sin6_addr, addr_buf, sizeof(addr_buf)));
-					ZVAL_LONG(&zremoteport, ntohs(((struct sockaddr_in6 *) &ss)->sin6_port));
-					break;
-				case AF_INET:
-					ZVAL_STRING(&zremoteip, inet_ntop(ss.ss_family, &((struct sockaddr_in *) &ss)->sin_addr, addr_buf, sizeof(addr_buf)));
-					ZVAL_LONG(&zremoteport, ntohs(((struct sockaddr_in *) &ss)->sin_port));
-					break;
-				}
+			if (SUCCESS == php_network_get_peer_name (fd, &zremoteaddr_str, NULL, NULL)) {
+				ZVAL_STR(&zremoteaddr, zremoteaddr_str);
 			} else {
 				php_error_docref(NULL, E_WARNING, "getpeername failed: %s", strerror (errno));
 			}
 
-			ZVAL_COPY(&params[0], &zremoteip);
-			ZVAL_COPY(&params[1], &zremoteport);
+			ZVAL_COPY(&params[0], &zremoteaddr);
 
-			retval = s_invoke_php_callback (&MEMC_GET_CB(MEMC_SERVER_ON_CONNECT), params, 2);
+			retval = s_invoke_php_callback (&MEMC_GET_CB(MEMC_SERVER_ON_CONNECT), params, 1);
 
 			zval_ptr_dtor(&params[0]);
-			zval_ptr_dtor(&params[1]);
-			zval_ptr_dtor(&zremoteip);
-			zval_ptr_dtor(&zremoteport);
+			zval_ptr_dtor(&zremoteaddr);
 
 			if (retval != PROTOCOL_BINARY_RESPONSE_SUCCESS) {
 				memcached_protocol_client_destroy (client->protocol_client);
