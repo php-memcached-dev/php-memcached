@@ -299,6 +299,7 @@ protocol_binary_response_status s_flush_handler(const void *cookie, uint32_t whe
 	}
 
 	MEMC_MAKE_ZVAL_COOKIE(zcookie, cookie);
+	ZVAL_LONG(&zwhen, when);
 
 	ZVAL_COPY(&params[0], &zcookie);
 	ZVAL_COPY(&params[1], &zwhen);
