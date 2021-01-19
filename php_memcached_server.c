@@ -23,10 +23,6 @@
 
 #include <assert.h>
 
-#if HAVE_ARPA_INET_H
-# include <arpa/inet.h>
-#endif
-
 #define MEMC_GET_CB(cb_type) (MEMC_SERVER_G(callbacks)[cb_type])
 #define MEMC_HAS_CB(cb_type) (MEMC_GET_CB(cb_type).fci.size > 0)
 
