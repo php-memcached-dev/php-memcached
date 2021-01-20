@@ -3925,7 +3925,6 @@ static
 PHP_GINIT_FUNCTION(php_memcached)
 {
 #ifdef HAVE_MEMCACHED_SESSION
-
 	php_memcached_globals->session.lock_enabled = 0;
 	php_memcached_globals->session.lock_wait_max = 150;
 	php_memcached_globals->session.lock_wait_min = 150;
@@ -3944,8 +3943,12 @@ PHP_GINIT_FUNCTION(php_memcached)
 	php_memcached_globals->session.persistent_enabled = 0;
 	php_memcached_globals->session.sasl_username = NULL;
 	php_memcached_globals->session.sasl_password = NULL;
-
 #endif
+
+#ifdef HAVE_MEMCACHED_PROTOCOL
+	memset(&php_memcached_globals->server, 0, sizeof(php_memcached_globals->server));
+#endif
+
 	php_memcached_globals->memc.serializer_name = NULL;
 	php_memcached_globals->memc.serializer_type = SERIALIZER_DEFAULT;
 	php_memcached_globals->memc.compression_name = NULL;

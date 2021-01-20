@@ -23,7 +23,7 @@ function memcached_server_start($code = 'server.php', $host = "127.0.0.1", $port
     // note: even when server prints 'Listening on localhost:8964...Press Ctrl-C to quit.'
     //       it might not be listening yet...need to wait until fsockopen() call returns
     $error = "Unable to connect to server\n";
-    for ($i=0; $i < 60; $i++) {
+    for ($i=0; $i < getenv("VALGRIND") ? 1000 : 60; $i++) {
         usleep(50000); // 50ms per try
         $status = proc_get_status($handle);
         $fp = @fsockopen($host, $port);
@@ -46,12 +46,16 @@ function memcached_server_start($code = 'server.php', $host = "127.0.0.1", $port
     if ($error) {
         echo $error;
         proc_terminate($handle);
+        proc_close($handle);
         exit(1);
     }
 
     register_shutdown_function(
         function($handle) {
-            proc_terminate($handle);
+            if (is_resource($handle)) {
+                proc_terminate($handle);
+                proc_close($handle);
+            }
         },
         $handle
     );
@@ -72,6 +76,7 @@ function memcached_server_stop($handle) {
             }
             usleep(50000);
         }
+        proc_close($handle);
     }
     return $success;
 }
