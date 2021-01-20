@@ -1,7 +1,7 @@
 <?php
 function memcached_server_start($code = 'server.php', $host = "127.0.0.1", $port = 3434) {
-	$php_executable = getenv('TEST_PHP_EXECUTABLE') ?? PHP_BINARY;
-	$php_args = getenv('TEST_PHP_ARGS') ?? '';
+	$php_executable = getenv('TEST_PHP_EXECUTABLE') ?: PHP_BINARY;
+	$php_args = getenv('TEST_PHP_ARGS') ?: '';
 
 	$descriptorspec = array(
 		0 => STDIN,
@@ -29,7 +29,7 @@ function memcached_server_start($code = 'server.php', $host = "127.0.0.1", $port
         $fp = @fsockopen($host, $port);
         // Failure, the server is no longer running
         if (!($status && $status['running'])) {
-            $error = "Server is not running\n";
+            $error = "Server is not running {$status['command']}\n";
             break;
         }
         // Success, Connected to servers
@@ -75,4 +75,3 @@ function memcached_server_stop($handle) {
     }
     return $success;
 }
-
