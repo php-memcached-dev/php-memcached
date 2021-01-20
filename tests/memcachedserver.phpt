@@ -1,9 +1,12 @@
 --TEST--
-Memcached::get() with cache callback
+MemcachedServer
 --SKIPIF--
 <?php
 if (!extension_loaded("memcached")) {
 	die("skip memcached is not loaded\n");
+}
+if (!class_exists("MemcachedServer")) {
+	die("skip memcached not built with libmemcachedprotocol support\n");
 }
 ?>
 --FILE--
@@ -31,8 +34,9 @@ var_dump($cache->get('get_this'));
 $cache->set ('set_key', 'value 1', 100);
 $cache->replace ('replace_key', 'value 2', 200);
 
-// TODO var_dump($cache->getVersion());
-// TODO var_dump($cache->getStats());
+var_dump($cache->getVersion());
+var_dump($cache->getStats());
+var_dump($cache->getStats("foobar"));
 
 $cache->quit();
 
@@ -55,5 +59,26 @@ client_id=[%s]: Noop
 string(20) "Hello to you client!"
 client_id=[%s]: Set key=[set_key], value=[value 1], flags=[0], expiration=[100], cas=[0]
 client_id=[%s]: Replace key=[replace_key], value=[value 2], flags=[0], expiration=[200], cas=[0]
+client_id=[%s]: Version
+array(1) {
+  ["127.0.0.1:3434"]=>
+  string(5) "1.1.1"
+}
+client_id=[%s]: Stat key=[]
+array(1) {
+  ["127.0.0.1:3434"]=>
+  array(1) {
+    [""]=>
+    string(15) "Stat reply for "
+  }
+}
+client_id=[%s]: Stat key=[foobar]
+array(1) {
+  ["127.0.0.1:3434"]=>
+  array(1) {
+    ["foobar"]=>
+    string(21) "Stat reply for foobar"
+  }
+}
 client_id=[%s]: Client quit
 Done
