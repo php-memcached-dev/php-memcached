@@ -67,17 +67,21 @@ array(1) {
 client_id=[%s]: Stat key=[]
 array(1) {
   ["127.0.0.1:3434"]=>
-  array(1) {
-    [""]=>
-    string(15) "Stat reply for "
+  array(2) {
+    ["key"]=>
+    string(0) ""
+    ["foo"]=>
+    string(3) "bar"
   }
 }
 client_id=[%s]: Stat key=[foobar]
 array(1) {
   ["127.0.0.1:3434"]=>
-  array(1) {
-    ["foobar"]=>
-    string(21) "Stat reply for foobar"
+  array(2) {
+    ["key"]=>
+    string(6) "foobar"
+    ["foo"]=>
+    string(3) "bar"
   }
 }
 client_id=[%s]: Client quit

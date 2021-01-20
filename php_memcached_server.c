@@ -506,7 +506,7 @@ protocol_binary_response_status s_stat_handler (const void *cookie, const void *
 {
 	zval params[3];
 	protocol_binary_response_status retval = PROTOCOL_BINARY_RESPONSE_UNKNOWN_COMMAND;
-	zval zcookie, zkey, zbody;
+	zval zcookie, zkey, zstats;
 
 	if (!MEMC_HAS_CB(MEMC_SERVER_ON_STAT)) {
 		return retval;
@@ -519,24 +519,38 @@ protocol_binary_response_status s_stat_handler (const void *cookie, const void *
 	} else {
 		ZVAL_NULL(&zkey);
 	}
-	ZVAL_NULL(&zbody);
-	ZVAL_MAKE_REF(&zbody);
+	ZVAL_NULL(&zstats);
+	ZVAL_MAKE_REF(&zstats);
 
 	ZVAL_COPY(&params[0], &zcookie);
 	ZVAL_COPY(&params[1], &zkey);
-	ZVAL_COPY(&params[2], &zbody);
+	ZVAL_COPY(&params[2], &zstats);
 
 	retval = s_invoke_php_callback (&MEMC_GET_CB(MEMC_SERVER_ON_STAT), params, 3);
 
 	if (retval == PROTOCOL_BINARY_RESPONSE_SUCCESS) {
-		if (Z_TYPE(zbody) == IS_NULL) {
+		if (Z_ISNULL(zstats)) {
 			retval = response_handler(cookie, NULL, 0, NULL, 0);
-		}
-		else {
-			if (Z_TYPE(zbody) != IS_STRING) {
-				convert_to_string(&zbody);
+		} else {
+			zval *zarray = &zstats;
+			zend_string *key;
+			zval *val;
+
+			ZVAL_DEREF(zarray);
+			if (Z_TYPE_P(zarray) != IS_ARRAY) {
+				convert_to_array(zarray);
 			}
-			retval = response_handler(cookie, key, key_len, Z_STRVAL(zbody), (uint32_t) Z_STRLEN(zbody));
+
+			ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL_P(zarray), key, val)
+			{
+				zend_string *val_str = zval_get_string(val);
+				retval = response_handler(cookie, key->val, key->len, val_str->val, val_str->len);
+				if (retval != PROTOCOL_BINARY_RESPONSE_SUCCESS) {
+					break;
+				}
+				zend_string_release(val_str);
+			}
+			ZEND_HASH_FOREACH_END();
 		}
 	}
 
@@ -545,7 +559,7 @@ protocol_binary_response_status s_stat_handler (const void *cookie, const void *
 	zval_ptr_dtor(&params[2]);
 	zval_ptr_dtor (&zcookie);
 	zval_ptr_dtor (&zkey);
-	zval_ptr_dtor (&zbody);
+	zval_ptr_dtor (&zstats);
 	return retval;
 }
 
