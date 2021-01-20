@@ -31,7 +31,8 @@ var_dump($cache->get('get_this'));
 $cache->set ('set_key', 'value 1', 100);
 $cache->replace ('replace_key', 'value 2', 200);
 
-var_dump($cache->getStats());
+// TODO var_dump($cache->getVersion());
+// TODO var_dump($cache->getStats());
 
 $cache->quit();
 
@@ -54,5 +55,5 @@ client_id=[%s]: Noop
 string(20) "Hello to you client!"
 client_id=[%s]: Set key=[set_key], value=[value 1], flags=[0], expiration=[100], cas=[0]
 client_id=[%s]: Replace key=[replace_key], value=[value 2], flags=[0], expiration=[200], cas=[0]
-bool(false)
+client_id=[%s]: Client quit
 Done

@@ -79,6 +79,13 @@ $server->on (Memcached::ON_SET,
 $server->on (Memcached::ON_STAT,
              function ($client_id, $key, &$value) {
                  echo "client_id=[$client_id]: Stat key=[$key]" . PHP_EOL;
+                 $value = "Stat reply for $key";
+                 return Memcached::RESPONSE_SUCCESS;
+             });
+
+$server->on (Memcached::ON_VERSION,
+             function ($client_id, &$value) {
+                 echo "client_id=[$client_id]: Version" . PHP_EOL;
                  $value = "Stat reply";
                  return Memcached::RESPONSE_SUCCESS;
              });

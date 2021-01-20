@@ -560,6 +560,7 @@ protocol_binary_response_status s_version_handler (const void *cookie,
 	MEMC_MAKE_ZVAL_COOKIE(zcookie, cookie);
 
 	ZVAL_NULL(&zversion);
+	ZVAL_MAKE_REF(&zversion);
 
 	ZVAL_COPY(&params[0], &zcookie);
 	ZVAL_COPY(&params[1], &zversion);
