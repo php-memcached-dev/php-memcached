@@ -514,7 +514,11 @@ protocol_binary_response_status s_stat_handler (const void *cookie, const void *
 
 	MEMC_MAKE_ZVAL_COOKIE(zcookie, cookie);
 
-	ZVAL_STRINGL(&zkey, key, key_len);
+	if (key && key_len) {
+		ZVAL_STRINGL(&zkey, key, key_len);
+	} else {
+		ZVAL_NULL(&zkey);
+	}
 	ZVAL_NULL(&zbody);
 	ZVAL_MAKE_REF(&zbody);
 
@@ -566,7 +570,6 @@ protocol_binary_response_status s_version_handler (const void *cookie,
 	ZVAL_COPY(&params[1], &zversion);
 
 	retval = s_invoke_php_callback (&MEMC_GET_CB(MEMC_SERVER_ON_VERSION), params, 2);
-
 	if (retval == PROTOCOL_BINARY_RESPONSE_SUCCESS) {
 		if (Z_TYPE(zversion) != IS_STRING) {
 			convert_to_string(&zversion);
