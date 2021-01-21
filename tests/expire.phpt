@@ -1,7 +1,5 @@
 --TEST--
 Memcached store, fetch & touch expired key
---XFAIL--
-https://code.google.com/p/memcached/issues/detail?id=275
 --SKIPIF--
 <?php
 $min_version = "1.4.8";
