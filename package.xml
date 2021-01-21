@@ -173,7 +173,10 @@ Fixes
     <file role='test' name='stats_hang.phpt'/>
     <file role='test' name='default_behavior.phpt'/>
     <file role='test' name='reset_keyprefix.phpt'/>
-    <file role='test' name='session_lock-php71.phpt'/>
+	<file role='test' name='session_lock-php71.phpt'/>
+	<file role='test' name='server.inc'/>
+	<file role='test' name='server.php'/>
+	<file role='test' name='memcachedserver.phpt'/>
   </dir>
  </dir>
  </contents>
