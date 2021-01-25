@@ -8,6 +8,10 @@ if (!extension_loaded("memcached")) {
 if (!class_exists("MemcachedServer")) {
 	die("skip memcached not built with libmemcachedprotocol support\n");
 }
+
+if (Memcached::LIBMEMCACHED_VERSION_HEX < 0x1001000) {
+       die("skip needs at least libmemcached 1.1.0\n");
+}
 ?>
 --FILE--
 <?php
