@@ -37,6 +37,8 @@ $cache->replace ('replace_key', 'value 2', 200);
 var_dump($cache->getVersion());
 var_dump($cache->getStats());
 var_dump($cache->getStats("foobar"));
+var_dump($cache->getStats("scalar"));
+var_dump($cache->getStats("numeric array"));
 
 $cache->quit();
 
@@ -82,6 +84,26 @@ array(1) {
     string(6) "foobar"
     ["foo"]=>
     string(3) "bar"
+  }
+}
+client_id=[%s]: Stat key=[scalar]
+array(1) {
+  ["127.0.0.1:3434"]=>
+  array(1) {
+    [0]=>
+    string(%d) "you want it, you get it"
+  }
+}
+client_id=[%s]: Stat key=[numeric array]
+array(1) {
+  ["127.0.0.1:3434"]=>
+  array(3) {
+    [-1]=>
+    string(3) "one"
+    [0]=>
+    string(3) "two"
+    [1]=>
+    string(5) "three"
   }
 }
 client_id=[%s]: Client quit

@@ -77,13 +77,18 @@ $server->on (Memcached::ON_SET,
              });
 
 $server->on (Memcached::ON_STAT,
-             function ($client_id, $key, array &$values = null) {
-                 echo "client_id=[$client_id]: Stat key=[$key]" . PHP_EOL;
-                 $values = [
-                    "key" => $key,
-                    "foo" => "bar",
-                 ];
-                 return Memcached::RESPONSE_SUCCESS;
+             function ($client_id, $key, array &$values) {
+                echo "client_id=[$client_id]: Stat key=[$key]" . PHP_EOL;
+                
+                if ($key === "scalar") {
+                    $values = "you want it, you get it";
+                } elseif ($key === "numeric array") {
+                    $values = [-1 => "one", "two", "three"];
+                } else {
+                    $values["key"] = $key;
+                    $values["foo"] = "bar";
+                }
+                return Memcached::RESPONSE_SUCCESS;
              });
 
 $server->on (Memcached::ON_VERSION,
