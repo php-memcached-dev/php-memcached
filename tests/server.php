@@ -84,6 +84,8 @@ $server->on (Memcached::ON_STAT,
                     $values = "you want it, you get it";
                 } elseif ($key === "numeric array") {
                     $values = [-1 => "one", "two", "three"];
+                } elseif ($key === "empty") {
+                    $values = [];
                 } else {
                     $values["key"] = $key;
                     $values["foo"] = "bar";

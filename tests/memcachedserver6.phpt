@@ -8,20 +8,16 @@ if (!extension_loaded("memcached")) {
 if (!class_exists("MemcachedServer")) {
 	die("skip memcached not built with libmemcachedprotocol support\n");
 }
-
-if (Memcached::LIBMEMCACHED_VERSION_HEX < 0x1001000) {
-       die("skip needs at least libmemcached 1.1.0\n");
-}
 ?>
 --FILE--
 <?php
 include __DIR__ . '/server.inc';
-$server = memcached_server_start();
+$server = memcached_server_start('server.php', '[::1]', 3434);
 
 $cache = new Memcached();
 $cache->setOption(Memcached::OPT_BINARY_PROTOCOL, true);
 $cache->setOption(Memcached::OPT_COMPRESSION, false);
-$cache->addServer('127.0.0.1', 3434);
+$cache->addServer('[::1]', 3434);
 
 $cache->add("add_key", "hello", 500);
 $cache->append("append_key", "world");
@@ -51,9 +47,9 @@ memcached_server_stop($server);
 ?>
 Done
 --EXPECTF--
-Listening on 127.0.0.1:3434
-Incoming connection from 127.0.0.1:%s
-Incoming connection from 127.0.0.1:%s
+Listening on [::1]:3434
+Incoming connection from [::1]:%s
+Incoming connection from [::1]:%s
 client_id=[%s]: Add key=[add_key], value=[hello], flags=[0], expiration=[500]
 client_id=[%s]: Append key=[append_key], value=[world], cas=[0]
 client_id=[%s]: Prepend key=[prepend_key], value=[world], cas=[0]
@@ -68,12 +64,12 @@ client_id=[%s]: Set key=[set_key], value=[value 1], flags=[0], expiration=[100],
 client_id=[%s]: Replace key=[replace_key], value=[value 2], flags=[0], expiration=[200], cas=[0]
 client_id=[%s]: Version
 array(1) {
-  ["127.0.0.1:3434"]=>
+  ["[::1]:3434"]=>
   string(5) "1.1.1"
 }
 client_id=[%s]: Stat key=[]
 array(1) {
-  ["127.0.0.1:3434"]=>
+  ["[::1]:3434"]=>
   array(2) {
     ["key"]=>
     string(0) ""
@@ -86,7 +82,7 @@ array(0) {
 }
 client_id=[%s]: Stat key=[foobar]
 array(1) {
-  ["127.0.0.1:3434"]=>
+  ["[::1]:3434"]=>
   array(2) {
     ["key"]=>
     string(6) "foobar"
@@ -96,7 +92,7 @@ array(1) {
 }
 client_id=[%s]: Stat key=[scalar]
 array(1) {
-  ["127.0.0.1:3434"]=>
+  ["[::1]:3434"]=>
   array(1) {
     [0]=>
     string(%d) "you want it, you get it"
@@ -104,7 +100,7 @@ array(1) {
 }
 client_id=[%s]: Stat key=[numeric array]
 array(1) {
-  ["127.0.0.1:3434"]=>
+  ["[::1]:3434"]=>
   array(3) {
     [-1]=>
     string(3) "one"
