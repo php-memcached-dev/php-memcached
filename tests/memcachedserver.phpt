@@ -46,6 +46,7 @@ var_dump($cache->getStats("scalar"));
 var_dump($cache->getStats("numeric array"));
 
 $cache->quit();
+usleep(50000);
 
 memcached_server_stop($server);
 ?>
