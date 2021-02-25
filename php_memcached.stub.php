@@ -83,6 +83,7 @@ class Memcached {
 #endif
 	public function isPersistent(): bool {}
 	public function isPristine(): bool {}
+	public function checkKey(string $key): bool {}
 }
 
 #ifdef HAVE_MEMCACHED_PROTOCOL
