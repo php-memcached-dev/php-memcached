@@ -228,7 +228,7 @@ zend_bool s_memc_valid_key_ascii(zend_string *key)
 	size_t i, len = ZSTR_LEN(key);
 
 	for (i = 0; i < len; i++) {
-		if (iscntrl(str[i]) || isspace(str[i]))
+		if (!isgraph(str[i]) || isspace(str[i]))
 			return 0;
 	}
 	return 1;
@@ -3447,6 +3447,24 @@ static PHP_METHOD(Memcached, isPristine)
 	MEMC_METHOD_FETCH_OBJECT;
 
 	RETURN_BOOL(intern->is_pristine);
+}
+/* }}} */
+
+/* {{{ bool Memcached::checkKey(string key)
+   Checks if a key is valid */
+PHP_METHOD(Memcached, checkKey)
+{
+	zend_string *key;
+	MEMC_METHOD_INIT_VARS;
+
+	ZEND_PARSE_PARAMETERS_START(1, 1)
+		Z_PARAM_STR(key)
+	ZEND_PARSE_PARAMETERS_END();
+
+	MEMC_METHOD_FETCH_OBJECT;
+	s_memc_set_status(intern, MEMCACHED_SUCCESS, 0);
+	MEMC_CHECK_KEY(intern, key);
+	RETURN_TRUE;
 }
 /* }}} */
 
