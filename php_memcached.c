@@ -2089,8 +2089,8 @@ static void php_memc_cas_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 	MEMC_METHOD_INIT_VARS;
 
 	if (by_key) {
-		/* "zSSz|ll" */
-		ZEND_PARSE_PARAMETERS_START(4, 6)
+		/* "zSSz|l" */
+		ZEND_PARSE_PARAMETERS_START(4, 5)
 		        Z_PARAM_ZVAL(zv_cas)
 		        Z_PARAM_STR(server_key)
 		        Z_PARAM_STR(key)
@@ -2099,8 +2099,8 @@ static void php_memc_cas_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 		        Z_PARAM_LONG(expiration)
 		ZEND_PARSE_PARAMETERS_END();
 	} else {
-		/* "zSz|ll" */
-		ZEND_PARSE_PARAMETERS_START(3, 5)
+		/* "zSz|l" */
+		ZEND_PARSE_PARAMETERS_START(3, 4)
 		        Z_PARAM_ZVAL(zv_cas)
 		        Z_PARAM_STR(key)
 		        Z_PARAM_ZVAL(value)
