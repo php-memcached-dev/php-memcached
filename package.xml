@@ -87,6 +87,7 @@ Fixes
     <file role='test' name='cas_multi.phpt'/>
     <file role='test' name='check_if_persistent.phpt'/>
     <file role='test' name='check_if_pristine.phpt'/>
+    <file role='test' name='check_key.phpt'/>
     <file role='test' name='clone.phpt'/>
     <file role='test' name='compression_conditions.phpt'/>
     <file role='test' name='compression_types.phpt'/>

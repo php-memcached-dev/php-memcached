@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 573d35c5c6b6c397943e0f8ab9c505e2f4ce9e34 */
+ * Stub hash: 3f4694d4e1f3d1647a832acd8539b056b2ab5e7a */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Memcached___construct, 0, 0, 0)
 	ZEND_ARG_INFO(0, persistent_id)
@@ -245,6 +245,10 @@ ZEND_END_ARG_INFO()
 
 #define arginfo_class_Memcached_isPristine arginfo_class_Memcached_getResultCode
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Memcached_checkKey, 0, 0, 1)
+	ZEND_ARG_INFO(0, key)
+ZEND_END_ARG_INFO()
+
 #if defined(HAVE_MEMCACHED_PROTOCOL)
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_MemcachedServer_run, 0, 0, 1)
 	ZEND_ARG_INFO(0, address)
@@ -321,6 +325,7 @@ ZEND_METHOD(Memcached, setEncodingKey);
 #endif
 ZEND_METHOD(Memcached, isPersistent);
 ZEND_METHOD(Memcached, isPristine);
+ZEND_METHOD(Memcached, checkKey);
 #if defined(HAVE_MEMCACHED_PROTOCOL)
 ZEND_METHOD(MemcachedServer, run);
 #endif
@@ -392,6 +397,7 @@ static const zend_function_entry class_Memcached_methods[] = {
 #endif
 	ZEND_ME(Memcached, isPersistent, arginfo_class_Memcached_isPersistent, ZEND_ACC_PUBLIC)
 	ZEND_ME(Memcached, isPristine, arginfo_class_Memcached_isPristine, ZEND_ACC_PUBLIC)
+	ZEND_ME(Memcached, checkKey, arginfo_class_Memcached_checkKey, ZEND_ACC_PUBLIC)
 	ZEND_FE_END
 };
 
