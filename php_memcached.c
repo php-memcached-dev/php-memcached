@@ -1876,7 +1876,7 @@ static void php_memc_setMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 
 	if (by_key) {
 		/* "Sa|ll" */
-		ZEND_PARSE_PARAMETERS_START(2, 4)
+		ZEND_PARSE_PARAMETERS_START(2, 3)
 		        Z_PARAM_STR(server_key)
 		        Z_PARAM_ARRAY(entries)
 		        Z_PARAM_OPTIONAL
@@ -1884,7 +1884,7 @@ static void php_memc_setMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 		ZEND_PARSE_PARAMETERS_END();
 	} else {
 		/* "a|ll" */
-		ZEND_PARSE_PARAMETERS_START(1, 3)
+		ZEND_PARSE_PARAMETERS_START(1, 2)
 		        Z_PARAM_ARRAY(entries)
 		        Z_PARAM_OPTIONAL
 		        Z_PARAM_LONG(expiration)
