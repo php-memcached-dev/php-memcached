@@ -77,9 +77,26 @@ $server->on (Memcached::ON_SET,
              });
 
 $server->on (Memcached::ON_STAT,
-             function ($client_id, $key, &$value) {
-                 echo "client_id=[$client_id]: Stat key=[$key]" . PHP_EOL;
-                 $value = "Stat reply";
+             function ($client_id, $key, array &$values) {
+                echo "client_id=[$client_id]: Stat key=[$key]" . PHP_EOL;
+                
+                if ($key === "scalar") {
+                    $values = "you want it, you get it";
+                } elseif ($key === "numeric array") {
+                    $values = [-1 => "one", "two", "three"];
+                } elseif ($key === "empty") {
+                    $values = [];
+                } else {
+                    $values["key"] = $key;
+                    $values["foo"] = "bar";
+                }
+                return Memcached::RESPONSE_SUCCESS;
+             });
+
+$server->on (Memcached::ON_VERSION,
+             function ($client_id, &$value) {
+                 echo "client_id=[$client_id]: Version" . PHP_EOL;
+                 $value = "1.1.1";
                  return Memcached::RESPONSE_SUCCESS;
              });
 
@@ -89,4 +106,6 @@ $server->on (Memcached::ON_QUIT,
                  return Memcached::RESPONSE_SUCCESS;
              });
 
-$server->run ("127.0.0.1:3434");
+$addr = ($_SERVER['argv'][1] ?? "127.0.0.1:3434");
+echo "Listening on $addr" . PHP_EOL;
+$server->run($addr);
