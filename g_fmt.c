@@ -27,12 +27,17 @@
  *        // Teddy Grenman <teddy.grenman@iki.fi>, 2010-05-18.
  */
 
-#include <zend_operators.h>
+#include <php.h>
 
 char *php_memcached_g_fmt(register char *b, double x) {
 	register int i, k;
 	register char *s;
-	int decpt, j, sign;
+	int decpt, j;
+#if PHP_VERSION_ID < 80100
+	int sign;
+#else
+	bool sign;
+#endif
 	char *b0, *s0, *se;
 
 	b0 = b;
