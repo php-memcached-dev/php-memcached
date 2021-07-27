@@ -4300,7 +4300,22 @@ PHP_MINFO_FUNCTION(memcached)
 	php_info_print_table_start();
 	php_info_print_table_header(2, "memcached support", "enabled");
 	php_info_print_table_row(2, "Version", PHP_MEMCACHED_VERSION);
-	php_info_print_table_row(2, "libmemcached version", memcached_lib_version());
+
+#ifdef LIBMEMCACHED_AWESOME
+	if (strcmp(LIBMEMCACHED_VERSION_STRING, memcached_lib_version())) {
+		php_info_print_table_row(2, "libmemcached-awesome headers version", LIBMEMCACHED_VERSION_STRING);
+		php_info_print_table_row(2, "libmemcached-awesome library version", memcached_lib_version());
+	} else {
+		php_info_print_table_row(2, "libmemcached-awesome version", memcached_lib_version());
+	}
+#else
+	if (strcmp(LIBMEMCACHED_VERSION_STRING, memcached_lib_version())) {
+		php_info_print_table_row(2, "libmemcached headers version", LIBMEMCACHED_VERSION_STRING);
+		php_info_print_table_row(2, "libmemcached library version", memcached_lib_version());
+	} else {
+		php_info_print_table_row(2, "libmemcached version", memcached_lib_version());
+	}
+#endif
 
 #ifdef HAVE_MEMCACHED_SASL
 	php_info_print_table_row(2, "SASL support", "yes");
