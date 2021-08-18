@@ -1907,9 +1907,8 @@ static void php_memc_setMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 			str_key = zend_string_init(tmp_key, tmp_len, 0);
 		}
 
-		if (!s_memc_write_zval (intern, MEMC_OP_SET, server_key, str_key, value, expiration)) {
-			php_error_docref(NULL, E_WARNING, "failed to set key %s", ZSTR_VAL(str_key));
-		}
+		/* If this failed to write a value, intern stores the error for the return value */
+		s_memc_write_zval (intern, MEMC_OP_SET, server_key, str_key, value, expiration);
 
 		if (!skey) {
 			zend_string_release (str_key);
