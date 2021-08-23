@@ -3519,6 +3519,8 @@ static
 void php_memc_server_free_storage(zend_object *object)
 {
 	php_memc_server_t *intern = php_memc_server_fetch_object(object);
+
+	php_memc_proto_handler_destroy(&intern->handler);
 	zend_object_std_dtor(&intern->zo);
 }
 
@@ -3532,6 +3534,7 @@ zend_object *php_memc_server_new(zend_class_entry *ce)
 	object_properties_init(&intern->zo, ce);
 
 	intern->zo.handlers = &memcached_server_object_handlers;
+	intern->handler = php_memc_proto_handler_new();
 
 	return &intern->zo;
 }
@@ -3921,7 +3924,6 @@ static
 PHP_GINIT_FUNCTION(php_memcached)
 {
 #ifdef HAVE_MEMCACHED_SESSION
-
 	php_memcached_globals->session.lock_enabled = 0;
 	php_memcached_globals->session.lock_wait_max = 150;
 	php_memcached_globals->session.lock_wait_min = 150;
@@ -3940,8 +3942,12 @@ PHP_GINIT_FUNCTION(php_memcached)
 	php_memcached_globals->session.persistent_enabled = 0;
 	php_memcached_globals->session.sasl_username = NULL;
 	php_memcached_globals->session.sasl_password = NULL;
-
 #endif
+
+#ifdef HAVE_MEMCACHED_PROTOCOL
+	memset(&php_memcached_globals->server, 0, sizeof(php_memcached_globals->server));
+#endif
+
 	php_memcached_globals->memc.serializer_name = NULL;
 	php_memcached_globals->memc.serializer_type = SERIALIZER_DEFAULT;
 	php_memcached_globals->memc.compression_name = NULL;
