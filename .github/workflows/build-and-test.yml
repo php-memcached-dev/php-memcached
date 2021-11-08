@@ -1,0 +1,84 @@
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    continue-on-error: ${{ matrix.experimental }}
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['7.0', '7.1', '7.2', '7.3', '7.4', '8.0']
+        experimental: [false]
+        include:
+          - php: '8.1'
+            experimental: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          submodules: true
+      - name: Install PHP ${{ matrix.php }}
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: none, json, igbinary, msgpack
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install libmemcached-dev memcached libsasl2-dev sasl2-bin zlib1g-dev
+      - name: Start memcached daemons
+        run: |
+          export SASL_CONF_PATH="/tmp/sasl2"
+          mkdir "${SASL_CONF_PATH}"
+          export MEMCACHED_SASL_PWDB="${SASL_CONF_PATH}/sasldb2"
+
+          # Create configuration
+          cat<<EOF > "${SASL_CONF_PATH}/memcached.conf"
+          mech_list: PLAIN
+          plainlog_level: 5
+          sasldb_path: ${MEMCACHED_SASL_PWDB}
+          EOF
+
+          echo "test" | /usr/sbin/saslpasswd2 -c memcached -a memcached -f "${MEMCACHED_SASL_PWDB}"
+
+          # Run normal memcached
+          memcached -d -p 11211
+
+          # Run memcached on port 11212 with SASL support
+          memcached -S -d -p 11212
+      - name: Build extension
+        run: |
+          phpize
+          ./configure \
+            --enable-memcached-protocol=no \
+            --enable-memcached-sasl \
+            --enable-memcached-json \
+            --enable-memcached-msgpack \
+            --enable-memcached-igbinary
+          make
+          sudo make install
+      - name: Create test configuration
+        run: |
+          cat<<EOF > tests/config.inc.local
+          <?php
+            define ("MEMC_SERVER_HOST", "127.0.0.1");
+            define ("MEMC_SERVER_PORT", 11211);
+
+            define ("MEMC_SASL_SERVER_HOST", "127.0.0.1");
+            define ("MEMC_SASL_SERVER_PORT", 11212);
+              
+            define ('MEMC_SASL_USER', 'memcached');
+            define ('MEMC_SASL_PASS', 'test');
+          EOF
+      - name: Run tests
+        run: |
+          export NO_INTERACTION=1
+          export REPORT_EXIT_STATUS=1
+          export TEST_PHP_EXECUTABLE=$(which php)
+
+          # We have one xfail test, we run it separately
+          php run-tests.php --show-diff -d extension=modules/memcached.so ./tests/expire.phpt
+          rm ./tests/expire.phpt
+
+          # Run normal tests
+          php run-tests.php --show-diff -d extension=modules/memcached.so ./tests/*.phpt
