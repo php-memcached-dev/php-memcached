@@ -107,6 +107,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
     <file role='test' name='gh_21.phpt'/>
     <file role='test' name='gh_77.phpt'/>
     <file role='test' name='gh_90.phpt'/>
+    <file role='test' name='gh_500.phpt'/>
     <file role='test' name='invoke_callback.phpt'/>
     <file role='test' name='invoke_callback_2.phpt'/>
     <file role='test' name='invoke_callback_twice.phpt'/>
