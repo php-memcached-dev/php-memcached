@@ -12,14 +12,14 @@ $newServers = array(
               );            
 $m->addServers($newServers);
 
-$m->set('floatpoint', 100.200);
+$m->set('floatpoint', 100.2);
 $n = $m->get('floatpoint');
 var_dump($n);
 
-$m->set('floatpoint_neg', -300.400);
+$m->set('floatpoint_neg', -300.4);
 $n = $m->get('floatpoint_neg');
 var_dump($n);
 ?>
 --EXPECT--
-float(100.200)
-float(-300.400)
+float(100.2)
+float(-300.4)
