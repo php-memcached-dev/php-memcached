@@ -27,24 +27,27 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <email>aaron@serendipity.cx</email>
   <active>yes</active>
  </lead>
- <date>2019-12-03</date>
+ <lead>
+  <name>Remi Collet</name>
+  <user>remi</user>
+  <email>remi@php.net</email>
+  <active>yes</active>
+ </lead>
+ <date>2022-03-07</date>
  <version>
-  <release>3.1.5</release>
-  <api>3.0.0</api>
+  <release>3.2.0RC1</release>
+  <api>3.2.0</api>
  </version>
  <stability>
-  <release>stable</release>
-  <api>stable</api>
+  <release>beta</release>
+  <api>beta</api>
  </stability>
  <license uri="http://www.php.net/license">PHP</license>
  <notes>
-PHP 7.0 - 7.1 - 7.2 - 7.3 - 7.4 release of memcached extension. Note that support for
-libmemcached 0.x series has been discontinued and the oldest actively tested
-version is 1.0.8. It is highly recommended to use version 1.0.18 of
-libmemcached.
-
-Fixes
- * Fix build with PHP 7.4 release due to ulong typedef removal (#445)
+- PHP 8.0 and 8.1 support
+- store_retry_count is no more set explicitly (#452)
+- fix MemcachedServer (libmemcached-awesome is recommended)
+- code cleanup
  </notes>
  <contents>
   <dir name="/">
@@ -177,6 +180,7 @@ Fixes
 	<file role='test' name='server.inc'/>
 	<file role='test' name='server.php'/>
 	<file role='test' name='memcachedserver.phpt'/>
+	<file role='test' name='memcachedserver6.phpt'/>
   </dir>
  </dir>
  </contents>
@@ -213,6 +217,27 @@ Fixes
   <configureoption name="enable-memcached-session"  prompt="enable sessions"            default="yes"/>
  </extsrcrelease>
  <changelog>
+    <release>
+     <date>2019-12-03</date>
+     <version>
+      <release>3.1.5</release>
+      <api>3.0.0</api>
+     </version>
+     <stability>
+      <release>stable</release>
+      <api>stable</api>
+     </stability>
+     <license uri="http://www.php.net/license">PHP</license>
+     <notes>
+PHP 7.0 - 7.1 - 7.2 - 7.3 - 7.4 release of memcached extension. Note that support for
+libmemcached 0.x series has been discontinued and the oldest actively tested
+version is 1.0.8. It is highly recommended to use version 1.0.18 of
+libmemcached.
+
+Fixes
+ * Fix build with PHP 7.4 release due to ulong typedef removal (#445)
+     </notes>
+    </release>
     <release>
       <stability>
         <release>stable</release>
