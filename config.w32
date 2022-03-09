@@ -8,7 +8,7 @@ ARG_ENABLE('memcached-json', 'whether to enable memcached json serializer suppor
 
 if (PHP_MEMCACHED == "yes") {
 
-  if (!CHECK_LIB("memcached.lib", "memcached", PHP_MEMCACHED)) { 
+  if (!CHECK_LIB("memcached.lib;libmemcached.lib", "memcached", PHP_MEMCACHED)) { 
 	ERROR("memcached: library 'memcached' not found");
   }
   
