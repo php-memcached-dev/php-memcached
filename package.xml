@@ -48,6 +48,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
 - store_retry_count is no more set explicitly (#452)
 - fix MemcachedServer (libmemcached-awesome is recommended)
 - code cleanup
+- fix windows build
  </notes>
  <contents>
   <dir name="/">
