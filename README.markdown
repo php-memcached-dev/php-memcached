@@ -23,7 +23,7 @@ Dependencies
 ------------
 
 php-memcached 3.x:
-* Supports PHP 7.0 - 7.4.
+* Supports PHP 7.0 - 8.1.
 * Requires libmemcached 1.x or higher.
 * Optionally supports igbinary 2.0 or higher.
 * Optionally supports msgpack 2.0 or higher.
@@ -34,9 +34,10 @@ php-memcached 2.x:
 * Optionally supports igbinary 1.0 or higher.
 * Optionally supports msgpack 0.5 or higher.
 
-[libmemcached](http://libmemcached.org/libMemcached.html) version 1.0.18 or
-higher is recommended for best performance and compatibility with memcached
-servers.
+[libmemcached](http://libmemcached.org/libMemcached.html) or the new
+[libmemcached-awesome](https://github.com/awesomized/libmemcached) version
+1.0.18 or higher is recommended for best performance and compatibility with
+memcached servers.
 
 [igbinary](https://github.com/igbinary/igbinary) is a faster and more compact
 binary serializer for PHP data structures. When installing php-memcached from
