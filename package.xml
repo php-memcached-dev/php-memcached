@@ -35,7 +35,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
  </lead>
  <date>2022-03-24</date>
  <version>
-  <release>3.2.0</release>
+  <release>3.2.1dev</release>
   <api>3.2.0</api>
  </version>
  <stability>
@@ -44,11 +44,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
  </stability>
  <license uri="http://www.php.net/license">PHP</license>
  <notes>
-- PHP 8.0 and 8.1 support
-- store_retry_count is no more set explicitly (#452)
-- fix MemcachedServer (libmemcached-awesome is recommended)
-- code cleanup
-- fix windows build
+-
  </notes>
  <contents>
   <dir name="/">
@@ -219,6 +215,25 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <configureoption name="enable-memcached-session"  prompt="enable sessions"            default="yes"/>
  </extsrcrelease>
  <changelog>
+    <release>
+     <date>2022-03-24</date>
+     <version>
+      <release>3.2.0</release>
+      <api>3.2.0</api>
+     </version>
+     <stability>
+      <release>stable</release>
+      <api>stable</api>
+     </stability>
+     <license uri="http://www.php.net/license">PHP</license>
+     <notes>
+- PHP 8.0 and 8.1 support
+- store_retry_count is no more set explicitly (#452)
+- fix MemcachedServer (libmemcached-awesome is recommended)
+- code cleanup
+- fix windows build
+     </notes>
+    </release>
     <release>
      <date>2019-12-03</date>
      <version>
