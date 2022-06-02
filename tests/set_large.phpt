@@ -5,7 +5,9 @@ set large data
 --FILE--
 <?php
 include dirname (__FILE__) . '/config.inc';
-$m = memc_get_instance ();
+$m = memc_get_instance (array (
+	Memcached::OPT_ITEM_SIZE_LIMIT => 0,
+));
 
 $key = 'foobarbazDEADC0DE';
 $value = str_repeat("foo bar", 1024 * 1024);

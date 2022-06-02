@@ -77,6 +77,7 @@ static int php_memc_list_entry(void) {
 #define MEMC_OPT_COMPRESSION_TYPE   -1004
 #define MEMC_OPT_STORE_RETRY_COUNT  -1005
 #define MEMC_OPT_USER_FLAGS         -1006
+#define MEMC_OPT_ITEM_SIZE_LIMIT    -1007
 
 /****************************************
   Custom result codes
@@ -155,6 +156,7 @@ typedef struct {
 
 	zend_long store_retry_count;
 	zend_long set_udf_flags;
+	zend_long item_size_limit;
 
 #ifdef HAVE_MEMCACHED_SASL
 	zend_bool has_sasl_data;
@@ -411,6 +413,7 @@ PHP_INI_BEGIN()
 	MEMC_INI_ENTRY("compression_threshold", "2000",                  OnUpdateLong,            compression_threshold)
 	MEMC_INI_ENTRY("serializer",            SERIALIZER_DEFAULT_NAME, OnUpdateSerializer,      serializer_name)
 	MEMC_INI_ENTRY("store_retry_count",     "0",                     OnUpdateLong,            store_retry_count)
+	MEMC_INI_ENTRY("item_size_limit",       "0",                     OnUpdateLongGEZero,      item_size_limit)
 
 	MEMC_INI_BOOL ("default_consistent_hash",       "0", OnUpdateBool,       default_behavior.consistent_hash_enabled)
 	MEMC_INI_BOOL ("default_binary_protocol",       "0", OnUpdateBool,       default_behavior.binary_protocol_enabled)
@@ -1103,6 +1106,39 @@ zend_string *s_zval_to_payload(php_memc_object_t *intern, zval *value, uint32_t 
 }
 
 static
+zend_long s_payload_bytes (zend_string *payload)
+{
+	/* Compute the size in bytes of the payload */
+	return ZSTR_LEN(payload);
+}
+
+static
+zend_bool s_should_limit_payload_size(php_memc_object_t *intern)
+{
+	php_memc_user_data_t *memc_user_data = memcached_get_user_data(intern->memc);
+
+	/* An item size limit of 0 implies no limit enforced */
+	if (memc_user_data->item_size_limit > 0) {
+		return 1;
+	}
+	return 0;
+}
+
+static
+zend_bool s_is_payload_too_big(php_memc_object_t *intern, zend_string *payload)
+{
+	php_memc_user_data_t *memc_user_data = memcached_get_user_data(intern->memc);
+
+	if (!s_should_limit_payload_size(intern)) {
+		return 0;
+	}
+	if (s_payload_bytes(payload) > memc_user_data->item_size_limit) {
+		return 1;
+	}
+	return 0;
+}
+
+static
 zend_bool s_should_retry_write (php_memc_object_t *intern, memcached_return status)
 {
 	if (memcached_server_count (intern->memc) == 0) {
@@ -1126,6 +1162,12 @@ zend_bool s_memc_write_zval (php_memc_object_t *intern, php_memc_write_op op, ze
 
 		if (!payload) {
 			s_memc_set_status(intern, MEMC_RES_PAYLOAD_FAILURE, 0);
+			return 0;
+		}
+
+		if (s_is_payload_too_big(intern, payload)) {
+			s_memc_set_status(intern, MEMCACHED_E2BIG, 0);
+			zend_string_release(payload);
 			return 0;
 		}
 	}
@@ -1280,6 +1322,7 @@ static PHP_METHOD(Memcached, __construct)
 	memc_user_data->encoding_enabled  = 0;
 	memc_user_data->store_retry_count = MEMC_G(store_retry_count);
 	memc_user_data->set_udf_flags     = -1;
+	memc_user_data->item_size_limit   = MEMC_G(item_size_limit);
 	memc_user_data->is_persistent     = is_persistent;
 
 	memcached_set_user_data(intern->memc, memc_user_data);
@@ -2120,6 +2163,12 @@ static void php_memc_cas_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_key)
 		RETURN_FALSE;
 	}
 
+	if (s_is_payload_too_big(intern, payload)) {
+		intern->rescode = MEMCACHED_E2BIG;
+		zend_string_release(payload);
+		RETURN_FALSE;
+	}
+
 	if (by_key) {
 		status = memcached_cas_by_key(intern->memc, ZSTR_VAL(server_key), ZSTR_LEN(server_key), ZSTR_VAL(key), ZSTR_LEN(key), ZSTR_VAL(payload), ZSTR_LEN(payload), expiration, flags, cas);
 	} else {
@@ -2942,6 +2991,9 @@ static PHP_METHOD(Memcached, getOption)
 		case MEMC_OPT_COMPRESSION:
 			RETURN_BOOL(memc_user_data->compression_enabled);
 
+		case MEMC_OPT_ITEM_SIZE_LIMIT:
+			RETURN_LONG(memc_user_data->item_size_limit);
+
 		case MEMC_OPT_PREFIX_KEY:
 		{
 			memcached_return retval;
@@ -3008,6 +3060,15 @@ int php_memc_set_option(php_memc_object_t *intern, long option, zval *value)
 				intern->rescode = MEMCACHED_INVALID_ARGUMENTS;
 				return 0;
 			}
+			break;
+
+		case MEMC_OPT_ITEM_SIZE_LIMIT:
+			lval = zval_get_long(value);
+			if (lval < 0) {
+				php_error_docref(NULL, E_WARNING, "ITEM_SIZE_LIMIT must be >= 0");
+				return 0;
+			}
+			memc_user_data->item_size_limit = lval;
 			break;
 
 		case MEMC_OPT_PREFIX_KEY:
@@ -3955,6 +4016,7 @@ PHP_GINIT_FUNCTION(php_memcached)
 	php_memcached_globals->memc.compression_type = COMPRESSION_TYPE_FASTLZ;
 	php_memcached_globals->memc.compression_factor = 1.30;
 	php_memcached_globals->memc.store_retry_count = 2;
+	php_memcached_globals->memc.item_size_limit = 0;
 
 	php_memcached_globals->memc.sasl_initialised = 0;
 	php_memcached_globals->no_effect = 0;
@@ -4004,6 +4066,7 @@ static void php_memc_register_constants(INIT_FUNC_ARGS)
 
 	REGISTER_MEMC_CLASS_CONST_LONG(OPT_USER_FLAGS,  MEMC_OPT_USER_FLAGS);
 	REGISTER_MEMC_CLASS_CONST_LONG(OPT_STORE_RETRY_COUNT,  MEMC_OPT_STORE_RETRY_COUNT);
+	REGISTER_MEMC_CLASS_CONST_LONG(OPT_ITEM_SIZE_LIMIT, MEMC_OPT_ITEM_SIZE_LIMIT);
 
 	/*
 	 * Indicate whether igbinary serializer is available

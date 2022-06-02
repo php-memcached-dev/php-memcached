@@ -13,12 +13,14 @@ var_dump($m->setOptions(array(
 	Memcached::OPT_COMPRESSION => 0,
 	Memcached::OPT_LIBKETAMA_COMPATIBLE => 1,
 	Memcached::OPT_CONNECT_TIMEOUT => 5000,
+	Memcached::OPT_ITEM_SIZE_LIMIT => 1000000,
 )));
 
 var_dump($m->getOption(Memcached::OPT_PREFIX_KEY) == 'a_prefix');
 var_dump($m->getOption(Memcached::OPT_SERIALIZER) == Memcached::SERIALIZER_PHP);
 var_dump($m->getOption(Memcached::OPT_COMPRESSION) == 0);
 var_dump($m->getOption(Memcached::OPT_LIBKETAMA_COMPATIBLE) == 1);
+var_dump($m->getOption(Memcached::OPT_ITEM_SIZE_LIMIT) == 1000000);
 
 echo "test invalid options\n";
 
@@ -31,6 +33,7 @@ var_dump($m->setOptions(array(
 )));
 
 --EXPECTF--
+bool(true)
 bool(true)
 bool(true)
 bool(true)
