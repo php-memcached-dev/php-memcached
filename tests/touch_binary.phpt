@@ -28,12 +28,12 @@ function status_print ($op, $mem, $expected)
 	$code = $mem->getResultcode();
 
 	if ($code == $expected)
-		echo "${op} status code as expected" . PHP_EOL;
+		echo "{$op} status code as expected" . PHP_EOL;
 	else {
 		$expected = resolve_to_constant ($expected);
 		$code = resolve_to_constant ($code);
 		
-		echo "${op} status code mismatch, expected ${expected} but got ${code}" . PHP_EOL;
+		echo "{$op} status code mismatch, expected {$expected} but got {$code}" . PHP_EOL;
 	}
 }
 
