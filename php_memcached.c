@@ -1106,33 +1106,15 @@ zend_string *s_zval_to_payload(php_memc_object_t *intern, zval *value, uint32_t 
 }
 
 static
-zend_long s_payload_bytes (zend_string *payload)
-{
-	/* Compute the size in bytes of the payload */
-	return ZSTR_LEN(payload);
-}
-
-static
-zend_bool s_should_limit_payload_size(php_memc_object_t *intern)
-{
-	php_memc_user_data_t *memc_user_data = memcached_get_user_data(intern->memc);
-
-	/* An item size limit of 0 implies no limit enforced */
-	if (memc_user_data->item_size_limit > 0) {
-		return 1;
-	}
-	return 0;
-}
-
-static
 zend_bool s_is_payload_too_big(php_memc_object_t *intern, zend_string *payload)
 {
 	php_memc_user_data_t *memc_user_data = memcached_get_user_data(intern->memc);
 
-	if (!s_should_limit_payload_size(intern)) {
+	/* An item size limit of 0 implies no limit enforced */
+	if (memc_user_data->item_size_limit == 0) {
 		return 0;
 	}
-	if (s_payload_bytes(payload) > memc_user_data->item_size_limit) {
+	if (ZSTR_LEN(payload) > memc_user_data->item_size_limit) {
 		return 1;
 	}
 	return 0;
