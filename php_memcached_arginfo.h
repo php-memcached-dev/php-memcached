@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 3f4694d4e1f3d1647a832acd8539b056b2ab5e7a */
+ * Stub hash: cad7892c60b5b898fa5e20b4b0b0ca62149c1334 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Memcached___construct, 0, 0, 0)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, persistent_id, IS_STRING, 1, "null")
@@ -406,12 +406,36 @@ static const zend_function_entry class_Memcached_methods[] = {
 };
 
 
+#if defined(HAVE_MEMCACHED_PROTOCOL)
 static const zend_function_entry class_MemcachedServer_methods[] = {
-#if defined(HAVE_MEMCACHED_PROTOCOL)
 	ZEND_ME(MemcachedServer, run, arginfo_class_MemcachedServer_run, ZEND_ACC_PUBLIC)
-#endif
-#if defined(HAVE_MEMCACHED_PROTOCOL)
 	ZEND_ME(MemcachedServer, on, arginfo_class_MemcachedServer_on, ZEND_ACC_PUBLIC)
-#endif
 	ZEND_FE_END
 };
+#endif
+
+static zend_class_entry *register_class_Memcached(void)
+{
+	zend_class_entry ce, *class_entry;
+
+	INIT_CLASS_ENTRY(ce, "Memcached", class_Memcached_methods);
+	class_entry = zend_register_internal_class_ex(&ce, NULL);
+
+#if defined(HAVE_MEMCACHED_SASL)
+	zend_mark_function_parameter_as_sensitive(&class_entry->function_table, "setsaslauthdata", 1);
+#endif
+
+	return class_entry;
+}
+
+#if defined(HAVE_MEMCACHED_PROTOCOL)
+static zend_class_entry *register_class_MemcachedServer(void)
+{
+	zend_class_entry ce, *class_entry;
+
+	INIT_CLASS_ENTRY(ce, "MemcachedServer", class_MemcachedServer_methods);
+	class_entry = zend_register_internal_class_ex(&ce, NULL);
+
+	return class_entry;
+}
+#endif

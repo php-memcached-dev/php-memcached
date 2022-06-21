@@ -3895,9 +3895,14 @@ PHP_METHOD(MemcachedServer, on)
 
 #endif
 
+#if PHP_VERSION_ID < 80200
+#define zend_mark_function_parameter_as_sensitive(a,b,c)
+#endif
+
 #if PHP_VERSION_ID < 80000
 #include "php_memcached_legacy_arginfo.h"
 #else
+#include "zend_attributes.h"
 #include "php_memcached_arginfo.h"
 #endif
 
@@ -4254,8 +4259,7 @@ PHP_MINIT_FUNCTION(memcached)
 
 	le_memc = zend_register_list_destructors_ex(NULL, php_memc_dtor, "Memcached persistent connection", module_number);
 
-	INIT_CLASS_ENTRY(ce, "Memcached", class_Memcached_methods);
-	memcached_ce = zend_register_internal_class(&ce);
+	memcached_ce = register_class_Memcached();
 	memcached_ce->create_object = php_memc_object_new;
 
 #ifdef HAVE_MEMCACHED_PROTOCOL
@@ -4264,8 +4268,7 @@ PHP_MINIT_FUNCTION(memcached)
 	memcached_server_object_handlers.clone_obj = NULL;
 	memcached_server_object_handlers.free_obj = php_memc_server_free_storage;
 
-	INIT_CLASS_ENTRY(ce, "MemcachedServer", class_MemcachedServer_methods);
-	memcached_server_ce = zend_register_internal_class(&ce);
+	memcached_server_ce = register_class_MemcachedServer();
 	memcached_server_ce->create_object = php_memc_server_new;
 #endif
 
