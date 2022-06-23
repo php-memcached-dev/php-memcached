@@ -35,7 +35,13 @@ if (PHP_MEMCACHED == "yes") {
 		ERROR("memcached: header 'igbinary.h' not found");
 	  }
   }
-  
+  if (PHP_MEMCACHED_MSGPACK != "no"){
+	AC_DEFINE("HAVE_MEMCACHED_MSGPACK",1);
+	ADD_EXTENSION_DEP("memcached", "msgpack", true);
+	if (!CHECK_HEADER_ADD_INCLUDE("php_msgpack.h", "CFLAGS_MEMCACHED")) {
+		ERROR("memcached: header 'php_msgpack.h' not found");
+	  }
+  }
   EXTENSION("memcached", "php_memcached.c php_libmemcached_compat.c g_fmt.c"+memcached_extra_src, null, " /DHAVE_SSIZE_T");
   ADD_SOURCES(configure_module_dirname+"\\fastlz", "fastlz.c", "memcached");
   AC_DEFINE("HAVE_MEMCACHED", 1, "memcached support");
