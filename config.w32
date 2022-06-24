@@ -5,6 +5,7 @@ ARG_ENABLE('memcached', 'libmemcached extension', 'no');
 ARG_ENABLE('memcached-session', 'whether to enable memcached session handler support', 'no');
 ARG_ENABLE('memcached-igbinary', 'whether to enable memcached igbinary serializer support', 'no');
 ARG_ENABLE('memcached-json', 'whether to enable memcached json serializer support', 'no');
+ARG_ENABLE('memcached-msgpack', 'whether to enable memcached msgpack serializer support', 'no');
 
 if (PHP_MEMCACHED == "yes") {
 
