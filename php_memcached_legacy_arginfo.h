@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: cad7892c60b5b898fa5e20b4b0b0ca62149c1334 */
+ * Stub hash: 0964c9bfee903e59b63e5a16bd8b6611d827b151 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Memcached___construct, 0, 0, 0)
 	ZEND_ARG_INFO(0, persistent_id)
@@ -416,10 +416,6 @@ static zend_class_entry *register_class_Memcached(void)
 
 	INIT_CLASS_ENTRY(ce, "Memcached", class_Memcached_methods);
 	class_entry = zend_register_internal_class_ex(&ce, NULL);
-
-#if defined(HAVE_MEMCACHED_SASL)
-	zend_mark_function_parameter_as_sensitive(&class_entry->function_table, "setsaslauthdata", 1);
-#endif
 
 	return class_entry;
 }

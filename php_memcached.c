@@ -3895,10 +3895,6 @@ PHP_METHOD(MemcachedServer, on)
 
 #endif
 
-#if PHP_VERSION_ID < 80200
-#define zend_mark_function_parameter_as_sensitive(a,b,c)
-#endif
-
 #if PHP_VERSION_ID < 80000
 #include "php_memcached_legacy_arginfo.h"
 #else

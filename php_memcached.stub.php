@@ -6,7 +6,6 @@
  * @generate-class-entries
  */
 
-
 class Memcached {
 
 	public function __construct(?string $persistent_id=null, ?callable $callback=null, ?string $connection_str=null) {}
@@ -76,8 +75,7 @@ class Memcached {
 	public function setOptions(array $options): bool {}
 	public function setBucket(array $host_map, ?array $forward_map, int $replicas): bool {}
 #ifdef HAVE_MEMCACHED_SASL
-	/** @sensitive-param $password **/
-	public function setSaslAuthData(string $username, string $password): bool {}
+	public function setSaslAuthData(string $username, #[\SensitiveParameter] string $password): bool {}
 #endif
 
 #ifdef HAVE_MEMCACHED_SET_ENCODING_KEY
