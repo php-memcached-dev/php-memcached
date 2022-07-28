@@ -3,8 +3,8 @@
 /**
  * @generate-function-entries
  * @generate-legacy-arginfo
+ * @generate-class-entries
  */
-
 
 class Memcached {
 
@@ -75,7 +75,7 @@ class Memcached {
 	public function setOptions(array $options): bool {}
 	public function setBucket(array $host_map, ?array $forward_map, int $replicas): bool {}
 #ifdef HAVE_MEMCACHED_SASL
-	public function setSaslAuthData(string $username, string $password): bool {}
+	public function setSaslAuthData(string $username, #[\SensitiveParameter] string $password): bool {}
 #endif
 
 #ifdef HAVE_MEMCACHED_SET_ENCODING_KEY
@@ -86,7 +86,7 @@ class Memcached {
 	public function checkKey(string $key): bool {}
 }
 
-#ifdef HAVE_MEMCACHED_PROTOCOL
+#if defined(HAVE_MEMCACHED_PROTOCOL)
 class MemcachedServer {
 
 	public function run(string $address): bool {}
