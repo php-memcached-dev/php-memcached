@@ -31,14 +31,8 @@ class Memcached {
 	public function setMulti(array $items, int $expiration=0): bool {}
 	public function setMultiByKey(string $server_key, array $items, int $expiration=0): bool {}
 
-	/**
-	 * @param string|int|float $cas_token
-	 */
-	public function cas($cas_token, string $key, mixed $value, int $expiration=0): bool {}
-	/**
-	 * @param string|int|float $cas_token
-	 */
-	public function casByKey($cas_token, string $server_key, string $key, mixed $value, int $expiration=0): bool {}
+	public function cas(string|int|float $cas_token, string $key, mixed $value, int $expiration=0): bool {}
+	public function casByKey(string|int|float $cas_token, string $server_key, string $key, mixed $value, int $expiration=0): bool {}
 	public function add(string $key, mixed $value, int $expiration=0): bool {}
 	public function addByKey(string $server_key, string $key, mixed $value, int $expiration=0): bool {}
 	public function append(string $key, string $value): ?bool {}

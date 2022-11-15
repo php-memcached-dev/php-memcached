@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 95bbd37829c87980e3a770df1e2a805e93025fbd */
+ * Stub hash: 75604abd7f58655a9ebda6f0ea579840311c1f08 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Memcached___construct, 0, 0, 0)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, persistent_id, IS_STRING, 1, "null")
@@ -91,14 +91,14 @@ ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_Memcached_setMultiByKey, 0
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_Memcached_cas, 0, 3, _IS_BOOL, 0)
-	ZEND_ARG_INFO(0, cas_token)
+	ZEND_ARG_TYPE_MASK(0, cas_token, MAY_BE_STRING|MAY_BE_LONG|MAY_BE_DOUBLE, NULL)
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, value, IS_MIXED, 0)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, expiration, IS_LONG, 0, "0")
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_Memcached_casByKey, 0, 4, _IS_BOOL, 0)
-	ZEND_ARG_INFO(0, cas_token)
+	ZEND_ARG_TYPE_MASK(0, cas_token, MAY_BE_STRING|MAY_BE_LONG|MAY_BE_DOUBLE, NULL)
 	ZEND_ARG_TYPE_INFO(0, server_key, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, value, IS_MIXED, 0)
