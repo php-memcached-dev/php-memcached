@@ -86,7 +86,7 @@ static int php_memc_list_entry(void) {
 /****************************************
   Payload value flags
 ****************************************/
-#define MEMC_CREATE_MASK(start, n_bits) (((1 << n_bits) - 1) << start)
+#define MEMC_CREATE_MASK(start, n_bits) (((1U << n_bits) - 1) << start)
 
 #define MEMC_MASK_TYPE     MEMC_CREATE_MASK(0, 4)
 #define MEMC_MASK_INTERNAL MEMC_CREATE_MASK(4, 12)
