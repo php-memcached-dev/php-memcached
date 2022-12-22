@@ -51,7 +51,7 @@
   #if (defined(_MSC_VER) && _MSC_VER<=1920) 
   #include "win32/php_stdint.h"
   #else
-  # include "<stdint.h>"
+  #include <stdint.h>
   #endif
 #else
 /* Used to store the size of the block */
