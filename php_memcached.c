@@ -81,6 +81,7 @@ static int php_memc_list_entry(void) {
 #define MEMC_OPT_COMPRESSION_TYPE   -1004
 #define MEMC_OPT_STORE_RETRY_COUNT  -1005
 #define MEMC_OPT_USER_FLAGS         -1006
+#define MEMC_OPT_COMPRESSION_LEVEL  -1007
 
 /****************************************
   Custom result codes
@@ -159,6 +160,7 @@ typedef struct {
 
 	zend_long serializer;
 	zend_long compression_type;
+	zend_long compression_level;
 
 	zend_long store_retry_count;
 	zend_long set_udf_flags;
@@ -2964,6 +2966,9 @@ static PHP_METHOD(Memcached, getOption)
 		case MEMC_OPT_COMPRESSION_TYPE:
 			RETURN_LONG(memc_user_data->compression_type);
 
+		case MEMC_OPT_COMPRESSION_LEVEL:
+			RETURN_LONG(memc_user_data->compression_level);
+
 		case MEMC_OPT_COMPRESSION:
 			RETURN_BOOL(memc_user_data->compression_enabled);
 
@@ -4049,6 +4054,7 @@ static void php_memc_register_constants(INIT_FUNC_ARGS)
 
 	REGISTER_MEMC_CLASS_CONST_LONG(OPT_COMPRESSION, MEMC_OPT_COMPRESSION);
 	REGISTER_MEMC_CLASS_CONST_LONG(OPT_COMPRESSION_TYPE, MEMC_OPT_COMPRESSION_TYPE);
+	REGISTER_MEMC_CLASS_CONST_LONG(OPT_COMPRESSION_LEVEL, MEMC_OPT_COMPRESSION_LEVEL);
 	REGISTER_MEMC_CLASS_CONST_LONG(OPT_PREFIX_KEY,  MEMC_OPT_PREFIX_KEY);
 	REGISTER_MEMC_CLASS_CONST_LONG(OPT_SERIALIZER,  MEMC_OPT_SERIALIZER);
 
