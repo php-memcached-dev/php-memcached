@@ -27,6 +27,9 @@ PHP_ARG_ENABLE(memcached-protocol, whether to enable memcached protocol support,
 PHP_ARG_WITH(system-fastlz, whether to use system FastLZ library,
 [  --with-system-fastlz            Use system FastLZ library], no, no)
 
+PHP_ARG_WITH(zstd, whether to use system zstd library,
+[  --with-zstd           Use system zstd library], no, no)
+
 if test -z "$PHP_ZLIB_DIR"; then
 PHP_ARG_WITH(zlib-dir, for ZLIB,
 [  --with-zlib-dir=DIR             Set the path to ZLIB install prefix.], no)
@@ -343,6 +346,13 @@ if test "$PHP_MEMCACHED" != "no"; then
     else
       ac_cv_have_fastlz="no"
       PHP_MEMCACHED_FILES="${PHP_MEMCACHED_FILES} fastlz/fastlz.c"
+    fi
+
+    if test "$PHP_ZSTD" != "no"; then
+      AC_CHECK_HEADERS([zstd.h], [ac_cv_have_zstd="yes"], [ac_cv_have_zstd="no"])
+      PHP_CHECK_LIBRARY(zstd, ZSTD_compress,
+          [PHP_ADD_LIBRARY(zstd, 1, MEMCACHED_SHARED_LIBADD)],
+          [AC_MSG_ERROR(zstd library not found)])
     fi
 
     if test "$PHP_MEMCACHED_SESSION" != "no"; then

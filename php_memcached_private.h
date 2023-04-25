@@ -98,7 +98,10 @@ typedef enum {
 
 typedef enum {
 	COMPRESSION_TYPE_ZLIB   = 1,
-	COMPRESSION_TYPE_FASTLZ = 2
+	COMPRESSION_TYPE_FASTLZ = 2,
+#ifdef HAVE_ZSTD_H
+	COMPRESSION_TYPE_ZSTD   = 3
+#endif
 } php_memc_compression_type;
 
 typedef struct {
@@ -186,6 +189,7 @@ ZEND_BEGIN_MODULE_GLOBALS(php_memcached)
 		zend_long compression_threshold;
 		double    compression_factor;
 		zend_long store_retry_count;
+		zend_long compression_level;
 
 		/* Converted values*/
 		php_memc_serializer_type  serializer_type;

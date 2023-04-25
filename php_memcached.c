@@ -37,6 +37,10 @@
 #endif
 #include <zlib.h>
 
+#ifdef HAVE_ZSTD_H
+#include <zstd.h>
+#endif
+
 #ifdef HAVE_JSON_API
 # include "ext/json/php_json.h"
 #endif
@@ -107,6 +111,9 @@ static int php_memc_list_entry(void) {
 #define MEMC_VAL_COMPRESSED          (1<<0)
 #define MEMC_VAL_COMPRESSION_ZLIB    (1<<1)
 #define MEMC_VAL_COMPRESSION_FASTLZ  (1<<2)
+#ifdef HAVE_ZSTD_H
+#define MEMC_VAL_COMPRESSION_ZSTD    (1<<3)
+#endif
 
 #define MEMC_VAL_GET_FLAGS(internal_flags)               (((internal_flags) & MEMC_MASK_INTERNAL) >> 4)
 #define MEMC_VAL_SET_FLAG(internal_flags, internal_flag) ((internal_flags) |= (((internal_flag) << 4) & MEMC_MASK_INTERNAL))
@@ -278,6 +285,10 @@ static PHP_INI_MH(OnUpdateCompressionType)
 		MEMC_G(compression_type) = COMPRESSION_TYPE_FASTLZ;
 	} else if (!strcmp(ZSTR_VAL(new_value), "zlib")) {
 		MEMC_G(compression_type) = COMPRESSION_TYPE_ZLIB;
+#ifdef HAVE_ZSTD_H
+	} else if (!strcmp(ZSTR_VAL(new_value), "zstd")) {
+		MEMC_G(compression_type) = COMPRESSION_TYPE_ZSTD;
+#endif
 	} else {
 		return FAILURE;
 	}
@@ -408,6 +419,7 @@ PHP_INI_BEGIN()
 
 	MEMC_INI_ENTRY("compression_type",      "fastlz",                OnUpdateCompressionType, compression_name)
 	MEMC_INI_ENTRY("compression_factor",    "1.3",                   OnUpdateReal,            compression_factor)
+	MEMC_INI_ENTRY("compression_level",     "3",                     OnUpdateLong,            compression_level)
 	MEMC_INI_ENTRY("compression_threshold", "2000",                  OnUpdateLong,            compression_threshold)
 	MEMC_INI_ENTRY("serializer",            SERIALIZER_DEFAULT_NAME, OnUpdateSerializer,      serializer_name)
 	MEMC_INI_ENTRY("store_retry_count",     "0",                     OnUpdateLong,            store_retry_count)
@@ -896,6 +908,19 @@ zend_bool s_compress_value (php_memc_compression_type compression_type, zend_str
 			}
 		}
 			break;
+
+#ifdef HAVE_ZSTD_H
+		case COMPRESSION_TYPE_ZSTD:
+		{
+			compressed_size = ZSTD_compress((void *)buffer, buffer_size, ZSTR_VAL(payload), ZSTR_LEN(payload), MEMC_G(compression_level));
+
+			if (!ZSTD_isError(compressed_size)) {
+				compress_status = 1;
+				compression_type_flag = MEMC_VAL_COMPRESSION_ZSTD;
+			}
+		}
+			break;
+#endif
 
 		case COMPRESSION_TYPE_ZLIB:
 		{
@@ -3001,6 +3026,9 @@ int php_memc_set_option(php_memc_object_t *intern, long option, zval *value)
 		case MEMC_OPT_COMPRESSION_TYPE:
 			lval = zval_get_long(value);
 			if (lval == COMPRESSION_TYPE_FASTLZ ||
+#ifdef HAVE_ZSTD_H
+				lval == COMPRESSION_TYPE_ZSTD ||
+#endif
 				lval == COMPRESSION_TYPE_ZLIB) {
 				memc_user_data->compression_type = lval;
 			} else {
@@ -3608,16 +3636,19 @@ zend_string *s_decompress_value (const char *payload, size_t payload_len, uint32
 	uint32_t stored_length;
 	unsigned long length;
 	zend_bool decompress_status = 0;
-	zend_bool is_fastlz = 0, is_zlib = 0;
+	zend_bool is_fastlz = 0, is_zlib = 0, is_zstd = 0;
 
 	if (payload_len < sizeof (uint32_t)) {
 		return NULL;
 	}
 
 	is_fastlz = MEMC_VAL_HAS_FLAG(flags, MEMC_VAL_COMPRESSION_FASTLZ);
+#ifdef HAVE_ZSTD_H
+	is_zstd   = MEMC_VAL_HAS_FLAG(flags, MEMC_VAL_COMPRESSION_ZSTD);
+#endif
 	is_zlib   = MEMC_VAL_HAS_FLAG(flags, MEMC_VAL_COMPRESSION_ZLIB);
 
-	if (!is_fastlz && !is_zlib) {
+	if (!is_fastlz && !is_zlib && !is_zstd) {
 		php_error_docref(NULL, E_WARNING, "could not decompress value: unrecognised compression type");
 		return NULL;
 	}
@@ -3629,6 +3660,23 @@ zend_string *s_decompress_value (const char *payload, size_t payload_len, uint32
 
 	buffer = zend_string_alloc (stored_length, 0);
 
+#ifdef HAVE_ZSTD_H
+	if (is_zstd) {
+		length = ZSTD_getFrameContentSize(payload, payload_len);
+		if (length == ZSTD_CONTENTSIZE_ERROR) {
+			php_error_docref(NULL, E_WARNING, "value was not compressed by zstd");
+			zend_string_release (buffer);
+			return NULL;
+		} else if (length == ZSTD_CONTENTSIZE_UNKNOWN) {
+			php_error_docref(NULL, E_WARNING, "zstd streaming decompression not supported");
+			zend_string_release (buffer);
+			return NULL;
+		}
+		decompress_status = !ZSTD_isError(ZSTD_decompress(&buffer->val, buffer->len, payload, payload_len));
+
+	}
+	else
+#endif
 	if (is_fastlz) {
 		decompress_status = ((length = fastlz_decompress(payload, payload_len, &buffer->val, buffer->len)) > 0);
 	}
@@ -3955,6 +4003,7 @@ PHP_GINIT_FUNCTION(php_memcached)
 	php_memcached_globals->memc.compression_threshold = 2000;
 	php_memcached_globals->memc.compression_type = COMPRESSION_TYPE_FASTLZ;
 	php_memcached_globals->memc.compression_factor = 1.30;
+	php_memcached_globals->memc.compression_level = 3;
 	php_memcached_globals->memc.store_retry_count = 2;
 
 	php_memcached_globals->memc.sasl_initialised = 0;
@@ -4013,6 +4062,15 @@ static void php_memc_register_constants(INIT_FUNC_ARGS)
 	REGISTER_MEMC_CLASS_CONST_BOOL(HAVE_IGBINARY, 1);
 #else
 	REGISTER_MEMC_CLASS_CONST_BOOL(HAVE_IGBINARY, 0);
+#endif
+
+	/*
+	 * Indicate whether zstd compression is available
+	 */
+#ifdef HAVE_ZSTD_H
+	REGISTER_MEMC_CLASS_CONST_BOOL(HAVE_ZSTD, 1);
+#else
+	REGISTER_MEMC_CLASS_CONST_BOOL(HAVE_ZSTD, 0);
 #endif
 
 	/*
@@ -4186,6 +4244,9 @@ static void php_memc_register_constants(INIT_FUNC_ARGS)
 	 */
 	REGISTER_MEMC_CLASS_CONST_LONG(COMPRESSION_FASTLZ, COMPRESSION_TYPE_FASTLZ);
 	REGISTER_MEMC_CLASS_CONST_LONG(COMPRESSION_ZLIB,   COMPRESSION_TYPE_ZLIB);
+#ifdef HAVE_ZSTD_H
+	REGISTER_MEMC_CLASS_CONST_LONG(COMPRESSION_ZSTD,   COMPRESSION_TYPE_ZSTD);
+#endif
 
 	/*
 	 * Flags.
@@ -4349,6 +4410,12 @@ PHP_MINFO_FUNCTION(memcached)
 	php_info_print_table_row(2, "msgpack support", "yes");
 #else
 	php_info_print_table_row(2, "msgpack support", "no");
+#endif
+
+#ifdef HAVE_ZSTD_H
+	php_info_print_table_row(2, "zstd support", "yes");
+#else
+	php_info_print_table_row(2, "zstd support", "no");
 #endif
 
 	php_info_print_table_end();
