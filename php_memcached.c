@@ -3651,6 +3651,13 @@ zend_string *s_decompress_value (const char *payload, size_t payload_len, uint32
 	is_zstd   = MEMC_VAL_HAS_FLAG(flags, MEMC_VAL_COMPRESSION_ZSTD);
 	is_zlib   = MEMC_VAL_HAS_FLAG(flags, MEMC_VAL_COMPRESSION_ZLIB);
 
+#ifndef HAVE_ZSTD_H
+	if (is_zstd) {
+		php_error_docref(NULL, E_WARNING, "could not decompress value: value was compressed with zstd but zstd support has not been compiled in");
+		return NULL;
+	}
+#endif
+
 	if (!is_fastlz && !is_zlib && !is_zstd) {
 		php_error_docref(NULL, E_WARNING, "could not decompress value: unrecognised compression type");
 		return NULL;
