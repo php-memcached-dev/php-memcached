@@ -16,9 +16,9 @@ function get_compression($name) {
 		case 'fastlz':
 			return Memcached::COMPRESSION_FASTLZ;
 		case 'zstd':
-            if (Memcached::HAVE_ZSTD) {
-			    return Memcached::COMPRESSION_ZSTD;
-            } else return 0;
+			if (Memcached::HAVE_ZSTD) {
+				return Memcached::COMPRESSION_ZSTD;
+			} else return 0;
 		default:
 			echo "Strange compression type: $name\n";
 			return 0;
@@ -65,7 +65,7 @@ fetch_with_compression($m, 'hello12', $data, 'fastlz', 'zstd');
 fetch_with_compression($m, 'hello13', $data, '', 'zstd');
 fetch_with_compression($m, 'hello14', $data, 'zstd', '');
 } else {
-    echo <<<EOB
+	echo <<<EOB
 set=[zstd] get=[zstd]
 bool(true)
 set=[zstd] get=[fastlz]
