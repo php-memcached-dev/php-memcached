@@ -3648,9 +3648,7 @@ zend_string *s_decompress_value (const char *payload, size_t payload_len, uint32
 	}
 
 	is_fastlz = MEMC_VAL_HAS_FLAG(flags, MEMC_VAL_COMPRESSION_FASTLZ);
-#ifdef HAVE_ZSTD_H
 	is_zstd   = MEMC_VAL_HAS_FLAG(flags, MEMC_VAL_COMPRESSION_ZSTD);
-#endif
 	is_zlib   = MEMC_VAL_HAS_FLAG(flags, MEMC_VAL_COMPRESSION_ZLIB);
 
 	if (!is_fastlz && !is_zlib && !is_zstd) {
