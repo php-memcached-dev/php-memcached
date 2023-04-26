@@ -112,9 +112,7 @@ static int php_memc_list_entry(void) {
 #define MEMC_VAL_COMPRESSED          (1<<0)
 #define MEMC_VAL_COMPRESSION_ZLIB    (1<<1)
 #define MEMC_VAL_COMPRESSION_FASTLZ  (1<<2)
-#ifdef HAVE_ZSTD_H
 #define MEMC_VAL_COMPRESSION_ZSTD    (1<<3)
-#endif
 
 #define MEMC_VAL_GET_FLAGS(internal_flags)               (((internal_flags) & MEMC_MASK_INTERNAL) >> 4)
 #define MEMC_VAL_SET_FLAG(internal_flags, internal_flag) ((internal_flags) |= (((internal_flag) << 4) & MEMC_MASK_INTERNAL))

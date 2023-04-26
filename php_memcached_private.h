@@ -99,9 +99,7 @@ typedef enum {
 typedef enum {
 	COMPRESSION_TYPE_ZLIB   = 1,
 	COMPRESSION_TYPE_FASTLZ = 2,
-#ifdef HAVE_ZSTD_H
 	COMPRESSION_TYPE_ZSTD   = 3
-#endif
 } php_memc_compression_type;
 
 typedef struct {
