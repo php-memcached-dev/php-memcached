@@ -15,6 +15,10 @@ function get_compression($name) {
 			return Memcached::COMPRESSION_ZLIB;
 		case 'fastlz':
 			return Memcached::COMPRESSION_FASTLZ;
+		case 'zstd':
+			if (Memcached::HAVE_ZSTD) {
+				return Memcached::COMPRESSION_ZSTD;
+			} else return 0;
 		default:
 			echo "Strange compression type: $name\n";
 			return 0;
@@ -54,6 +58,26 @@ fetch_with_compression($m, 'hello6', $data, '', 'fastlz');
 fetch_with_compression($m, 'hello7', $data, 'zlib', '');
 fetch_with_compression($m, 'hello8', $data, 'fastlz', '');
 fetch_with_compression($m, 'hello9', $data, '', '');
+if (Memcached::HAVE_ZSTD) {
+fetch_with_compression($m, 'hello10', $data, 'zstd', 'zstd');
+fetch_with_compression($m, 'hello11', $data, 'zstd', 'fastlz');
+fetch_with_compression($m, 'hello12', $data, 'fastlz', 'zstd');
+fetch_with_compression($m, 'hello13', $data, '', 'zstd');
+fetch_with_compression($m, 'hello14', $data, 'zstd', '');
+} else {
+	echo <<<EOB
+set=[zstd] get=[zstd]
+bool(true)
+set=[zstd] get=[fastlz]
+bool(true)
+set=[fastlz] get=[zstd]
+bool(true)
+set=[] get=[zstd]
+bool(true)
+set=[zstd] get=[]
+bool(true)
+EOB;
+}
 ?>
 --EXPECT--
 set=[zlib] get=[zlib]
@@ -73,4 +97,14 @@ bool(true)
 set=[fastlz] get=[]
 bool(true)
 set=[] get=[]
+bool(true)
+set=[zstd] get=[zstd]
+bool(true)
+set=[zstd] get=[fastlz]
+bool(true)
+set=[fastlz] get=[zstd]
+bool(true)
+set=[] get=[zstd]
+bool(true)
+set=[zstd] get=[]
 bool(true)

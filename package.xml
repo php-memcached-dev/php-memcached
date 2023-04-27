@@ -44,7 +44,8 @@ http://pear.php.net/dtd/package-2.0.xsd">
  </stability>
  <license uri="http://www.php.net/license">PHP</license>
  <notes>
--
+- mark password as a sensitive param for PHP 8.2
+- Fix #523 Incorrect PHP reflection type for Memcached::cas $cas_token
  </notes>
  <contents>
   <dir name="/">

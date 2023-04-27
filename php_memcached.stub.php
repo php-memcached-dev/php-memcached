@@ -3,8 +3,8 @@
 /**
  * @generate-function-entries
  * @generate-legacy-arginfo
+ * @generate-class-entries
  */
-
 
 class Memcached {
 
@@ -15,12 +15,12 @@ class Memcached {
 
 	public function get(string $key, ?callable $cache_cb=null, int $get_flags=0): mixed {}
 	public function getByKey(string $server_key, string $key, ?callable $cache_cb=null, int $get_flags=0): mixed {}
-	public function getMulti(array $keys, int $get_flags=0): false|array {}
-	public function getMultiByKey(string $server_key, array $keys, int $get_flags=0): false|array {}
+	public function getMulti(array $keys, int $get_flags=0): array|false {}
+	public function getMultiByKey(string $server_key, array $keys, int $get_flags=0): array|false {}
 	public function getDelayed(array $keys, bool $with_cas=false, ?callable $value_cb=null): bool {}
 	public function getDelayedByKey(string $server_key, array $keys, bool $with_cas=false, ?callable $value_cb=null): bool {}
-	public function fetch(): false|array {}
-	public function fetchAll(): false|array {}
+	public function fetch(): array|false {}
+	public function fetchAll(): array|false {}
 
 	public function set(string $key, mixed $value, int $expiration=0): bool {}
 	public function setByKey(string $server_key, string $key, mixed $value, int $expiration=0): bool {}
@@ -31,8 +31,8 @@ class Memcached {
 	public function setMulti(array $items, int $expiration=0): bool {}
 	public function setMultiByKey(string $server_key, array $items, int $expiration=0): bool {}
 
-	public function cas(string $cas_token, string $key, mixed $value, int $expiration=0): bool {}
-	public function casByKey(string $cas_token, string $server_key, string $key, mixed $value, int $expiration=0): bool {}
+	public function cas(string|int|float $cas_token, string $key, mixed $value, int $expiration=0): bool {}
+	public function casByKey(string|int|float $cas_token, string $server_key, string $key, mixed $value, int $expiration=0): bool {}
 	public function add(string $key, mixed $value, int $expiration=0): bool {}
 	public function addByKey(string $server_key, string $key, mixed $value, int $expiration=0): bool {}
 	public function append(string $key, string $value): ?bool {}
@@ -46,15 +46,15 @@ class Memcached {
 	public function deleteByKey(string $server_key, string $key, int $time=0): bool {}
 	public function deleteMultiByKey(string $server_key, array $keys, int $time=0): array {}
 
-	public function increment(string $key, int $offset=1, int $initial_value=0, int $expiry=0): false|int {}
-	public function decrement(string $key, int $offset=1, int $initial_value=0, int $expiry=0): false|int {}
-	public function incrementByKey(string $server_key, string $key, int $offset=1, int $initial_value=0, int $expiry=0): false|int {}
-	public function decrementByKey(string $server_key, string $key, int $offset=1, int $initial_value=0, int $expiry=0): false|int {}
+	public function increment(string $key, int $offset=1, int $initial_value=0, int $expiry=0): int|false {}
+	public function decrement(string $key, int $offset=1, int $initial_value=0, int $expiry=0): int|false {}
+	public function incrementByKey(string $server_key, string $key, int $offset=1, int $initial_value=0, int $expiry=0): int|false {}
+	public function decrementByKey(string $server_key, string $key, int $offset=1, int $initial_value=0, int $expiry=0): int|false {}
 
 	public function addServer(string $host, int $port, int $weight=0): bool {}
 	public function addServers(array $servers): bool {}
 	public function getServerList(): array {}
-	public function getServerByKey(string $server_key): false|array {}
+	public function getServerByKey(string $server_key): array|false {}
 	public function resetServerList(): bool {}
 	public function quit(): bool {}
 	public function flushBuffers(): bool {}
@@ -62,11 +62,11 @@ class Memcached {
 	public function getLastErrorMessage(): string {}
 	public function getLastErrorCode(): int {}
 	public function getLastErrorErrno(): int {}
-	public function getLastDisconnectedServer(): false|array {}
+	public function getLastDisconnectedServer(): array|false {}
 
-	public function getStats(?string $type=null): false|array {}
-	public function getVersion(): false|array {}
-	public function getAllKeys(): false|array {}
+	public function getStats(?string $type=null): array|false {}
+	public function getVersion(): array|false {}
+	public function getAllKeys(): array|false {}
 
 	public function flush(int $delay=0): bool {}
 
@@ -75,7 +75,7 @@ class Memcached {
 	public function setOptions(array $options): bool {}
 	public function setBucket(array $host_map, ?array $forward_map, int $replicas): bool {}
 #ifdef HAVE_MEMCACHED_SASL
-	public function setSaslAuthData(string $username, string $password): bool {}
+	public function setSaslAuthData(string $username, #[\SensitiveParameter] string $password): bool {}
 #endif
 
 #ifdef HAVE_MEMCACHED_SET_ENCODING_KEY
@@ -86,7 +86,7 @@ class Memcached {
 	public function checkKey(string $key): bool {}
 }
 
-#ifdef HAVE_MEMCACHED_PROTOCOL
+#if defined(HAVE_MEMCACHED_PROTOCOL)
 class MemcachedServer {
 
 	public function run(string $address): bool {}

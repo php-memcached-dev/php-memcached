@@ -21,6 +21,8 @@ function get_compression($name) {
 			return Memcached::COMPRESSION_ZLIB;
 		case 'fastlz':
 			return Memcached::COMPRESSION_FASTLZ;
+		case 'zstd':
+			return Memcached::COMPRESSION_ZSTD;
 		default:
 			echo "Strange compression type: $name\n";
 			return 0;

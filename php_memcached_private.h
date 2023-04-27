@@ -48,11 +48,11 @@
 #include <ext/standard/basic_functions.h>
 
 #ifdef PHP_WIN32
-  #  if PHP_VERSION_ID >= 80000
-  #  include "php_stdint.h"
-#else
-# include "win32/php_stdint.h"
-#endif
+   #  if PHP_VERSION_ID >= 80000
+   #  include <stdint.h>
+   #else
+   # include "win32/php_stdint.h"
+   #endif
 #else
 /* Used to store the size of the block */
 #  if defined(HAVE_INTTYPES_H)
@@ -98,7 +98,8 @@ typedef enum {
 
 typedef enum {
 	COMPRESSION_TYPE_ZLIB   = 1,
-	COMPRESSION_TYPE_FASTLZ = 2
+	COMPRESSION_TYPE_FASTLZ = 2,
+	COMPRESSION_TYPE_ZSTD   = 3
 } php_memc_compression_type;
 
 typedef struct {
@@ -185,7 +186,8 @@ ZEND_BEGIN_MODULE_GLOBALS(php_memcached)
 		char     *compression_name;
 		zend_long compression_threshold;
 		double    compression_factor;
-		zend_long store_retry_count;
+    zend_long store_retry_count;
+    zend_long compression_level;
 		zend_long item_size_limit;
 
 		/* Converted values*/

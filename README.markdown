@@ -23,7 +23,7 @@ Dependencies
 ------------
 
 php-memcached 3.x:
-* Supports PHP 7.0 - 8.1.
+* Supports PHP 7.0 - 8.2 or higher.
 * Requires libmemcached 1.x or higher.
 * Optionally supports igbinary 2.0 or higher.
 * Optionally supports msgpack 2.0 or higher.
