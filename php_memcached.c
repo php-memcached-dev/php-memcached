@@ -884,7 +884,7 @@ zend_bool s_invoke_cache_callback(zval *zobject, zend_fcall_info *fci, zend_fcal
 ****************************************/
 
 static
-zend_bool s_compress_value (php_memc_compression_type compression_type, zend_string **payload_in, uint32_t *flags)
+zend_bool s_compress_value (php_memc_compression_type compression_type, zend_long compression_level, zend_string **payload_in, uint32_t *flags)
 {
 	/* status */
 	zend_bool compress_status = 0;
@@ -915,7 +915,13 @@ zend_bool s_compress_value (php_memc_compression_type compression_type, zend_str
 #ifdef HAVE_ZSTD_H
 		case COMPRESSION_TYPE_ZSTD:
 		{
-			compressed_size = ZSTD_compress((void *)buffer, buffer_size, ZSTR_VAL(payload), ZSTR_LEN(payload), MEMC_G(compression_level));
+			compressed_size = ZSTD_compress((void *)buffer, buffer_size, ZSTR_VAL(payload), ZSTR_LEN(payload), compression_level);
+
+			if (compression_level < -22) {
+				compression_level = -22;
+			} else if (compression_level > 22) {
+				compression_level = 22;
+			}
 
 			if (!ZSTD_isError(compressed_size)) {
 				compress_status = 1;
@@ -928,7 +934,14 @@ zend_bool s_compress_value (php_memc_compression_type compression_type, zend_str
 		case COMPRESSION_TYPE_ZLIB:
 		{
 			compressed_size = buffer_size;
-			int status = compress((Bytef *) buffer, &compressed_size, (Bytef *) ZSTR_VAL(payload), ZSTR_LEN(payload));
+
+			if (compression_level < 0) {
+				compression_level = 0;
+			} else if (compression_level > 9) {
+				compression_level = 9;
+			}
+
+			int status = compress2((Bytef *) buffer, &compressed_size, (Bytef *) ZSTR_VAL(payload), ZSTR_LEN(payload), compression_level);
 
 			if (status == Z_OK) {
 				compress_status = 1;
@@ -1120,7 +1133,7 @@ zend_string *s_zval_to_payload(php_memc_object_t *intern, zval *value, uint32_t 
 		 *
 		 * No need to check the return value because the payload is always valid.
 		 */
-		(void)s_compress_value (memc_user_data->compression_type, &payload, flags);
+		(void)s_compress_value (memc_user_data->compression_type, memc_user_data->compression_level, &payload, flags);
 	}
 
 	if (memc_user_data->set_udf_flags >= 0) {
@@ -1325,6 +1338,7 @@ static PHP_METHOD(Memcached, __construct)
 	memc_user_data                    = pecalloc (1, sizeof(*memc_user_data), is_persistent);
 	memc_user_data->serializer        = MEMC_G(serializer_type);
 	memc_user_data->compression_type  = MEMC_G(compression_type);
+	memc_user_data->compression_level = MEMC_G(compression_level);
 	memc_user_data->compression_enabled = 1;
 	memc_user_data->encoding_enabled  = 0;
 	memc_user_data->store_retry_count = MEMC_G(store_retry_count);
@@ -3075,6 +3089,11 @@ int php_memc_set_option(php_memc_object_t *intern, long option, zval *value)
 			}
 			break;
 
+		case MEMC_OPT_COMPRESSION_LEVEL:
+			lval = zval_get_long(value);
+			memc_user_data->compression_level = lval;
+			break;
+
 		case MEMC_OPT_ITEM_SIZE_LIMIT:
 			lval = zval_get_long(value);
 			if (lval < 0) {
@@ -4054,7 +4073,7 @@ PHP_GINIT_FUNCTION(php_memcached)
 	php_memcached_globals->memc.compression_threshold = 2000;
 	php_memcached_globals->memc.compression_type = COMPRESSION_TYPE_FASTLZ;
 	php_memcached_globals->memc.compression_factor = 1.30;
-	php_memcached_globals->memc.compression_level = 3;
+	php_memcached_globals->memc.compression_level = 6;
 	php_memcached_globals->memc.store_retry_count = 2;
 	php_memcached_globals->memc.item_size_limit = 0;
 
