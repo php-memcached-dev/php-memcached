@@ -917,6 +917,12 @@ zend_bool s_compress_value (php_memc_compression_type compression_type, zend_lon
 		{
 			compressed_size = ZSTD_compress((void *)buffer, buffer_size, ZSTR_VAL(payload), ZSTR_LEN(payload), compression_level);
 
+			if (compression_level < -22) {
+				compression_level = -22;
+			} else if (compression_level > 22) {
+				compression_level = 22;
+			}
+
 			if (!ZSTD_isError(compressed_size)) {
 				compress_status = 1;
 				compression_type_flag = MEMC_VAL_COMPRESSION_ZSTD;
@@ -928,6 +934,13 @@ zend_bool s_compress_value (php_memc_compression_type compression_type, zend_lon
 		case COMPRESSION_TYPE_ZLIB:
 		{
 			compressed_size = buffer_size;
+
+			if (compression_level < 0) {
+				compression_level = 0;
+			} else if (compression_level > 9) {
+				compression_level = 9;
+			}
+
 			int status = compress2((Bytef *) buffer, &compressed_size, (Bytef *) ZSTR_VAL(payload), ZSTR_LEN(payload), compression_level);
 
 			if (status == Z_OK) {
