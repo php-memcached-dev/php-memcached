@@ -5,7 +5,10 @@ Memcached::cas() with strange key
 --FILE--
 <?php
 include dirname(__FILE__) . '/config.inc';
-$m = memc_get_instance ();
+$m = memc_get_instance (array (
+    Memcached::OPT_BINARY_PROTOCOL => false,
+    Memcached::OPT_VERIFY_KEY => true
+));
 
 error_reporting(0);
 var_dump($m->cas(0, '', true, 10));
