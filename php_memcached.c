@@ -246,6 +246,7 @@ zend_bool s_memc_valid_key_ascii(zend_string *key)
 #define MEMC_CHECK_KEY(intern, key)                                               \
 	if (UNEXPECTED(ZSTR_LEN(key) == 0 ||                                          \
 		ZSTR_LEN(key) > MEMC_OBJECT_KEY_MAX_LENGTH ||                             \
+		memcached_behavior_get(intern->memc, MEMCACHED_BEHAVIOR_VERIFY_KEY) &&    \
 		(memcached_behavior_get(intern->memc, MEMCACHED_BEHAVIOR_BINARY_PROTOCOL) \
 				? !s_memc_valid_key_binary(key)                                   \
 				: !s_memc_valid_key_ascii(key)                                    \
