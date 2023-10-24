@@ -13,7 +13,7 @@ jobs:
     runs-on: windows-latest
     steps:
       - name: Checkout memcached
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Setup PHP
         id: setup-php
         uses: cmb69/setup-php-sdk@v0.7
