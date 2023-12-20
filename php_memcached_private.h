@@ -186,8 +186,8 @@ ZEND_BEGIN_MODULE_GLOBALS(php_memcached)
 		char     *compression_name;
 		zend_long compression_threshold;
 		double    compression_factor;
-    zend_long store_retry_count;
-    zend_long compression_level;
+		zend_long store_retry_count;
+		zend_long compression_level;
 		zend_long item_size_limit;
 
 		/* Converted values*/
