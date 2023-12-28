@@ -5,7 +5,10 @@ Memcached::deleteByKey()
 --FILE--
 <?php
 include dirname(__FILE__) . '/config.inc';
-$m = memc_get_instance ();
+$m = memc_get_instance (array (
+    Memcached::OPT_BINARY_PROTOCOL => false,
+    Memcached::OPT_VERIFY_KEY => true
+));
 
 $m->setByKey('keffe', 'eisaleeoo', "foo");
 var_dump($m->getByKey('keffe', 'eisaleeoo'));
