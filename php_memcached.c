@@ -933,7 +933,7 @@ zend_bool s_compress_value (php_memc_compression_type compression_type, zend_lon
 
 		case COMPRESSION_TYPE_ZLIB:
 		{
-			compressed_size = buffer_size;
+			unsigned long cs = compressed_size = buffer_size;
 
 			if (compression_level < 0) {
 				compression_level = 0;
@@ -941,9 +941,10 @@ zend_bool s_compress_value (php_memc_compression_type compression_type, zend_lon
 				compression_level = 9;
 			}
 
-			int status = compress2((Bytef *) buffer, &compressed_size, (Bytef *) ZSTR_VAL(payload), ZSTR_LEN(payload), compression_level);
+			int status = compress2((Bytef *) buffer, &cs, (Bytef *) ZSTR_VAL(payload), ZSTR_LEN(payload), compression_level);
 
 			if (status == Z_OK) {
+				compressed_size = cs;
 				compress_status = 1;
 				compression_type_flag = MEMC_VAL_COMPRESSION_ZLIB;
 			}
@@ -3751,7 +3752,10 @@ zend_string *s_decompress_value (const char *payload, size_t payload_len, uint32
 		decompress_status = ((length = fastlz_decompress(payload, payload_len, &buffer->val, buffer->len)) > 0);
 	}
 	else if (is_zlib) {
-		decompress_status = (uncompress((Bytef *) buffer->val, &buffer->len, (Bytef *)payload, payload_len) == Z_OK);
+		unsigned long ds = buffer->len;
+
+		decompress_status = (uncompress((Bytef *) buffer->val, &ds, (Bytef *)payload, payload_len) == Z_OK);
+		buffer->len = ds;
 	}
 
 	ZSTR_VAL(buffer)[stored_length] = '\0';
