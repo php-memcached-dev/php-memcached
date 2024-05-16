@@ -1,6 +1,6 @@
 Build Status
 ------------
-[![Build Status](https://travis-ci.org/php-memcached-dev/php-memcached.png)](https://travis-ci.org/php-memcached-dev/php-memcached)
+![Build Status](https://github.com/php-memcached-dev/php-memcached/actions/workflows/build-and-test.yml/badge.svg?branch=master)
 
 Description
 -----------
@@ -23,7 +23,7 @@ Dependencies
 ------------
 
 php-memcached 3.x:
-* Supports PHP 7.0 - 8.2 or higher.
+* Supports PHP 7.0 - 8.3 or higher.
 * Requires libmemcached 1.x or higher.
 * Optionally supports igbinary 2.0 or higher.
 * Optionally supports msgpack 2.0 or higher.
