@@ -231,6 +231,18 @@ zend_bool s_memc_valid_key_binary(zend_string *key)
 }
 
 static
+uint32_t s_memc_object_key_max_length(php_memc_object_t *intern) {
+	memcached_return retval;
+	char *result;
+
+	result = memcached_callback_get(intern->memc, MEMCACHED_CALLBACK_PREFIX_KEY, &retval);
+	if (retval == MEMCACHED_SUCCESS && result) {
+		return MEMC_OBJECT_KEY_MAX_LENGTH - strlen(result);
+	} else {
+		return MEMC_OBJECT_KEY_MAX_LENGTH;
+	}
+}
+
 zend_bool s_memc_valid_key_ascii(zend_string *key, uint64_t verify_key)
 {
 	const char *str = ZSTR_VAL(key);
@@ -252,7 +264,7 @@ zend_bool s_memc_valid_key_ascii(zend_string *key, uint64_t verify_key)
 
 #define MEMC_CHECK_KEY(intern, key)                                               \
 	if (UNEXPECTED(ZSTR_LEN(key) == 0 ||                                          \
-		ZSTR_LEN(key) > MEMC_OBJECT_KEY_MAX_LENGTH ||                             \
+		ZSTR_LEN(key) > s_memc_object_key_max_length(intern) ||                   \
 		(memcached_behavior_get(intern->memc, MEMCACHED_BEHAVIOR_BINARY_PROTOCOL) \
 				? !s_memc_valid_key_binary(key)                                   \
 				: !s_memc_valid_key_ascii(key, memcached_behavior_get(intern->memc, MEMCACHED_BEHAVIOR_VERIFY_KEY)) \
