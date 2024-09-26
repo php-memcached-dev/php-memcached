@@ -1,3 +1,5 @@
+
+name: Test on Ubuntu
 on: [push, pull_request]
 
 jobs:
