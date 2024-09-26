@@ -1,0 +1,68 @@
+{
+    "name": "php-memcached/php-memcached",
+    "type": "php-ext",
+    "license": "PHP-3.01",
+    "description": "memcached extension based on libmemcached library ",
+    "require": {
+        "php": ">= 7.0.0"
+    },
+    "suggest": {
+        "ext-igbinary": "igbinary is a faster and more compact binary serializer for PHP data structures.",
+        "ext-msgpack": "msgpack is a faster and more compact data structure representation that is interoperable with msgpack implementations for other languages."
+    },
+    "php-ext": {
+        "extension-name": "memcached",
+        "configure-options": [
+            {
+                "name": "enable-memcached",
+                "description": "Enable memcached support"
+            },
+            {
+                "name": "with-libmemcached-dir",
+                "description": "Set the path to libmemcached install prefix.",
+                "needs-value": true
+            },
+            {
+                "name": "enable-memcached-session",
+                "description": "Enable memcached session handler support"
+            },
+            {
+                "name": "enable-memcached-igbinary",
+                "description": "Enable memcached igbinary serializer support"
+            },
+            {
+                "name": "enable-memcached-json",
+                "description": "Enable memcached json serializer support"
+            },
+            {
+                "name": "enable-memcached-msgpack",
+                "description": "Enable memcached msgpack serializer support"
+            },
+            {
+                "name": "enable-memcached-sasl",
+                "description": "Enable memcached sasl support"
+            },
+            {
+                "name": "enable-memcached-protocol",
+                "description": "Enable memcached protocol support"
+            },
+            {
+                "name": "with-system-fastlz",
+                "description": "Use system FastLZ library"
+            },
+            {
+                "name": "with-zstd",
+                "description": "Use system zstd library"
+            },
+            {
+                "name": "with-zlib-dir",
+                "description": "Set the path to ZLIB install prefix.",
+                "needs-value": true
+            },
+            {
+                "name": "enable-debug",
+                "description": "Compile with debugging symbols"
+            }
+        ]
+    }
+}

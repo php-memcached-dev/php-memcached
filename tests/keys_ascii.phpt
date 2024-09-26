@@ -8,11 +8,8 @@ Test valid and invalid keys - ascii
 include dirname (__FILE__) . '/config.inc';
 $ascii = memc_get_instance (array (
 				Memcached::OPT_BINARY_PROTOCOL => false,
-				Memcached::OPT_VERIFY_KEY => false
+				Memcached::OPT_VERIFY_KEY => true
 		));
-// libmemcached can verify keys, but these are tests are for our own
-// function s_memc_valid_key_ascii, so explicitly disable the checks
-// that libmemcached can perform.
 
 echo 'ASCII: SPACES' . PHP_EOL;
 var_dump ($ascii->set ('ascii key with spaces', 'this is a test'));

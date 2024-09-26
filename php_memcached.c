@@ -243,15 +243,21 @@ uint32_t s_memc_object_key_max_length(php_memc_object_t *intern) {
 	}
 }
 
-static
-zend_bool s_memc_valid_key_ascii(zend_string *key)
+zend_bool s_memc_valid_key_ascii(zend_string *key, uint64_t verify_key)
 {
 	const char *str = ZSTR_VAL(key);
 	size_t i, len = ZSTR_LEN(key);
 
-	for (i = 0; i < len; i++) {
-		if (!isgraph(str[i]) || isspace(str[i]))
-			return 0;
+	if (verify_key) {
+		for (i = 0; i < len; i++) {
+			if (!isgraph(str[i]) || isspace(str[i]))
+				return 0;
+		}
+	} else { /* if key verification is disabled, only check for spaces to avoid injection issues */
+		for (i = 0; i < len; i++) {
+			if (isspace(str[i]))
+				return 0;
+		}
 	}
 	return 1;
 }
@@ -261,7 +267,7 @@ zend_bool s_memc_valid_key_ascii(zend_string *key)
 		ZSTR_LEN(key) > s_memc_object_key_max_length(intern) ||                   \
 		(memcached_behavior_get(intern->memc, MEMCACHED_BEHAVIOR_BINARY_PROTOCOL) \
 				? !s_memc_valid_key_binary(key)                                   \
-				: !s_memc_valid_key_ascii(key)                                    \
+				: !s_memc_valid_key_ascii(key, memcached_behavior_get(intern->memc, MEMCACHED_BEHAVIOR_VERIFY_KEY)) \
 		))) {                                                                     \
 		intern->rescode = MEMCACHED_BAD_KEY_PROVIDED;                             \
 		RETURN_FALSE;                                                             \
@@ -355,7 +361,7 @@ PHP_INI_MH(OnUpdateSessionPrefixString)
 			php_error_docref(NULL, E_WARNING, "memcached.sess_prefix too long (max: %d)", MEMCACHED_MAX_KEY - 1);
 			return FAILURE;
 		}
-		if (!s_memc_valid_key_ascii(new_value)) {
+		if (!s_memc_valid_key_ascii(new_value, 1)) {
 			php_error_docref(NULL, E_WARNING, "memcached.sess_prefix cannot contain whitespace or control characters");
 			return FAILURE;
 		}
@@ -946,7 +952,7 @@ zend_bool s_compress_value (php_memc_compression_type compression_type, zend_lon
 
 		case COMPRESSION_TYPE_ZLIB:
 		{
-			compressed_size = buffer_size;
+			unsigned long cs = compressed_size = buffer_size;
 
 			if (compression_level < 0) {
 				compression_level = 0;
@@ -954,9 +960,10 @@ zend_bool s_compress_value (php_memc_compression_type compression_type, zend_lon
 				compression_level = 9;
 			}
 
-			int status = compress2((Bytef *) buffer, &compressed_size, (Bytef *) ZSTR_VAL(payload), ZSTR_LEN(payload), compression_level);
+			int status = compress2((Bytef *) buffer, &cs, (Bytef *) ZSTR_VAL(payload), ZSTR_LEN(payload), compression_level);
 
 			if (status == Z_OK) {
+				compressed_size = cs;
 				compress_status = 1;
 				compression_type_flag = MEMC_VAL_COMPRESSION_ZLIB;
 			}
@@ -3764,7 +3771,10 @@ zend_string *s_decompress_value (const char *payload, size_t payload_len, uint32
 		decompress_status = ((length = fastlz_decompress(payload, payload_len, &buffer->val, buffer->len)) > 0);
 	}
 	else if (is_zlib) {
-		decompress_status = (uncompress((Bytef *) buffer->val, &buffer->len, (Bytef *)payload, payload_len) == Z_OK);
+		unsigned long ds = buffer->len;
+
+		decompress_status = (uncompress((Bytef *) buffer->val, &ds, (Bytef *)payload, payload_len) == Z_OK);
+		buffer->len = ds;
 	}
 
 	ZSTR_VAL(buffer)[stored_length] = '\0';
