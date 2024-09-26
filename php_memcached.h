@@ -30,7 +30,7 @@
 # include "config.h"
 #endif
 
-#define PHP_MEMCACHED_VERSION "3.2.1-dev"
+#define PHP_MEMCACHED_VERSION "3.3.0RC1"
 
 #if defined(PHP_WIN32) && defined(MEMCACHED_EXPORTS)
 #define PHP_MEMCACHED_API __declspec(dllexport)

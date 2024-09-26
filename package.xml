@@ -33,19 +33,27 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <email>remi@php.net</email>
   <active>yes</active>
  </lead>
- <date>2022-03-24</date>
+ <date>2024-09-26</date>
  <version>
-  <release>3.2.1dev</release>
-  <api>3.2.0</api>
+  <release>3.3.0RC1</release>
+  <api>3.3.0</api>
  </version>
  <stability>
-  <release>stable</release>
+  <release>beta</release>
   <api>stable</api>
  </stability>
  <license uri="http://www.php.net/license">PHP</license>
  <notes>
-- mark password as a sensitive param for PHP 8.2
-- Fix #523 Incorrect PHP reflection type for Memcached::cas $cas_token
+- Add #515 option to locally enforce payload size limit
+- Add #539 zstd support
+- Add #540 compression_level option
+- Mark password as a sensitive param for PHP 8.2
+- Fix Windows PHP 8 compatibility
+- Fix #518 Windows msgpack support
+- Fix #522 signed integer overflow
+- Fix #523 incorrect PHP reflection type for Memcached::cas $cas_token
+- Fix #546 don't check key automatically, unless client-side verify_key is enabled
+- Fix #555 incompatible pointer types (32-bit)
  </notes>
  <contents>
   <dir name="/">
