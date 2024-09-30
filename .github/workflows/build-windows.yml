@@ -22,6 +22,7 @@ jobs:
           arch: ${{matrix.arch}}
           ts: ${{matrix.ts}}
           deps: zlib
+          cache: true
       - name: Fetch libmemcached
         run: curl -OLs https://windows.php.net/downloads/pecl/deps/libmemcached-1.1.1-${{steps.setup-php.outputs.vs}}-${{matrix.arch}}.zip && 7z x libmemcached-1.1.1-${{steps.setup-php.outputs.vs}}-${{matrix.arch}}.zip -o..\deps
       - name: Enable Developer Command Prompt
