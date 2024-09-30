@@ -16,7 +16,7 @@ jobs:
         uses: actions/checkout@v4
       - name: Setup PHP
         id: setup-php
-        uses: php/setup-php-sdk@v0.9
+        uses: php/setup-php-sdk@d07cd9875fcb041bbfa63c2c592c4e68a137e1ca
         with:
           version: ${{matrix.version}}
           arch: ${{matrix.arch}}
