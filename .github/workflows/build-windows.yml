@@ -7,9 +7,13 @@ jobs:
         shell: cmd
     strategy:
       matrix:
-          version: ['8.3']
+          version: ['8.3', '8.4']
           arch: [x64, x86]
           ts: [nts, zts]
+          exclude:
+            - { version: '8.4', arch: x64, ts: zts }
+            - { version: '8.4', arch: x86, ts: nts }
+            - { version: '8.4', arch: x86, ts: zts }
     runs-on: windows-latest
     steps:
       - name: Checkout memcached
