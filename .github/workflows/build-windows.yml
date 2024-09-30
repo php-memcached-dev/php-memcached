@@ -7,23 +7,30 @@ jobs:
         shell: cmd
     strategy:
       matrix:
-          version: ['8.3']
+          version: ['8.3', '8.4']
           arch: [x64, x86]
           ts: [nts, zts]
+          exclude:
+            - { version: '8.4', arch: x64, ts: zts }
+            - { version: '8.4', arch: x86, ts: nts }
+            - { version: '8.4', arch: x86, ts: zts }
     runs-on: windows-latest
     steps:
       - name: Checkout memcached
         uses: actions/checkout@v4
       - name: Setup PHP
         id: setup-php
-        uses: php/setup-php-sdk@v0.9
+        uses: php/setup-php-sdk@v0.10
         with:
           version: ${{matrix.version}}
           arch: ${{matrix.arch}}
           ts: ${{matrix.ts}}
           deps: zlib
+          cache: true
       - name: Fetch libmemcached
-        run: curl -OLs https://windows.php.net/downloads/pecl/deps/libmemcached-1.1.1-${{steps.setup-php.outputs.vs}}-${{matrix.arch}}.zip && 7z x libmemcached-1.1.1-${{steps.setup-php.outputs.vs}}-${{matrix.arch}}.zip -o..\deps
+        run: |
+          set MEMCACHED_FILENAME=libmemcached-1.1.1-${{steps.setup-php.outputs.vs == 'vs17' && 'vs16' || steps.setup-php.outputs.vs}}-${{matrix.arch}}.zip
+          curl -OLs https://downloads.php.net/~windows/pecl/deps/%MEMCACHED_FILENAME% && 7z x %MEMCACHED_FILENAME% -o..\deps
       - name: Enable Developer Command Prompt
         uses: ilammy/msvc-dev-cmd@v1
         with:
