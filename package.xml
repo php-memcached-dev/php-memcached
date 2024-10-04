@@ -33,7 +33,13 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <email>remi@php.net</email>
   <active>yes</active>
  </lead>
- <date>2024-09-26</date>
+ <lead>
+  <name>Michael Wallner</name>
+  <user>mike</user>
+  <email>mike@php.net</email>
+  <active>yes</active>
+ </lead>
+ <date>2024-10-04</date>
  <version>
   <release>3.3.0RC1</release>
   <api>3.3.0</api>
