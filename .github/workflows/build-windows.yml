@@ -29,7 +29,7 @@ jobs:
           cache: true
       - name: Fetch libmemcached
         run: |
-          set MEMCACHED_FILENAME=libmemcached-1.1.1-${{steps.setup-php.outputs.vs == 'vs17' && 'vs16' || steps.setup-php.outputs.vs}}-${{matrix.arch}}.zip
+          set MEMCACHED_FILENAME=libmemcached-1.1.4-${{steps.setup-php.outputs.vs == 'vs17' && 'vs16' || steps.setup-php.outputs.vs}}-${{matrix.arch}}.zip
           curl -OLs https://downloads.php.net/~windows/pecl/deps/%MEMCACHED_FILENAME% && 7z x %MEMCACHED_FILENAME% -o..\deps
       - name: Enable Developer Command Prompt
         uses: ilammy/msvc-dev-cmd@v1
