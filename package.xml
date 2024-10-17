@@ -41,26 +41,16 @@ http://pear.php.net/dtd/package-2.0.xsd">
  </lead>
  <date>2024-10-17</date>
  <version>
-  <release>3.3.0</release>
+  <release>3.3.1dev</release>
   <api>3.3.0</api>
  </version>
  <stability>
-  <release>stable</release>
+  <release>beta</release>
   <api>stable</api>
  </stability>
  <license uri="http://www.php.net/license">PHP</license>
  <notes>
-- Add #515 option to locally enforce payload size limit
-- Add #539 zstd support
-- Add #540 compression_level option
-- Mark password as a sensitive param for PHP 8.2
-- Upgrade Windows libmemcached to v1.1.4
-- Fix Windows PHP 8 compatibility
-- Fix #518 Windows msgpack support
-- Fix #522 signed integer overflow
-- Fix #523 incorrect PHP reflection type for Memcached::cas $cas_token
-- Fix #546 don't check key automatically, unless client-side verify_key is enabled
-- Fix #555 incompatible pointer types (32-bit)
+-
  </notes>
  <contents>
   <dir name="/">
@@ -231,6 +221,31 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <configureoption name="enable-memcached-session"  prompt="enable sessions"            default="yes"/>
  </extsrcrelease>
  <changelog>
+  <release>
+   <date>2024-10-17</date>
+   <version>
+    <release>3.3.0</release>
+    <api>3.3.0</api>
+   </version>
+   <stability>
+    <release>stable</release>
+    <api>stable</api>
+   </stability>
+   <license uri="http://www.php.net/license">PHP</license>
+   <notes>
+- Add #515 option to locally enforce payload size limit
+- Add #539 zstd support
+- Add #540 compression_level option
+- Mark password as a sensitive param for PHP 8.2
+- Upgrade Windows libmemcached to v1.1.4
+- Fix Windows PHP 8 compatibility
+- Fix #518 Windows msgpack support
+- Fix #522 signed integer overflow
+- Fix #523 incorrect PHP reflection type for Memcached::cas $cas_token
+- Fix #546 don't check key automatically, unless client-side verify_key is enabled
+- Fix #555 incompatible pointer types (32-bit)
+     </notes>
+    </release>
     <release>
      <date>2022-03-24</date>
      <version>
