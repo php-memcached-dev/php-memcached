@@ -3739,8 +3739,8 @@ zend_string *s_decompress_value (const char *payload, size_t payload_len, uint32
 #endif
 
 	if (!is_fastlz && !is_zlib && !is_zstd) {
-		php_error_docref(NULL, E_WARNING, "could not decompress value: unrecognised compression type");
-		return NULL;
+		// Fall back to ZLIB.
+		is_zlib = 1;
 	}
 
 	memcpy(&stored_length, payload, sizeof (uint32_t));
