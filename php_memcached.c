@@ -3961,7 +3961,7 @@ zend_class_entry *php_memc_get_exception_base(int root)
 		}
 	}
 
-	return zend_exception_get_default();
+	return zend_ce_exception;
 }
 
 
