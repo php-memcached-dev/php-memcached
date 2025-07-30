@@ -43,7 +43,11 @@
 #include <ext/standard/info.h>
 #include <zend_extensions.h>
 #include <zend_exceptions.h>
+#if PHP_VERSION_ID < 70200
 #include <ext/standard/php_smart_string.h>
+#else
+#include <Zend/zend_smart_string.h>
+#endif
 #include <ext/standard/php_var.h>
 #include <ext/standard/basic_functions.h>
 
