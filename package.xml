@@ -39,13 +39,13 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <email>mike@php.net</email>
   <active>yes</active>
  </lead>
- <date>2024-10-17</date>
+ <date>2025-10-12</date>
  <version>
-  <release>3.3.1dev</release>
-  <api>3.3.0</api>
+  <release>3.4.0</release>
+  <api>3.4.0</api>
  </version>
  <stability>
-  <release>beta</release>
+  <release>stable</release>
   <api>stable</api>
  </stability>
  <license uri="http://www.php.net/license">PHP</license>
@@ -221,6 +221,22 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <configureoption name="enable-memcached-session"  prompt="enable sessions"            default="yes"/>
  </extsrcrelease>
  <changelog>
+  <release>
+   <date>2025-10-12</date>
+   <version>
+    <release>3.4.0</release>
+    <api>3.4.0</api>
+   </version>
+   <stability>
+    <release>stable</release>
+    <api>stable</api>
+   </stability>
+   <license uri="http://www.php.net/license">PHP</license>
+   <notes>
+- Use Zend/zend_smart_string.h for PHP 8.5 compatibility (#574)
+- Use zen_ce_exception for PHP 8.5 compatibility (#573)
+   </notes>
+  </release>
   <release>
    <date>2024-10-17</date>
    <version>
