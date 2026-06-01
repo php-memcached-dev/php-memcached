@@ -324,15 +324,21 @@ PS_OPEN_FUNC(memcached)
 
 	memcached_server_list_st servers;
 
+#if PHP_VERSION_ID >= 80600
+    const char *save_path_str = ZSTR_VAL(save_path);
+#else
+    const char *save_path_str = save_path;
+#endif
+
 	// Fail on incompatible PERSISTENT identifier (removed in php-memcached 3.0)
-	if (strstr(save_path, "PERSISTENT=")) {
+	if (strstr(save_path_str, "PERSISTENT=")) {
 		php_error_docref(NULL, E_WARNING, "failed to parse session.save_path: PERSISTENT is replaced by memcached.sess_persistent = On");
 		PS_SET_MOD_DATA(NULL);
 		return FAILURE;
 	}
 
 	// First parse servers
-	servers = memcached_servers_parse(save_path);
+	servers = memcached_servers_parse(save_path_str);
 
 	if (!servers) {
 		php_error_docref(NULL, E_WARNING, "failed to parse session.save_path");
@@ -343,7 +349,7 @@ PS_OPEN_FUNC(memcached)
 	if (MEMC_SESS_INI(persistent_enabled)) {
 		zend_resource *le_p;
 
-		plist_key_len = spprintf(&plist_key, 0, "memc-session:%s", save_path);
+		plist_key_len = spprintf(&plist_key, 0, "memc-session:%s", save_path_str);
 
 		if ((le_p = zend_hash_str_find_ptr(&EG(persistent_list), plist_key, plist_key_len)) != NULL) {
 			if (le_p->type == s_memc_sess_list_entry()) {

@@ -195,7 +195,7 @@ typedef struct {
 } php_memc_result_callback_ctx_t;
 
 static inline php_memc_object_t *php_memc_fetch_object(zend_object *obj) {
-	return (php_memc_object_t *)((char *)obj - XtOffsetOf(php_memc_object_t, zo));
+	return (php_memc_object_t *)((char *)obj - offsetof(php_memc_object_t, zo));
 }
 #define Z_MEMC_OBJ_P(zv) php_memc_fetch_object(Z_OBJ_P(zv));
 
@@ -280,7 +280,7 @@ typedef struct {
 } php_memc_server_t;
 
 static inline php_memc_server_t *php_memc_server_fetch_object(zend_object *obj) {
-	return (php_memc_server_t *)((char *)obj - XtOffsetOf(php_memc_server_t, zo));
+	return (php_memc_server_t *)((char *)obj - offsetof(php_memc_server_t, zo));
 }
 #define Z_MEMC_SERVER_P(zv) php_memc_server_fetch_object(Z_OBJ_P(zv))
 
@@ -1689,7 +1689,7 @@ static void php_memc_getMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 	}
 
 	if (!retval || EG(exception)) {
-		zval_dtor(return_value);
+		zval_ptr_dtor_nogc(return_value);
 		RETURN_FROM_GET;
 	}
 }
@@ -1892,7 +1892,7 @@ PHP_METHOD(Memcached, fetchAll)
 	status = php_memc_result_apply(intern, s_fetch_all_apply, 0, return_value);
 
 	if (s_memc_status_handle_result_code(intern, status) == FAILURE) {
-		zval_dtor(return_value);
+		zval_ptr_dtor_nogc(return_value);
 		RETURN_FALSE;
 	}
 }
@@ -2935,7 +2935,7 @@ PHP_METHOD(Memcached, getVersion)
 	array_init(return_value);
 	status = memcached_server_cursor(intern->memc, callbacks, return_value, 1);
 	if (s_memc_status_handle_result_code(intern, status) == FAILURE) {
-		zval_dtor(return_value);
+		zval_ptr_dtor_nogc(return_value);
 		RETURN_FALSE;
 	}
 }
@@ -2977,7 +2977,7 @@ PHP_METHOD(Memcached, getAllKeys)
 	 */
 	if (rc != MEMCACHED_CLIENT_ERROR && rc != MEMCACHED_SERVER_ERROR
 	    && s_memc_status_handle_result_code(intern, rc) == FAILURE) {
-		zval_dtor(return_value);
+		zval_ptr_dtor_nogc(return_value);
 		RETURN_FALSE;
 	}
 }
@@ -4404,7 +4404,7 @@ PHP_MINIT_FUNCTION(memcached)
 	zend_class_entry ce;
 
 	memcpy(&memcached_object_handlers, zend_get_std_object_handlers(), sizeof(zend_object_handlers));
-	memcached_object_handlers.offset    = XtOffsetOf(php_memc_object_t, zo);
+	memcached_object_handlers.offset    = offsetof(php_memc_object_t, zo);
 	memcached_object_handlers.clone_obj = NULL;
 	memcached_object_handlers.free_obj  = php_memc_object_free_storage;
 
@@ -4415,7 +4415,7 @@ PHP_MINIT_FUNCTION(memcached)
 
 #ifdef HAVE_MEMCACHED_PROTOCOL
 	memcpy(&memcached_server_object_handlers, zend_get_std_object_handlers(), sizeof(zend_object_handlers));
-	memcached_server_object_handlers.offset = XtOffsetOf(php_memc_server_t, zo);
+	memcached_server_object_handlers.offset = offsetof(php_memc_server_t, zo);
 	memcached_server_object_handlers.clone_obj = NULL;
 	memcached_server_object_handlers.free_obj = php_memc_server_free_storage;
 
