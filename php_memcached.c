@@ -1689,7 +1689,7 @@ static void php_memc_getMulti_impl(INTERNAL_FUNCTION_PARAMETERS, zend_bool by_ke
 	}
 
 	if (!retval || EG(exception)) {
-		zval_dtor(return_value);
+		zval_ptr_dtor_nogc(return_value);
 		RETURN_FROM_GET;
 	}
 }
@@ -1892,7 +1892,7 @@ PHP_METHOD(Memcached, fetchAll)
 	status = php_memc_result_apply(intern, s_fetch_all_apply, 0, return_value);
 
 	if (s_memc_status_handle_result_code(intern, status) == FAILURE) {
-		zval_dtor(return_value);
+		zval_ptr_dtor_nogc(return_value);
 		RETURN_FALSE;
 	}
 }
@@ -2935,7 +2935,7 @@ PHP_METHOD(Memcached, getVersion)
 	array_init(return_value);
 	status = memcached_server_cursor(intern->memc, callbacks, return_value, 1);
 	if (s_memc_status_handle_result_code(intern, status) == FAILURE) {
-		zval_dtor(return_value);
+		zval_ptr_dtor_nogc(return_value);
 		RETURN_FALSE;
 	}
 }
@@ -2977,7 +2977,7 @@ PHP_METHOD(Memcached, getAllKeys)
 	 */
 	if (rc != MEMCACHED_CLIENT_ERROR && rc != MEMCACHED_SERVER_ERROR
 	    && s_memc_status_handle_result_code(intern, rc) == FAILURE) {
-		zval_dtor(return_value);
+		zval_ptr_dtor_nogc(return_value);
 		RETURN_FALSE;
 	}
 }
