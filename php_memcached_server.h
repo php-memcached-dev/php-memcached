@@ -29,7 +29,7 @@ typedef struct _php_memc_proto_handler_t php_memc_proto_handler_t;
 /*
 	Functions
 */
-php_memc_proto_handler_t *php_memc_proto_handler_new ();
+php_memc_proto_handler_t *php_memc_proto_handler_new (void);
 
 void php_memc_proto_handler_destroy (php_memc_proto_handler_t **ptr);
 

@@ -96,7 +96,7 @@ time_t s_adjust_expiration(zend_long expiration)
 }
 
 static
-time_t s_lock_expiration()
+time_t s_lock_expiration(void)
 {
 	if (MEMC_SESS_INI(lock_expiration) > 0) {
 		return s_adjust_expiration(MEMC_SESS_INI(lock_expiration));

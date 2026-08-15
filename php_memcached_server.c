@@ -714,7 +714,7 @@ void s_accept_cb (evutil_socket_t fd, short what, void *arg)
 	}
 }
 
-php_memc_proto_handler_t *php_memc_proto_handler_new ()
+php_memc_proto_handler_t *php_memc_proto_handler_new (void)
 {
 	php_memc_proto_handler_t *handler = ecalloc (1, sizeof (php_memc_proto_handler_t));
 

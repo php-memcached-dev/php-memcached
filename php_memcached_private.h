@@ -245,7 +245,7 @@ char *php_memc_printable_func (zend_fcall_info *fci, zend_fcall_info_cache *fci_
 
 memcached_return php_memcached_exist (memcached_st *memc, zend_string *key);
 
-zend_bool php_memc_init_sasl_if_needed();
+zend_bool php_memc_init_sasl_if_needed(void);
 
 #endif /* PHP_MEMCACHED_PRIVATE_H */
 

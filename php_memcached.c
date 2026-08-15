@@ -516,7 +516,7 @@ static
   Exported helper functions
 ****************************************/
 
-zend_bool php_memc_init_sasl_if_needed()
+zend_bool php_memc_init_sasl_if_needed(void)
 {
 #ifdef HAVE_MEMCACHED_SASL
 	if (MEMC_G(sasl_initialised)) {
