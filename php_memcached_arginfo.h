@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 75604abd7f58655a9ebda6f0ea579840311c1f08 */
+ * Stub hash: eb71af72c27ed853607afce6fd7519919f014217 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Memcached___construct, 0, 0, 0)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, persistent_id, IS_STRING, 1, "null")
@@ -420,6 +420,9 @@ static zend_class_entry *register_class_Memcached(void)
 
 	INIT_CLASS_ENTRY(ce, "Memcached", class_Memcached_methods);
 	class_entry = zend_register_internal_class_ex(&ce, NULL);
+#if (PHP_VERSION_ID >= 80100)
+	class_entry->ce_flags |= ZEND_ACC_NOT_SERIALIZABLE;
+#endif
 #if (PHP_VERSION_ID >= 80200)
 
 #if defined(HAVE_MEMCACHED_SASL)
@@ -438,6 +441,9 @@ static zend_class_entry *register_class_MemcachedServer(void)
 
 	INIT_CLASS_ENTRY(ce, "MemcachedServer", class_MemcachedServer_methods);
 	class_entry = zend_register_internal_class_ex(&ce, NULL);
+#if (PHP_VERSION_ID >= 80100)
+	class_entry->ce_flags |= ZEND_ACC_NOT_SERIALIZABLE;
+#endif
 
 	return class_entry;
 }

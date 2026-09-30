@@ -6,6 +6,7 @@
  * @generate-class-entries
  */
 
+/** @not-serializable */
 class Memcached {
 
 	public function __construct(?string $persistent_id=null, ?callable $callback=null, ?string $connection_str=null) {}
@@ -87,6 +88,7 @@ class Memcached {
 }
 
 #if defined(HAVE_MEMCACHED_PROTOCOL)
+/** @not-serializable */
 class MemcachedServer {
 
 	public function run(string $address): bool {}

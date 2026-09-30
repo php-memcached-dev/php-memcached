@@ -23,6 +23,7 @@
 #include "php_memcached_private.h"
 #include "php_memcached_server.h"
 #include "g_fmt.h"
+#include "zend_interfaces.h"
 
 #include <ctype.h>
 #include <limits.h>
@@ -4412,6 +4413,10 @@ PHP_MINIT_FUNCTION(memcached)
 
 	memcached_ce = register_class_Memcached();
 	memcached_ce->create_object = php_memc_object_new;
+#if PHP_VERSION_ID < 80100
+	memcached_ce->serialize = zend_class_serialize_deny;
+	memcached_ce->unserialize = zend_class_unserialize_deny;
+#endif
 
 #ifdef HAVE_MEMCACHED_PROTOCOL
 	memcpy(&memcached_server_object_handlers, zend_get_std_object_handlers(), sizeof(zend_object_handlers));
@@ -4421,6 +4426,10 @@ PHP_MINIT_FUNCTION(memcached)
 
 	memcached_server_ce = register_class_MemcachedServer();
 	memcached_server_ce->create_object = php_memc_server_new;
+#if PHP_VERSION_ID < 80100
+	memcached_server_ce->serialize = zend_class_serialize_deny;
+	memcached_server_ce->unserialize = zend_class_unserialize_deny;
+#endif
 #endif
 
 	INIT_CLASS_ENTRY(ce, "MemcachedException", NULL);
