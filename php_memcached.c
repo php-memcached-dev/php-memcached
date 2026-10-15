@@ -59,6 +59,16 @@
 # include "ext/msgpack/php_msgpack.h"
 #endif
 
+#ifdef HAVE_MEMCACHED_PHPSER
+# include "ext/standard/php_versioning.h"
+#ifdef PHP_WIN32
+# include "php_phpser_api.h"
+#else
+# include "ext/phpser/php_phpser_api.h"
+#endif
+# define MEMC_PHPSER_CONTEXT "memcached"
+#endif
+
 # include "ext/spl/spl_exceptions.h"
 
 static int le_memc;
@@ -109,6 +119,7 @@ static int php_memc_list_entry(void) {
 #define MEMC_VAL_IS_IGBINARY   5
 #define MEMC_VAL_IS_JSON       6
 #define MEMC_VAL_IS_MSGPACK    7
+#define MEMC_VAL_IS_PHPSER     8
 
 #define MEMC_VAL_COMPRESSED          (1<<0)
 #define MEMC_VAL_COMPRESSION_ZLIB    (1<<1)
@@ -336,6 +347,10 @@ static PHP_INI_MH(OnUpdateSerializer)
 	} else if (!strcmp(ZSTR_VAL(new_value), "msgpack")) {
 		MEMC_G(serializer_type) = SERIALIZER_MSGPACK;
 #endif // msgpack
+#ifdef HAVE_MEMCACHED_PHPSER
+	} else if (!strcmp(ZSTR_VAL(new_value), "phpser")) {
+		MEMC_G(serializer_type) = SERIALIZER_PHPSER;
+#endif // phpser
 	} else {
 		return FAILURE;
 	}
@@ -902,6 +917,31 @@ zend_bool s_invoke_cache_callback(zval *zobject, zend_fcall_info *fci, zend_fcal
   Wrapper for setting from zval
 ****************************************/
 
+#ifdef HAVE_MEMCACHED_PHPSER
+/* phpser has no API that reports whether signing is active, so apply its own
+ * rule: a non-empty phpser.key means values must verify. A key shorter than
+ * phpser accepts also counts, because phpser then rejects every value. */
+static
+zend_bool s_phpser_key_set(void)
+{
+	zend_ini_entry *entry = zend_hash_str_find_ptr(EG(ini_directives), "phpser.key", sizeof("phpser.key") - 1);
+
+	return entry && entry->value && ZSTR_LEN(entry->value) > 0;
+}
+#endif
+
+/* With signed phpser, only verified phpser items and native integers and
+ * floats are read back; every other value type is written through phpser. */
+static
+zend_bool s_phpser_keyed(php_memc_serializer_type serializer)
+{
+#ifdef HAVE_MEMCACHED_PHPSER
+	return serializer == SERIALIZER_PHPSER && s_phpser_key_set();
+#else
+	return 0;
+#endif
+}
+
 static
 zend_bool s_compress_value (php_memc_compression_type compression_type, zend_long compression_level, zend_string **payload_in, uint32_t *flags)
 {
@@ -1027,6 +1067,25 @@ zend_bool s_serialize_value (php_memc_serializer_type serializer, zval *value, s
 #endif
 
 		/*
+			phpser serialization
+		*/
+#ifdef HAVE_MEMCACHED_PHPSER
+		case SERIALIZER_PHPSER:
+		{
+			zend_string *encoded;
+
+			/* phpser raises a warning or an exception on failure */
+			if (phpser_api_serialize(value, MEMC_PHPSER_CONTEXT, sizeof(MEMC_PHPSER_CONTEXT) - 1, &encoded) != PHPSER_API_OK) {
+				return 0;
+			}
+			smart_str_append(buf, encoded);
+			zend_string_release(encoded);
+			MEMC_VAL_SET_TYPE(*flags, MEMC_VAL_IS_PHPSER);
+		}
+			break;
+#endif
+
+		/*
 			JSON serialization
 		*/
 #ifdef HAVE_JSON_API
@@ -1080,15 +1139,32 @@ zend_bool s_serialize_value (php_memc_serializer_type serializer, zval *value, s
 }
 
 static
+zend_string *s_serialize_payload(php_memc_serializer_type serializer, zval *value, uint32_t *flags)
+{
+	smart_str buffer = {0};
+
+	if (!s_serialize_value (serializer, value, &buffer, flags)) {
+		smart_str_free(&buffer);
+		return NULL;
+	}
+	return buffer.s;
+}
+
+static
 zend_string *s_zval_to_payload(php_memc_object_t *intern, zval *value, uint32_t *flags)
 {
 	zend_string *payload;
 	php_memc_user_data_t *memc_user_data = memcached_get_user_data(intern->memc);
 	zend_bool should_compress = memc_user_data->compression_enabled;
+	zend_bool phpser_keyed = s_phpser_keyed(memc_user_data->serializer);
 
 	switch (Z_TYPE_P(value)) {
 
 		case IS_STRING:
+			if (phpser_keyed) {
+				payload = s_serialize_payload(memc_user_data->serializer, value, flags);
+				break;
+			}
 			payload = zval_get_string(value);
 			MEMC_VAL_SET_TYPE(*flags, MEMC_VAL_IS_STRING);
 			break;
@@ -1116,28 +1192,32 @@ zend_string *s_zval_to_payload(php_memc_object_t *intern, zval *value, uint32_t 
 			break;
 
 		case IS_TRUE:
+			if (phpser_keyed) {
+				payload = s_serialize_payload(memc_user_data->serializer, value, flags);
+				break;
+			}
 			payload = zend_string_init ("1", 1, 0);
 			MEMC_VAL_SET_TYPE(*flags, MEMC_VAL_IS_BOOL);
 			should_compress = 0;
 			break;
 
 		case IS_FALSE:
+			if (phpser_keyed) {
+				payload = s_serialize_payload(memc_user_data->serializer, value, flags);
+				break;
+			}
 			payload = zend_string_alloc (0, 0);
 			MEMC_VAL_SET_TYPE(*flags, MEMC_VAL_IS_BOOL);
 			should_compress = 0;
 			break;
 
 		default:
-		{
-			smart_str buffer = {0};
-
-			if (!s_serialize_value (memc_user_data->serializer, value, &buffer, flags)) {
-				smart_str_free(&buffer);
-				return NULL;
-			}
-			payload = buffer.s;
-		}
+			payload = s_serialize_payload(memc_user_data->serializer, value, flags);
 			break;
+	}
+
+	if (!payload) {
+		return NULL;
 	}
 
 	/* turn off compression for values below the threshold */
@@ -2146,6 +2226,14 @@ static void php_memc_store_impl(INTERNAL_FUNCTION_PARAMETERS, int op, zend_bool 
 		 */
 		if (op == MEMC_OP_APPEND || op == MEMC_OP_PREPEND) {
 			php_error_docref(NULL, E_WARNING, "cannot append/prepend with compression turned on");
+			RETURN_NULL();
+		}
+	}
+
+	if (s_phpser_keyed(memc_user_data->serializer)) {
+		/* Appending to a signed value breaks its tag, so it would read back as false */
+		if (op == MEMC_OP_APPEND || op == MEMC_OP_PREPEND) {
+			php_error_docref(NULL, E_WARNING, "cannot append/prepend with the phpser serializer when phpser.key is set");
 			RETURN_NULL();
 		}
 	}
@@ -3188,6 +3276,12 @@ int php_memc_set_option(php_memc_object_t *intern, long option, zval *value)
 				memc_user_data->serializer = SERIALIZER_MSGPACK;
 			} else
 #endif
+			/* phpser serializer */
+#ifdef HAVE_MEMCACHED_PHPSER
+			if (lval == SERIALIZER_PHPSER) {
+				memc_user_data->serializer = SERIALIZER_PHPSER;
+			} else
+#endif
 			/* php serializer */
 			if (lval == SERIALIZER_PHP) {
 				memc_user_data->serializer = SERIALIZER_PHP;
@@ -3827,6 +3921,27 @@ zend_bool s_unserialize_value (memcached_st *memc, int val_type, zend_string *pa
 #endif
 			break;
 
+		case MEMC_VAL_IS_PHPSER:
+#ifdef HAVE_MEMCACHED_PHPSER
+		{
+			int rc = phpser_api_unserialize(ZSTR_VAL(payload), ZSTR_LEN(payload), MEMC_PHPSER_CONTEXT, sizeof(MEMC_PHPSER_CONTEXT) - 1, return_value);
+
+			if (rc != PHPSER_API_OK) {
+				ZVAL_FALSE(return_value);
+				/* With phpser.key set, phpser itself reports every failure a forged value can cause */
+				if (rc == PHPSER_API_ERR && !EG(exception) && !s_phpser_key_set()) {
+					php_error_docref(NULL, E_WARNING, "could not unserialize value with phpser");
+				}
+				return 0;
+			}
+		}
+#else
+			ZVAL_FALSE(return_value);
+			php_error_docref(NULL, E_WARNING, "could not unserialize value, no phpser support");
+			return 0;
+#endif
+			break;
+
 		case MEMC_VAL_IS_JSON:
 #ifdef HAVE_JSON_API
 		{
@@ -3861,6 +3976,7 @@ zend_bool s_memcached_result_to_zval(memcached_st *memc, memcached_result_st *re
 	size_t payload_len;
 	uint32_t flags;
 	zend_bool retval = 1;
+	php_memc_user_data_t *memc_user_data = memcached_get_user_data(memc);
 
 	payload     = memcached_result_value(result);
 	payload_len = memcached_result_length(result);
@@ -3869,6 +3985,22 @@ zend_bool s_memcached_result_to_zval(memcached_st *memc, memcached_result_st *re
 	if (!payload && payload_len > 0) {
 		php_error_docref(NULL, E_WARNING, "Could not handle non-existing value of length %zu", payload_len);
 		return 0;
+	}
+
+	/* The type comes from the stored flags, which whoever wrote the item chose,
+	 * so the configured serializer alone does not keep other decoders out. */
+	if (s_phpser_keyed(memc_user_data->serializer)) {
+		switch (MEMC_VAL_GET_TYPE(flags)) {
+			case MEMC_VAL_IS_PHPSER:
+			case MEMC_VAL_IS_LONG:
+			case MEMC_VAL_IS_DOUBLE:
+				break;
+
+			default:
+				php_error_docref(NULL, E_WARNING, "could not unserialize value: phpser.key is set and the value is not signed phpser");
+				ZVAL_FALSE(return_value);
+				return 0;
+		}
 	}
 
 	if (MEMC_VAL_HAS_FLAG(flags, MEMC_VAL_COMPRESSED)) {
@@ -3915,6 +4047,7 @@ zend_bool s_memcached_result_to_zval(memcached_st *memc, memcached_result_st *re
 		case MEMC_VAL_IS_IGBINARY:
 		case MEMC_VAL_IS_JSON:
 		case MEMC_VAL_IS_MSGPACK:
+		case MEMC_VAL_IS_PHPSER:
 			retval = s_unserialize_value (memc, MEMC_VAL_GET_TYPE(flags), data, return_value);
 			break;
 
@@ -4057,6 +4190,9 @@ static const zend_module_dep memcached_deps[] = {
 #ifdef HAVE_MEMCACHED_MSGPACK
 	ZEND_MOD_REQUIRED("msgpack")
 #endif
+#ifdef HAVE_MEMCACHED_PHPSER
+	ZEND_MOD_REQUIRED("phpser")
+#endif
 	ZEND_MOD_REQUIRED("spl")
 	ZEND_MOD_END
 };
@@ -4185,6 +4321,15 @@ static void php_memc_register_constants(INIT_FUNC_ARGS)
 	REGISTER_MEMC_CLASS_CONST_BOOL(HAVE_MSGPACK, 1);
 #else
 	REGISTER_MEMC_CLASS_CONST_BOOL(HAVE_MSGPACK, 0);
+#endif
+
+	/*
+	 * Indicate whether phpser serializer is available
+	 */
+#ifdef HAVE_MEMCACHED_PHPSER
+	REGISTER_MEMC_CLASS_CONST_BOOL(HAVE_PHPSER, 1);
+#else
+	REGISTER_MEMC_CLASS_CONST_BOOL(HAVE_PHPSER, 0);
 #endif
 
 	/*
@@ -4334,6 +4479,7 @@ static void php_memc_register_constants(INIT_FUNC_ARGS)
 	REGISTER_MEMC_CLASS_CONST_LONG(SERIALIZER_JSON,       SERIALIZER_JSON);
 	REGISTER_MEMC_CLASS_CONST_LONG(SERIALIZER_JSON_ARRAY, SERIALIZER_JSON_ARRAY);
 	REGISTER_MEMC_CLASS_CONST_LONG(SERIALIZER_MSGPACK,    SERIALIZER_MSGPACK);
+	REGISTER_MEMC_CLASS_CONST_LONG(SERIALIZER_PHPSER,     SERIALIZER_PHPSER);
 
 	/*
 	 * Compression types
@@ -4398,10 +4544,42 @@ static void php_memc_register_constants(INIT_FUNC_ARGS)
 }
 /* }}} */
 
+#ifdef HAVE_MEMCACHED_PHPSER
+/* phpser_api_version() does not exist before phpser 0.9.0, so check the
+ * module version before calling into the API. */
+static
+int php_memc_check_phpser(void)
+{
+	const char *version = zend_get_module_version("phpser");
+
+	if (version == NULL || php_version_compare(version, "0.9.0") < 0) {
+		php_error_docref(NULL, E_CORE_WARNING,
+			"Memcached::SERIALIZER_PHPSER requires phpser 0.9.0 or later, found %s",
+			version ? version : "none");
+		return FAILURE;
+	}
+
+	if (phpser_api_version() != PHPSER_API_VERSION) {
+		php_error_docref(NULL, E_CORE_WARNING,
+			"Memcached::SERIALIZER_PHPSER requires phpser API version %d, found %u",
+			PHPSER_API_VERSION, phpser_api_version());
+		return FAILURE;
+	}
+
+	return SUCCESS;
+}
+#endif
+
 /* {{{ PHP_MINIT_FUNCTION */
 PHP_MINIT_FUNCTION(memcached)
 {
 	zend_class_entry ce;
+
+#ifdef HAVE_MEMCACHED_PHPSER
+	if (php_memc_check_phpser() == FAILURE) {
+		return FAILURE;
+	}
+#endif
 
 	memcpy(&memcached_object_handlers, zend_get_std_object_handlers(), sizeof(zend_object_handlers));
 	memcached_object_handlers.offset    = offsetof(php_memc_object_t, zo);
@@ -4504,6 +4682,12 @@ PHP_MINFO_FUNCTION(memcached)
 	php_info_print_table_row(2, "msgpack support", "yes");
 #else
 	php_info_print_table_row(2, "msgpack support", "no");
+#endif
+
+#ifdef HAVE_MEMCACHED_PHPSER
+	php_info_print_table_row(2, "phpser support", "yes");
+#else
+	php_info_print_table_row(2, "phpser support", "no");
 #endif
 
 #ifdef HAVE_ZSTD_H

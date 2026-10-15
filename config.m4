@@ -12,6 +12,9 @@ PHP_ARG_ENABLE(memcached-session, whether to enable memcached session handler su
 PHP_ARG_ENABLE(memcached-igbinary, whether to enable memcached igbinary serializer support,
 [  --enable-memcached-igbinary     Enable memcached igbinary serializer support], no, no)
 
+PHP_ARG_ENABLE(memcached-phpser, whether to enable memcached phpser serializer support,
+[  --enable-memcached-phpser       Enable memcached phpser serializer support], no, no)
+
 PHP_ARG_ENABLE(memcached-json, whether to enable memcached json serializer support,
 [  --enable-memcached-json         Enable memcached json serializer support], no, no)
 
@@ -160,6 +163,31 @@ if test "$PHP_MEMCACHED" != "no"; then
     fi
   fi
 
+  if test "$PHP_MEMCACHED_PHPSER" != "no"; then
+    AC_MSG_CHECKING([for phpser includes])
+    phpser_inc_path=""
+
+    if test -f "$abs_srcdir/include/php/ext/phpser/php_phpser_api.h"; then
+      phpser_inc_path="$abs_srcdir/include/php"
+    elif test -f "$abs_srcdir/ext/phpser/php_phpser_api.h"; then
+      phpser_inc_path="$abs_srcdir"
+    elif test -f "$phpincludedir/ext/phpser/php_phpser_api.h"; then
+      phpser_inc_path="$phpincludedir"
+    else
+      for i in php php4 php5 php6; do
+        if test -f "$prefix/include/$i/ext/phpser/php_phpser_api.h"; then
+          phpser_inc_path="$prefix/include/$i"
+        fi
+      done
+    fi
+
+    if test "$phpser_inc_path" = ""; then
+      AC_MSG_ERROR([Cannot find php_phpser_api.h])
+    else
+      AC_MSG_RESULT([$phpser_inc_path])
+    fi
+  fi
+
   if test "$PHP_MEMCACHED_MSGPACK" != "no"; then
     AC_MSG_CHECKING([for msgpack includes])
     msgpack_inc_path=""
@@ -212,6 +240,20 @@ if test "$PHP_MEMCACHED" != "no"; then
     ])
   else
     IGBINARY_INCLUDES=""
+    AC_MSG_RESULT([disabled])
+  fi
+
+  AC_MSG_CHECKING([for memcached phpser support])
+  if test "$PHP_MEMCACHED_PHPSER" != "no"; then
+    AC_MSG_RESULT([enabled])
+    AC_DEFINE(HAVE_MEMCACHED_PHPSER,1,[Whether memcache phpser serializer is enabled])
+    PHPSER_INCLUDES="-I$phpser_inc_path"
+    ifdef([PHP_ADD_EXTENSION_DEP],
+    [
+      PHP_ADD_EXTENSION_DEP(memcached, phpser)
+    ])
+  else
+    PHPSER_INCLUDES=""
     AC_MSG_RESULT([disabled])
   fi
 
@@ -405,7 +447,7 @@ if test "$PHP_MEMCACHED" != "no"; then
     export PKG_CONFIG_PATH="$ORIG_PKG_CONFIG_PATH"
     PHP_SUBST(MEMCACHED_SHARED_LIBADD)
 
-    PHP_NEW_EXTENSION(memcached, $PHP_MEMCACHED_FILES, $ext_shared,,$SESSION_INCLUDES $IGBINARY_INCLUDES $LIBEVENT_INCLUDES $MSGPACK_INCLUDES)
+    PHP_NEW_EXTENSION(memcached, $PHP_MEMCACHED_FILES, $ext_shared,,$SESSION_INCLUDES $IGBINARY_INCLUDES $PHPSER_INCLUDES $LIBEVENT_INCLUDES $MSGPACK_INCLUDES)
     if test "ac_cv_have_fastlz" != "yes"; then
       PHP_ADD_BUILD_DIR($ext_builddir/fastlz, 1)
     fi

@@ -4,6 +4,7 @@ ARG_ENABLE('memcached', 'libmemcached extension', 'no');
 
 ARG_ENABLE('memcached-session', 'whether to enable memcached session handler support', 'no');
 ARG_ENABLE('memcached-igbinary', 'whether to enable memcached igbinary serializer support', 'no');
+ARG_ENABLE('memcached-phpser', 'whether to enable memcached phpser serializer support', 'no');
 ARG_ENABLE('memcached-json', 'whether to enable memcached json serializer support', 'no');
 ARG_ENABLE('memcached-msgpack', 'whether to enable memcached msgpack serializer support', 'no');
 
@@ -35,6 +36,17 @@ if (PHP_MEMCACHED == "yes") {
 	if (!CHECK_HEADER_ADD_INCLUDE("igbinary.h", "CFLAGS_MEMCACHED")) {
 		ERROR("memcached: header 'igbinary.h' not found");
 	  }
+  }
+  if (PHP_MEMCACHED_PHPSER != "no"){
+	AC_DEFINE("HAVE_MEMCACHED_PHPSER",1);
+	ADD_EXTENSION_DEP("memcached", "phpser", true);
+	if (!CHECK_HEADER_ADD_INCLUDE("php_phpser_api.h", "CFLAGS_MEMCACHED", configure_module_dirname + "\\..\\phpser")) {
+		ERROR("memcached: header 'php_phpser_api.h' not found");
+	  }
+	// php_phpser_api.h selects dllimport only when COMPILE_DL_PHPSER is defined.
+	if (typeof(PHP_PHPSER_SHARED) != "undefined" && PHP_PHPSER_SHARED) {
+		ADD_FLAG("CFLAGS_MEMCACHED", "/D COMPILE_DL_PHPSER");
+	}
   }
   if (PHP_MEMCACHED_MSGPACK != "no"){
 	AC_DEFINE("HAVE_MEMCACHED_MSGPACK",1);

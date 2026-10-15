@@ -96,6 +96,8 @@ class Memcached {
 
 	const HAVE_MSGPACK;
 
+	const HAVE_PHPSER;
+
 	const HAVE_ENCODING;
 
 	/**
@@ -126,6 +128,8 @@ class Memcached {
 	const SERIALIZER_JSON_ARRAY;
 
 	const SERIALIZER_MSGPACK;
+
+	const SERIALIZER_PHPSER;
 
 	/**
 	 * Compression types

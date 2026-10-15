@@ -8,7 +8,8 @@
     },
     "suggest": {
         "ext-igbinary": "igbinary is a faster and more compact binary serializer for PHP data structures.",
-        "ext-msgpack": "msgpack is a faster and more compact data structure representation that is interoperable with msgpack implementations for other languages."
+        "ext-msgpack": "msgpack is a faster and more compact data structure representation that is interoperable with msgpack implementations for other languages.",
+        "ext-phpser": "phpser is a binary serializer for PHP data structures that can sign values with phpser.key."
     },
     "php-ext": {
         "extension-name": "memcached",
@@ -29,6 +30,10 @@
             {
                 "name": "enable-memcached-igbinary",
                 "description": "Enable memcached igbinary serializer support"
+            },
+            {
+                "name": "enable-memcached-phpser",
+                "description": "Enable memcached phpser serializer support"
             },
             {
                 "name": "enable-memcached-json",

@@ -97,7 +97,8 @@ typedef enum {
 	SERIALIZER_IGBINARY   = 2,
 	SERIALIZER_JSON       = 3,
 	SERIALIZER_JSON_ARRAY = 4,
-	SERIALIZER_MSGPACK    = 5
+	SERIALIZER_MSGPACK    = 5,
+	SERIALIZER_PHPSER     = 6
 } php_memc_serializer_type;
 
 typedef enum {
