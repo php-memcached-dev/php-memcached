@@ -3713,12 +3713,26 @@ memcached_return s_server_cursor_version_cb(const memcached_st *ptr, php_memcach
 }
 
 
+/* Most uncompressed bytes a single compressed byte can produce, so a stored
+ * length that no input of this size could reach is rejected before it is
+ * allocated:
+ * - zlib: a 258-byte match costs at least two bits, a limit of 1032:1
+ *   (https://zlib.net/zlib_tech.html).
+ * - FastLZ: a level 2 match grows by at most 255 bytes per input byte, and a
+ *   level 1 match yields at most 264 bytes from three (fastlz/fastlz.c).
+ * - zstd: an RLE block repeats one byte up to 128 KiB behind a three-byte
+ *   block header (RFC 8878, section 3.1.1.2). */
+#define MEMC_ZLIB_MAX_RATIO   1032
+#define MEMC_FASTLZ_MAX_RATIO 255
+#define MEMC_ZSTD_MAX_RATIO   ((128 * 1024) / 4)
+
 static
 zend_string *s_decompress_value (const char *payload, size_t payload_len, uint32_t flags)
 {
 	zend_string *buffer;
 
 	uint32_t stored_length;
+	uint32_t max_ratio;
 	unsigned long length;
 	zend_bool decompress_status = 0;
 	zend_bool is_fastlz = 0, is_zlib = 0, is_zstd = 0;
@@ -3748,27 +3762,53 @@ zend_string *s_decompress_value (const char *payload, size_t payload_len, uint32
 	payload     += sizeof (uint32_t);
 	payload_len -= sizeof (uint32_t);
 
+	if (is_zstd) {
+		max_ratio = MEMC_ZSTD_MAX_RATIO;
+	} else if (is_fastlz) {
+		max_ratio = MEMC_FASTLZ_MAX_RATIO;
+	} else {
+		max_ratio = MEMC_ZLIB_MAX_RATIO;
+	}
+
+	if ((uint64_t) stored_length > (uint64_t) payload_len * max_ratio) {
+		php_error_docref(NULL, E_WARNING, "could not decompress value: stored length does not match the compressed data");
+		return NULL;
+	}
+
+#ifdef HAVE_ZSTD_H
+	if (is_zstd) {
+		unsigned long long frame_length = ZSTD_getFrameContentSize(payload, payload_len);
+		if (frame_length == ZSTD_CONTENTSIZE_ERROR) {
+			php_error_docref(NULL, E_WARNING, "value was not compressed by zstd");
+			return NULL;
+		} else if (frame_length == ZSTD_CONTENTSIZE_UNKNOWN) {
+			php_error_docref(NULL, E_WARNING, "zstd streaming decompression not supported");
+			return NULL;
+		} else if (frame_length != stored_length) {
+			php_error_docref(NULL, E_WARNING, "could not decompress value: stored length does not match the compressed data");
+			return NULL;
+		}
+	}
+#endif
+
 	buffer = zend_string_alloc (stored_length, 0);
 
 #ifdef HAVE_ZSTD_H
 	if (is_zstd) {
-		length = ZSTD_getFrameContentSize(payload, payload_len);
-		if (length == ZSTD_CONTENTSIZE_ERROR) {
-			php_error_docref(NULL, E_WARNING, "value was not compressed by zstd");
-			zend_string_release (buffer);
-			return NULL;
-		} else if (length == ZSTD_CONTENTSIZE_UNKNOWN) {
-			php_error_docref(NULL, E_WARNING, "zstd streaming decompression not supported");
-			zend_string_release (buffer);
-			return NULL;
-		}
-		decompress_status = !ZSTD_isError(ZSTD_decompress(&buffer->val, buffer->len, payload, payload_len));
+		size_t zstd_length = ZSTD_decompress(&buffer->val, buffer->len, payload, payload_len);
 
+		decompress_status = !ZSTD_isError(zstd_length);
+		if (decompress_status) {
+			buffer->len = zstd_length;
+		}
 	}
 	else
 #endif
 	if (is_fastlz) {
 		decompress_status = ((length = fastlz_decompress(payload, payload_len, &buffer->val, buffer->len)) > 0);
+		if (decompress_status) {
+			buffer->len = length;
+		}
 	}
 	else if (is_zlib) {
 		unsigned long ds = buffer->len;
@@ -3777,14 +3817,13 @@ zend_string *s_decompress_value (const char *payload, size_t payload_len, uint32
 		buffer->len = ds;
 	}
 
-	ZSTR_VAL(buffer)[stored_length] = '\0';
-
 	if (!decompress_status) {
 		php_error_docref(NULL, E_WARNING, "could not decompress value");
 		zend_string_release (buffer);
 		return NULL;
 	}
 
+	ZSTR_VAL(buffer)[ZSTR_LEN(buffer)] = '\0';
 	zend_string_forget_hash_val(buffer);
 	return buffer;
 }
